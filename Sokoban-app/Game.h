@@ -1,0 +1,176 @@
+#pragma once
+
+#include "SFML/Graphics.hpp"
+#include <unordered_map>
+#include <string>
+#include <vector>
+
+#include "GameBoard.h"
+#include "GameBoardComponent.h"
+#include "BackGround.h"
+#include "BackGroundComponent.h"
+#include "Player.h"
+#include "PlayerComponent.h"
+#include "Baggage.h"
+#include "BaggageComponent.h"
+#include "PuzzleGenerator.h"
+
+// 一動作のログ
+struct Log
+{
+	std::pair<sf::Vector2i, sf::Vector2i> pCoordinate, bCoordinate;
+	bool isBMoved;
+	Player::Direction direction1, direction2;
+	std::string time;
+	std::vector<std::vector<Log>> thread;
+};
+
+class Game
+{
+public:
+	Game();
+	bool Initialize();
+	void RunLoop();
+	void Shutdown();
+
+	sf::Texture* LoadTexture(const std::string& fileName);
+
+	// アクターの追加と削除
+	void AddActor(class GameBoard* gameboard);
+	void RemoveActor(class GameBoard* gameboard);
+	void AddActor(class BackGround* gameboard);
+	void RemoveActor(class BackGround* gameboard);
+	void AddActor(class Player* player);
+	void RemoveActor(class Player* player);
+	void AddActor(class Baggage* baggage);
+	void RemoveActor(class Baggage* baggage);
+
+	// スプライトの追加と削除
+	void AddSprite(class GameBoardComponent* GBComp);
+	void RemoveSprite(class GameBoardComponent* GBcomp);
+	void AddSprite(class BackGroundComponent* GBComp);
+	void RemoveSprite(class BackGroundComponent* GBcomp);
+	void AddSprite(class PlayerComponent* PComp);
+	void RemoveSprite(class PlayerComponent* PComp);
+	void AddSprite(class BaggageComponent* BComp);
+	void RemoveSprite(class BaggageComponent* BComp);
+
+	// ゲーム特有のメンバ関数があれば追加
+	// ステップを加算
+	void AddStep() { mStep++; }
+
+	// undo/redo処理
+	void CallUndo();
+	void CallRedo();
+
+	// 盤面をセーブ
+	void CallSave();
+
+	// 盤面のリロード
+	void CallReload();
+
+	// 先のログを削除 (プレイヤーの移動処理時に呼び出す)
+	void RemoveRedo();
+
+	// ログを追加
+	void AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2, const Player::Direction& direction1, const Player::Direction& direction2);
+	void AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2, const sf::Vector2i& baggagePos1, const sf::Vector2i& baggagePos2, const Player::Direction& direction1, const Player::Direction& direction2);
+
+	// ログをテキストに変換
+	std::string ConvertLogToStr(const std::vector<Log>& logs, const unsigned long long& current);
+
+	// ログの出力
+	void OutputLogs();
+
+	// 現在日時を文字列で出力
+	std::string GetDateTime();
+
+	// 終了判定を行い、ウィンドウで通知
+	void HasComplete();
+
+	// 盤面の規模の入力
+	void InputBoardData();
+
+	// ヘルプウィンドウの表示
+	void DisplayHelpWindow();
+
+	// ゲッターとセッター
+	sf::Vector2f GetWindowSize() const { return mWindowSize; }
+	std::vector<std::string> GetFilenames() const { return mFilenames; }
+	std::string GetFilename(unsigned int num) const { return mFilenames.at(num); }
+	std::unordered_map<std::string, std::vector<std::string>> GetBoardData() const { return mBoardData; }
+
+	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
+
+	std::vector<std::string> GetBoardState() const { return mBoardState; }
+
+private:
+	void ProcessInput();
+	void UpdateGame();
+	void GenerateOutput();
+	void LoadData();
+	void UnloadData();
+
+	// ロードされたテクスチャのマップ
+	std::unordered_map<std::string, sf::Texture*> mTextures;
+
+	// ゲームのすべてのアクター
+	class GameBoard* mGameBoard;
+	class BackGround* mBackGround;
+	class Player* mPlayer;
+	std::vector<class Baggage*> mBaggages;
+	// 待機中のアクター
+	class GameBoard* mPendingGameBoard;
+	class BackGround* mPendingBackGround;
+	class Player* mPendingPlayer;
+	std::vector<class Baggage*> mPendingBaggages;
+
+	// 描画を行うコンポーネント
+	GameBoardComponent* mGameBoardComponent;
+	BackGroundComponent* mBackGroundComponent;
+	PlayerComponent* mPlayerComponent;
+	std::vector<BaggageComponent*> mBaggageComponents;
+
+	sf::RenderWindow* mWindow;
+	sf::Clock mClock;
+	sf::Time mTicksCount;
+	sf::Font mFont;
+	std::string mGameInfo;
+	sf::Text mInfoTxt;
+
+	bool mIsRunning;
+	bool mIsComplete;
+
+	// アクターが更新中かどうかの追跡 (true : あり / false : なし)
+	bool mUpdatingActors;
+
+	// 盤面の基礎的情報
+	sf::Vector2i mBoardSize;
+	int mBaggageNum;
+	int mRepetition01;
+	int mRepetition02;
+
+	// ゲーム特有のメンバ変数があれば追加
+	sf::Vector2f mWindowSize;
+	std::string mCurrentKey;
+	std::vector<std::string> mFilenames;
+	std::unordered_map<std::string, std::vector<std::string>> mBoardData;		// プレイヤーと荷物を含めた盤面情報
+	std::unordered_map<std::string, std::vector<std::string>> mInitBoardData;	// 初期盤面
+	std::vector<std::string> mBoardState;	// プレイヤーと荷物を除いた盤面情報
+	std::vector<sf::Vector2i> mGoalPos;
+	const sf::Vector2i mSizeMax{ 1024, 1024 };
+	const sf::Vector2i mSizeMin{ 5, 5 };
+
+	// プレイヤーと荷物の初期位置
+	sf::Vector2i mInitialPlayerPos;
+	std::unordered_map<Baggage*, sf::Vector2i> mInitialBaggagePos;
+
+	// 入力のクールダウン
+	float mInputCooldown;
+
+	// 現在のターン数
+	unsigned int mStep;
+
+	// ログを座標のリストで表す
+	std::vector<Log> mLogs;
+};
