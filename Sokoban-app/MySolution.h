@@ -13,11 +13,18 @@ using Board = std::vector<std::string>;
 using Route = std::vector<sf::Vector2i>;
 using CandidateItems = std::unordered_map<int, std::vector<sf::Vector2i>>;
 using CandidateRoutes = std::unordered_map<int, std::vector<Route>>;
+struct History
+{
+	Board mBoard;
+	std::vector<std::vector<unsigned int>> mPPass;
+	std::vector<std::vector<unsigned int>> mBPass;
+	int mSolveUpper;
+};
 
 class MySolution
 {
 public:
-	MySolution(const sf::Vector2i& size, const int& baggageNum, const int& buildNum, const int& runsNum);
+	MySolution(const sf::Vector2i& size, const int& baggageNum, const int& buildNum, const int& runsNum, const double& visitedRatio);
 
 	// ゲッターセッター
 	Board GetBoard() { return mBoardStr; }
@@ -39,6 +46,9 @@ private:
 	
 	// 仮想プレイのシミュレーションを行うフェーズ
 	void RunSimulation();
+
+	// 床タイルをランダムに訪問済みに初期化する関数
+	void SetVisitedStatus(std::vector<std::vector<unsigned int>>& visitedCount, const Board& board);
 
 	// シミュレーションの終了判定を行う関数
 	bool isLoopEnd(const Board& board, const std::vector<bool>& isMoved, const std::vector<std::vector<unsigned int>>& pPassCount, const std::vector<std::vector<unsigned int>>& bPassCount);
@@ -65,8 +75,11 @@ private:
 	// 荷物が配置できるか調べる関数
 	bool existsFreeSpace(const Board& board, const std::vector<sf::Vector2i>& bPositions);
 
+	bool existsDuplicateHistory(const std::vector<History> history, const Board& board);
+
 	// 押せる荷物の候補と押し始められる位置の全ての候補を求める関数
 	void SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, CandidateItems& outList);
+	void SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, std::vector<int>& outList);
 
 	// プレイヤーとある荷物の可能な移動経路の全ての候補を求める関数
 	void SetRoutes(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, std::unordered_map<int, std::vector<Route>>& outRoutes, const CandidateItems& initPositions, const std::vector<std::vector<unsigned int>>& pPassed, const std::vector<std::vector<unsigned int>>& bPassed);
@@ -91,14 +104,6 @@ private:
 		const std::vector<sf::Vector2i> bPositions,
 		const std::vector<std::vector<unsigned int>>& pPassCount,
 		const std::vector<std::vector<unsigned int>>& bPassCount);
-
-	// 探索関連の変数
-	const std::vector<sf::Vector2i> directions = {
-		sf::Vector2i(1, 0),   // 右
-		sf::Vector2i(0, 1),  // 下
-		sf::Vector2i(-1, 0),   // 左
-		sf::Vector2i(0, -1)   // 上
-	};
 
 	// 方向をインデックスに変換する関数
 	int GetDirectionIndex(const sf::Vector2i& dir)
@@ -133,6 +138,16 @@ private:
 		return sf::Vector2i{ pos.first, pos.second };
 	}
 
+	// 以下はメンバ変数 //
+	// 探索関連の変数
+	const std::vector<sf::Vector2i> directions =
+	{
+		sf::Vector2i(1, 0),   // 右
+		sf::Vector2i(0, 1),  // 下
+		sf::Vector2i(-1, 0),   // 左
+		sf::Vector2i(0, -1)   // 上
+	};
+
 	// 乱数関連の変数
 	std::random_device rd;
 	std::mt19937 mt;
@@ -146,6 +161,8 @@ private:
 	// 盤面の生成に関する変数
 	const int mBuildsNum;
 	const int mRunsNum;
+	double mVisitedRatio;	// 訪問済みに初期化する割合
+	std::vector<std::vector<History>> mBoardHistory;	// 盤面の履歴
 
 	// 解の上界
 	int mSolveUpper;

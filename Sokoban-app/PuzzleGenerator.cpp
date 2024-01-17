@@ -43,7 +43,7 @@ void PuzzleGenerator::mcts()
 
 void PuzzleGenerator::mysolution(const int& buildsNum, const int& runsNum)
 {
-	MySolution* gen = new MySolution(mSize, mBaggageNum, buildsNum, runsNum);
+	MySolution* gen = new MySolution(mSize, mBaggageNum, buildsNum, runsNum, 0.0);
 	mBoardStr = gen->GetBoard();
 	delete(gen);
 }
