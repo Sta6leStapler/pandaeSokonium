@@ -150,6 +150,8 @@ private:
 	int mRepetition01;
 	int mRepetition02;
 	double mRepetition03;
+	double mRepetition04;
+	int mRepetition05;
 
 	// ƒQ[ƒ€“Á—L‚Ìƒƒ“ƒo•Ï”‚ª‚ ‚ê‚Î’Ç‰Á
 	sf::Vector2f mWindowSize;

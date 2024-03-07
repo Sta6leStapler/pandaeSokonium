@@ -2,22 +2,40 @@
 #include <queue>
 #include <algorithm>
 
-MySolution::MySolution(const sf::Vector2i& size, const int& baggageNum, const int& buildsNum, const int& runsNum, const double& visitedRatio)
+MySolution::MySolution(
+	const sf::Vector2i& size,
+	const int& baggageNum,
+	const int& buildsNum,
+	const int& runsNum,
+	const double& initialWallRatio,
+	const double& visitedRatio,
+	const int& strategyIndex)
 	:mSize(size)
 	,mBaggageNum(baggageNum)
 	,mt(rd())
 	,mBuildsNum(buildsNum)
 	,mRunsNum(runsNum)
+	,mInitialWallRatio(initialWallRatio)
 	,mVisitedRatio(visitedRatio)
+	,mStrategyIndex(strategyIndex)
 	,mSolveUpper(0)
 {
+	if (mInitialWallRatio < 0.0)
+	{
+		mInitialWallRatio = 0.0;
+	}
+	else if (mInitialWallRatio > 1.0)
+	{
+		mInitialWallRatio = 1.0;
+	}
+
 	if (mVisitedRatio < 0.0)
 	{
 		mVisitedRatio = 0.0;
 	}
-	else if (mVisitedRatio > 100.0)
+	else if (mVisitedRatio > 1.0)
 	{
-		mVisitedRatio = 100.0;
+		mVisitedRatio = 1.0;
 	}
 
 	for (int i = 0; i < mSize.y; i++)
@@ -58,19 +76,9 @@ MySolution::MySolution(const sf::Vector2i& size, const int& baggageNum, const in
 
 void MySolution::InitSettings()
 {
-	// 壁を適当に配置
-	/*mBoardStr[4][5] = '#';
-	mBoardStr[5][5] = '#';
-	mBoardStr[6][5] = '#';
-	mBoardStr[7][5] = '#';*/
-
-	// プレイヤーの初期位置をランダムに決定
-	sf::Vector2i initP(RollCoordinate());
-	while (mBoardStr[initP.y][initP.x] == '#' && mBoardStr[initP.y][initP.x] == '$')
-	{
-		initP = RollCoordinate();
-	}
-	mBoardStr[initP.y][initP.x] = '@';
+	// 壁タイルの配置数を求める
+	int wallCount = ((mSize.x - 2) * (mSize.y - 2) - mBaggageNum - 1) * mInitialWallRatio;
+	SetWallTiles(wallCount);
 
 	// 盤面情報のコピー
 	Board cpBoard = mBoardStr;
@@ -98,7 +106,7 @@ void MySolution::InitSettings()
 		sf::Vector2i tmpCoordinate(RollCoordinate(2, mSize.x - 3, 2, mSize.y - 3));
 
 		// 配置先の座標に被りがないことを確認
-		if (mBoardStr[tmpCoordinate.y][tmpCoordinate.x] != '#' && initP != tmpCoordinate && std::find(mBaggagesCoordinate.begin(), mBaggagesCoordinate.end(), tmpCoordinate) == mBaggagesCoordinate.end())
+		if (mBoardStr[tmpCoordinate.y][tmpCoordinate.x] != '#' && std::find(mBaggagesCoordinate.begin(), mBaggagesCoordinate.end(), tmpCoordinate) == mBaggagesCoordinate.end())
 		{
 			// 詰みの荷物の配置がないことを確認する
 			cpBoard[tmpCoordinate.y][tmpCoordinate.x] = '$';
@@ -115,6 +123,14 @@ void MySolution::InitSettings()
 			}
 		}
 	}
+
+	// プレイヤーの初期位置をランダムに決定
+	sf::Vector2i initP{ -1, -1 };
+	do
+	{
+		initP = RollCoordinate();
+	} while (mBoardStr[initP.y][initP.x] == '#' || mBoardStr[initP.y][initP.x] == '$');
+	mBoardStr[initP.y][initP.x] = '@';
 }
 
 void MySolution::RunSimulation()
@@ -173,12 +189,15 @@ void MySolution::RunSimulation()
 		// 地形構築までの盤面の履歴
 		std::vector<History> currentHistory = { History{ cpBoard, PPassCount, BPassCount, mSolveUpper } };
 
+		// 直前に運んだ荷物のインデックス
+		int prevBaggageIndex = -1;
+
 		// プレイヤーと荷物の移動
 		for (int i = 0; i < mRunsNum || isLoopEnd(cpBoard, isMoved, PPassCount, BPassCount); i++)
 		{
 			// 押せる荷物と押し始められる位置のリストを求める
 			CandidateItems movableBaggages{};
-			SetCandidates(vpPoint, vbPoints, cpBoard, movableBaggages);
+			SetCandidates(vpPoint, vbPoints, cpBoard, movableBaggages, prevBaggageIndex);
 
 			if (movableBaggages.empty())
 			{
@@ -196,11 +215,14 @@ void MySolution::RunSimulation()
 
 			// 経路を選択する
 			//auto bId = GetRandomElement(pRoutes).first;
-			std::pair<int, Route> pRoute(GetBestRoute(pRoutes, cpBoard, vpPoint, vbPoints, PPassCount, BPassCount));//(bid, GetRandomElement(pRoutes[bId]));
+			std::pair<int, Route> pRoute(GetBestRoute(pRoutes, cpBoard, vpPoint, vbPoints, PPassCount, BPassCount, i, movableBaggages));//(bid, GetRandomElement(pRoutes[bId]));
 			isMoved[pRoute.first] = true;
 
+			// 今回運ぶ荷物のインデックスを記録
+			prevBaggageIndex = pRoute.first;
+
 			// プレイヤーの移動経路に沿ってプレイヤーと荷物を移動させる
-			MoveOnPath(pRoute.second, cpBoard, vpPoint, vbPoints[pRoute.first], PPassCount, BPassCount);
+			MoveOnPath(pRoute.second, cpBoard, vpPoint, vbPoints[pRoute.first], PPassCount, BPassCount, true);
 
 			// 解の上界を求めるために、経路の長さだけ加算
 			mSolveUpper += pRoute.second.size();
@@ -211,7 +233,7 @@ void MySolution::RunSimulation()
 				currentHistory.emplace_back(History{ cpBoard, PPassCount, BPassCount, mSolveUpper });
 			}
 			// 重複があった場合
-			// とりあえず、現在は直前の状態を出力として終了
+			// とりあえず、現在は重複が生じる荷物の運搬の1つ前の荷物の運搬の最終状態を出力として終了
 			else
 			{
 				cpBoard = currentHistory.back().mBoard;
@@ -255,11 +277,167 @@ void MySolution::RunSimulation()
 		}
 	}
 
+
+	// 無駄な床タイルを消す
+	std::vector<sf::Vector2i> tileList;
+	do
+	{
+		tileList.clear();
+		for (int x = 1; x < mSize.x - 1; ++x)
+		{
+			for (int y = 1; y < mSize.y - 1; ++y)
+			{
+				if (mBoardStr[y][x] == ' ')
+				{
+					for (int i = 0; i < directions.size(); ++i)
+					{
+						if (mBoardStr[y + directions[i].y][x + directions[i].x] == '#' &&
+							mBoardStr[y + directions[(i + 1) % 4].y][x + directions[(i + 1) % 4].x] == '#' &&
+							mBoardStr[y + directions[(i + 2) % 4].y][x + directions[(i + 2) % 4].x] == '#')
+						{
+							tileList.emplace_back(sf::Vector2i{ x, y });
+							mBoardStr[y][x] = '#';
+							break;
+						}
+					}
+				}
+			}
+		}
+	} while (!tileList.empty());
+
 	// 荷物とゴールの対応を作る
 	for (int i = 0; i < mBaggageNum; i++)
 	{
 		mInitToGoalList.emplace_back(std::make_pair(mBaggagesCoordinate[i], vbPoints[i]));
 	}
+
+	// 解の表示
+	std::cout << "Solution length : " << mSolveUpper << std::endl << "Solution : " << mSolutionDirection << std::endl;
+}
+
+void MySolution::SetWallTiles(const int& wallCount)
+{
+	// 盤面のコピー
+	Board cpBoard = mBoardStr;
+	// 配置された壁の数のカウント
+	int count = 0;
+	// 壁が規定数に達するまで配置
+	while (count < wallCount)
+	{
+		// ランダムな座標を取得
+		sf::Vector2i tmpPos = RollCoordinate();
+		// 取得した座標が床タイルかどうか
+		if (cpBoard[tmpPos.y][tmpPos.x] == ' ')
+		{
+			// 一時的に壁に書き換える
+			cpBoard[tmpPos.y][tmpPos.x] = '#';
+
+			// 3方以上が壁で囲まれている床タイルが存在しないか確認
+			if (hasEnclosedFloor(cpBoard))
+			{
+				cpBoard[tmpPos.y][tmpPos.x] = ' ';
+				continue;
+			}
+
+			// 盤面が2つ以上に分断されていないかを判定
+			if (isBoardPartitioned(cpBoard))
+			{
+				cpBoard[tmpPos.y][tmpPos.x] = ' ';
+				continue;
+			}
+
+			// いずれにも該当しない場合は、カウントを増やす
+			++count;
+		}
+	}
+	mBoardStr = cpBoard;
+}
+
+bool MySolution::hasEnclosedFloor(const Board& board)
+{
+	// 床タイルの周囲3方向以上が壁タイルで囲まれているかどうかの判定を行う
+	for (int x = 1; x < mSize.x - 1; ++x)
+	{
+		for (int y = 1; y < mSize.y - 1; ++y)
+		{
+			// 床タイルなら調べる
+			if (board[y][x] == ' ')
+			{
+				// 周囲3方向を調べる
+				for (int i = 0; i < 4; ++i)
+				{
+					if (board[y + directions[i].y][x + directions[i].x] == '#' &&
+						board[y + directions[(i + 1) % 4].y][x + directions[(i + 1) % 4].x] == '#' &&
+						board[y + directions[(i + 2) % 4].y][x + directions[(i + 2) % 4].x] == '#'
+						)
+					{
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+bool MySolution::isBoardPartitioned(const Board& board)
+{
+	// 盤面が2つ以上に分断されていないかを判定
+	// 幅優先探索で調べる
+	// 未探索かどうか
+	std::vector<std::vector<bool>> isUnachieved(mSize.y, std::vector<bool>(mSize.x, true));
+	std::queue<sf::Vector2i> q;
+	// 適当な床タイルを探す
+	sf::Vector2i initPos{ -1, -1 };
+	for (int y = 1; y < mSize.y - 1; ++y)
+	{
+		for (int x = 1; x < mSize.x - 1; ++x)
+		{
+			if (board[y][x] == ' ')
+			{
+				initPos = sf::Vector2i{ x, y };
+				break;
+			}
+		}
+		if (initPos.x != -1)
+		{
+			break;
+		}
+	}
+	q.push(initPos);
+	isUnachieved[initPos.y][initPos.x] = false;
+
+	while (!q.empty())
+	{
+		sf::Vector2i current = q.front();
+		q.pop();
+
+		for (const auto& dir : directions)
+		{
+			sf::Vector2i next{ current.x + dir.x, current.y + dir.y };
+			if (board[next.y][next.x] == ' ' && isUnachieved[next.y][next.x])
+			{
+				q.push(next);
+				isUnachieved[next.y][next.x] = false;
+			}
+		}
+	}
+	
+	// 未探索の床タイルがないかどうか確認する
+	for (int x = 1; x < mSize.x - 1; ++x)
+	{
+		for (int y = 1; y < mSize.y - 1; ++y)
+		{
+			// 床かつ未探索のタイルがあれば真を返す
+			if (board[y][x] == ' ' && isUnachieved[y][x])
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 void MySolution::SetVisitedStatus(std::vector<std::vector<unsigned int>>& visitedCount, const Board& board)
@@ -289,10 +467,13 @@ void MySolution::SetVisitedStatus(std::vector<std::vector<unsigned int>>& visite
 
 bool MySolution::isLoopEnd(const Board& board, const std::vector<bool>& isMoved, const std::vector<std::vector<unsigned int>>& pPassCount, const std::vector<std::vector<unsigned int>>& bPassCount)
 {
+	// NOTE 現状はこの機能は無効化
 	// 全ての荷物を動かしている
 	// 荷物の周囲3方が壁で囲まれていない
 	// TODO 初期位置で動かせない荷物がない
 	// いずれも満たしている場合は終了できる
+
+	return false;
 	
 	if (std::find(isMoved.begin(), isMoved.end(), false) == isMoved.end())
 	{
@@ -500,6 +681,13 @@ std::pair<T, U> MySolution::GetRandomElement(const std::unordered_map<T, U>& map
 	return std::make_pair(it->first, it->second);
 }
 
+std::vector<sf::Vector2i> MySolution::GetRandomDirections()
+{
+	std::vector<sf::Vector2i> output = directions;
+	std::shuffle(output.begin(), output.end(), mt);
+	return output;
+}
+
 std::vector<sf::Vector2i> MySolution::GetAroundWalls(const sf::Vector2i& point)
 {
 	std::vector<sf::Vector2i> result;
@@ -542,18 +730,60 @@ std::vector<sf::Vector2i> MySolution::GetAroundWalls(const sf::Vector2i& point)
 
 bool MySolution::isArrangementValid(const Board& board, const std::vector<sf::Vector2i>& bPositions)
 {
+	// 動かせない荷物があるかどうかを判定する
+	// 盤面の角の荷物は動かせない
 	if (board[1][1] == '$' || board[board.size() - 2][1] == '$' || board[1][board[1].size() - 2] == '$' || board[board.size() - 2][board[1].size() - 2] == '$')
 	{
 		return false;
 	}
 
+	// 荷物の周囲を見て、動かせるかどうかを調べる
 	for (const auto& bPos : bPositions)
 	{
 		for (int i = 0; i < directions.size(); i++)
 		{
+			// $$ ## #$ #$ $#
+			// $$ $$ $# $$ ## の形状
 			if ((board[bPos.y + directions[i].y][bPos.x + directions[i].x] == '#' || board[bPos.y + directions[i].y][bPos.x + directions[i].x] == '$') &&
 				(board[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == '#' || board[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == '$') &&
 				(board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '#' || board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$'))
+			{
+				return false;
+			}
+
+			// $#
+			// #  の形状
+			if (board[bPos.y + directions[i].y][bPos.x + directions[i].x] == '#' &&
+				board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '#')
+			{
+				return false;
+			}
+
+			//  $#
+			// #$  の形状
+			if (board[bPos.y + directions[i].y][bPos.x + directions[i].x] == '#' &&
+				board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$' &&
+				board[bPos.y + directions[(i + 1) % 4].y + directions[(i + 2) % 4].y][bPos.x + directions[(i + 1) % 4].x + directions[(i + 2) % 4].x] == '#')
+			{
+				return false;
+			}
+
+			// #$
+			//  $# の形状
+			if (board[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == '#' &&
+				board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$' &&
+				board[bPos.y + directions[(i + 2) % 4].y][bPos.x + directions[(i + 2) % 4].x] == '#')
+			{
+				return false;
+			}
+
+			// #
+			// $$
+			//  $# の形状
+			if (board[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == '#' &&
+				board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$' &&
+				board[bPos.y + directions[(i + 2) % 4].y][bPos.x + directions[(i + 2) % 4].x] == '$' &&
+				board[bPos.y + directions[(i + 2) % 4].y + directions[(i + 3) % 4].y][bPos.x + directions[(i + 2) % 4].x + directions[(i + 3) % 4].x] == '#')
 			{
 				return false;
 			}
@@ -617,7 +847,7 @@ bool MySolution::existsDuplicateHistory(const std::vector<History> history, cons
 	return true;
 }
 
-void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, CandidateItems& outList)
+void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, CandidateItems& outList, const int& prevBaggageIndex)
 {
 	// 荷物ごとに、プレイヤーが押し始める位置に移動できる座標のリストを求める
 	// 全ての荷物を壁とみなした盤面を考える
@@ -627,53 +857,57 @@ void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::V
 		baseBoard[bPos.y][bPos.x] = '#';
 	}
 
-	// 全ての荷物に対して調べる
+	// 直前に運んだ荷物以外の全ての荷物に対して調べる
 	for (size_t i = 0; i < bPositions.size(); i++)
 	{
-		// 対象の荷物の座標のみを荷物に戻す
-		Board tmpBoard = baseBoard;
-		tmpBoard[bPositions[i].y][bPositions[i].x] = '$';
-
-		// 探索したかどうかを保持する変数
-		std::vector<std::vector<bool>> unexplored(mSize.y, std::vector<bool>(mSize.x, true));
-		// 荷物の座標を探索済みにする
-		unexplored[pPos.y][pPos.x] = false;
-
-		std::queue<sf::Vector2i> q;
-		q.emplace(pPos);
-
-		while (!q.empty())
+		if (i != prevBaggageIndex)
 		{
-			const sf::Vector2i current = q.front();
-			q.pop();
+			// 対象の荷物の座標のみを荷物に戻す
+			Board tmpBoard = baseBoard;
+			tmpBoard[bPositions[i].y][bPositions[i].x] = '$';
 
-			// 探索中の現在地の四方向を調べる
-			for (const auto& dir : directions)
+			// 探索したかどうかを保持する変数
+			std::vector<std::vector<bool>> unexplored(mSize.y, std::vector<bool>(mSize.x, true));
+			// 荷物の座標を探索済みにする
+			unexplored[pPos.y][pPos.x] = false;
+
+			std::queue<sf::Vector2i> q;
+			q.emplace(pPos);
+
+			while (!q.empty())
 			{
-				sf::Vector2i next(current.x + dir.x, current.y + dir.y);
+				const sf::Vector2i current = q.front();
+				q.pop();
 
-				// 現在調べている方向が床タイルで、未探索なら探索を続ける
-				if (tmpBoard[next.y][next.x] == ' ' && unexplored[next.y][next.x])
+				// 探索中の現在地の四方向を調べる
+				std::vector<sf::Vector2i> tmpDir = GetRandomDirections();
+				for (const auto& dir : tmpDir)
 				{
-					q.emplace(next);
-					unexplored[next.y][next.x] = false;
-				}
-				// 現在調べている方向に荷物があり、その方向に押すことができるのならば該当荷物の座標のリストに追加
-				else if (tmpBoard[next.y][next.x] == '$' && tmpBoard[next.y + dir.y][next.x + dir.x] == ' ' && next - dir == current)
-				{
-					if (outList.find(i) == outList.end())
+					sf::Vector2i next(current.x + dir.x, current.y + dir.y);
+
+					// 現在調べている方向が床タイルで、未探索なら探索を続ける
+					if (tmpBoard[next.y][next.x] == ' ' && unexplored[next.y][next.x])
 					{
-						outList.emplace(i, std::vector<sf::Vector2i>{ sf::Vector2i{ next.x - dir.x, next.y - dir.y } });
+						q.emplace(next);
+						unexplored[next.y][next.x] = false;
+					}
+					// 現在調べている方向に荷物があり、その方向に押すことができるのならば該当荷物の座標のリストに追加
+					else if (tmpBoard[next.y][next.x] == '$' && tmpBoard[next.y + dir.y][next.x + dir.x] == ' ' && next - dir == current)
+					{
+						if (outList.find(i) == outList.end())
+						{
+							outList.emplace(i, std::vector<sf::Vector2i>{ sf::Vector2i{ next.x - dir.x, next.y - dir.y } });
+						}
+						else
+						{
+							outList[i].emplace_back(sf::Vector2i{ next.x - dir.x, next.y - dir.y });
+						}
+						unexplored[next.y][next.x] = false;
 					}
 					else
 					{
-						outList[i].emplace_back(sf::Vector2i{ next.x - dir.x, next.y - dir.y });
+						unexplored[next.y][next.x] = false;
 					}
-					unexplored[next.y][next.x] = false;
-				}
-				else
-				{
-					unexplored[next.y][next.x] = false;
 				}
 			}
 		}
@@ -711,7 +945,8 @@ void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::V
 			q.pop();
 
 			// 探索中の現在地の四方向を調べる
-			for (const auto& dir : directions)
+			std::vector<sf::Vector2i> tmpDir = GetRandomDirections();
+			for (const auto& dir : tmpDir)
 			{
 				sf::Vector2i next(current.x + dir.x, current.y + dir.y);
 
@@ -774,7 +1009,8 @@ void MySolution::SetRoutes(
 			{
 				if (tmpBoard[y][x] == ' ' || tmpBoard[y][x] == '@' || tmpBoard[y][x] == '$')
 				{
-					for (const auto& dir : directions)
+					std::vector<sf::Vector2i> tmpDir = GetRandomDirections();
+					for (const auto& dir : tmpDir)
 					{
 						if (tmpBoard[y + dir.y][x + dir.x] == ' ' || tmpBoard[y + dir.y][x + dir.x] == '@' || tmpBoard[y + dir.y][x + dir.x] == '$')
 						{
@@ -892,7 +1128,7 @@ void MySolution::SetRoutes(
 						toNextPos.emplace_back(nextElem.bPos);
 						nextElem.pRoute.insert(nextElem.pRoute.end(), toNextPos.begin(), toNextPos.end());
 						nextElem.prevPos = nextElem.bPos;
-						MoveOnPath(toNextPos, nextElem.currentBoard, nextElem.pPos, nextElem.bPos, nextElem.currentPPassed, nextElem.currentBPassed);
+						MoveOnPath(toNextPos, nextElem.currentBoard, nextElem.pPos, nextElem.bPos, nextElem.currentPPassed, nextElem.currentBPassed, false);
 						nextElem.mLen = -neighbor_dist;
 						distances[path] = neighbor_dist;
 						pq.push(nextElem);
@@ -927,7 +1163,8 @@ Route MySolution::FindRouteToBaggage(const sf::Vector2i& pCoordinate, const sf::
 		{
 			if (board[y][x] == ' ' || board[y][x] == '@')
 			{
-				for (const auto& dir : directions)
+				std::vector<sf::Vector2i> tmpDir = GetRandomDirections();
+				for (const auto& dir : tmpDir)
 				{
 					if (board[y + dir.y][x + dir.x] == ' ' || board[y + dir.y][x + dir.x] == '@')
 					{
@@ -1025,13 +1262,37 @@ void MySolution::MoveOnPath(
 	sf::Vector2i& pPos,
 	sf::Vector2i& bPos,
 	std::vector<std::vector<unsigned int>>& pPassCount,
-	std::vector<std::vector<unsigned int>>& bPassCount)
+	std::vector<std::vector<unsigned int>>& bPassCount,
+	const bool& isSave)
 {
 	for (const auto& nextPos : route)
 	{
 		// 次のタイルに何もなかった場合
 		if (board[nextPos.y][nextPos.x] == ' ')
 		{
+			// 経路の記録
+			if (isSave)
+			{
+				mSolutionPos.emplace_back(nextPos);
+				if (nextPos - pPos == sf::Vector2i{ 1, 0 })
+				{
+					mSolutionDirection += "r";
+				}
+				else if (nextPos - pPos == sf::Vector2i{ 0, 1 })
+				{
+					mSolutionDirection += "d";
+				}
+				else if (nextPos - pPos == sf::Vector2i{ -1, 0 })
+				{
+					mSolutionDirection += "l";
+				}
+				else if (nextPos - pPos == sf::Vector2i{ 0, -1 })
+				{
+					mSolutionDirection += "u";
+				}
+			}
+
+			// プレイヤーの移動
 			board[pPos.y][pPos.x] = ' ';
 			board[nextPos.y][nextPos.x] = '@';
 			pPassCount[nextPos.y][nextPos.x]++;
@@ -1044,6 +1305,29 @@ void MySolution::MoveOnPath(
 			sf::Vector2i nextNextPos(nextPos.x + (nextPos.x - pPos.x), nextPos.y + (nextPos.y - pPos.y));
 			if (board[nextNextPos.y][nextNextPos.x] == ' ')
 			{
+				// 経路の記録
+				if (isSave)
+				{
+					mSolutionPos.emplace_back(nextPos);
+					if (nextPos - pPos == sf::Vector2i{ 1, 0 })
+					{
+						mSolutionDirection += "R";
+					}
+					else if (nextPos - pPos == sf::Vector2i{ 0, 1 })
+					{
+						mSolutionDirection += "D";
+					}
+					else if (nextPos - pPos == sf::Vector2i{ -1, 0 })
+					{
+						mSolutionDirection += "L";
+					}
+					else if (nextPos - pPos == sf::Vector2i{ 0, -1 })
+					{
+						mSolutionDirection += "U";
+					}
+				}
+
+				// プレイヤーと荷物の移動
 				board[pPos.y][pPos.x] = ' ';
 				board[nextPos.y][nextPos.x] = '@';
 				board[nextNextPos.y][nextNextPos.x] = '$';
@@ -1072,32 +1356,23 @@ std::pair<int, Route> MySolution::GetBestRoute(
 	const sf::Vector2i& pPos,
 	const std::vector<sf::Vector2i> bPositions,
 	const std::vector<std::vector<unsigned int>>& pPassCount,
-	const std::vector<std::vector<unsigned int>>& bPassCount)
+	const std::vector<std::vector<unsigned int>>& bPassCount,
+	const int& switchCount,
+	const CandidateItems& movableBaggages)
 {
-	struct Rating
-	{
-		double totalRate;
-		int m2x2Spaces;				// 2x2の数
-		int m2x3Spaces;				// 2x3の数
-		int m3x3Spaces;				// 3x3の数
-		int mDisCenterToGoal;		// 
-		int mGoalArround;			// 
-		int mDeadEnd;				// 周囲の壁が3つ以上の荷物の数
-		int mCornerEnd;				// 角となるような地形にある荷物の数 (座標的な角ではない)
-		int mSides;					// 盤面の外周の辺に配置されている荷物の数
-		int mCorners;				// 盤面の外周の角に配置されている荷物の数
-		int mChangedCandidates;		// 移動前後で動かせるかどうかが変わった荷物の数
-	};
-
 	std::pair<int, Route> result;
 	// 荷物ごとに荷物が持つ全経路のレートの連想配列を作る
 	std::unordered_map<int, std::unordered_map<int, Rating>> mRates;
+	// 最もレートの少ない経路を格納する
+	// 荷物のインデックスと、経路のインデックスと、そのレートを格納
 	std::pair<int, std::pair<int, double>> minRate(-1, { -1, DBL_MAX });
 
 	// cerRouteは荷物のIDをキー、経路のリストを値として持つペア
 	for (const auto& cerRoute : routes)
 	{
+		// 現在の荷物の要素を追加
 		mRates[cerRoute.first] = std::unordered_map<int, Rating>{};
+		// レートはその荷物の経路の数だけ記録
 		auto bSize = cerRoute.second.size();
 		for (int i = 0; i < bSize; i++)
 		{
@@ -1109,7 +1384,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 			std::vector<std::vector<unsigned int>> cbPassCount = bPassCount;
 
 			// プレイヤーの移動
-			MoveOnPath(cerRoute.second[i], cpBoard, cpPos, cbPos, cpPassCount, cbPassCount);
+			MoveOnPath(cerRoute.second[i], cpBoard, cpPos, cbPos, cpPassCount, cbPassCount, false);
 			
 			// 2x2スペースの数のカウント
 			int count2x2Areas = 0;
@@ -1273,24 +1548,49 @@ std::pair<int, Route> MySolution::GetBestRoute(
 
 			// プレイヤーと荷物の移動後の状態での動かせる荷物の候補の数を求める
 			// 押せる荷物と押し始められる位置のリストを求める
-			//std::vector<int> movableBaggages;
-			//std::vector<sf::Vector2i> cbPoints = bPositions;
-			//cbPoints[cerRoute.first] = cbPos;
-			//SetCandidates(cpPos, cbPoints, cpBoard, movableBaggages);
+			// 荷物ごとに0箇所から、最大4箇所までプレイヤーの開始位置が与えられる
+			// 現在押している荷物は除いて、荷物のインデックスをキーとした、プレイヤーの開始位置のリストを作る
+			CandidateItems startPos;
+			// 運搬した荷物以外は位置が変わっていないのでそのままコピー
+			std::vector<sf::Vector2i> cbPoints = bPositions;
+			cbPoints[cerRoute.first] = cbPos;
+			SetCandidates(cpPos, cbPoints, cpBoard, startPos, cerRoute.first);
 			int changedMovable = 0;
 			// 動かせるか動かせないかが入れ替わっている数をカウント
-			/*for (const auto& item : movableBaggages)
+			for (const auto& item : startPos)
 			{
-				if (routes.count(item) == 1)
+				if (movableBaggages.count(item.first) == 0)
 				{
-					--changedMovable;
+					continue;
 				}
-			}*/
+				for (const auto& pos : item.second)
+				{
+					if (std::find(movableBaggages.at(item.first).begin(), movableBaggages.at(item.first).end(), pos) == movableBaggages.at(item.first).end())
+					{
+						--changedMovable;
+					}
+				}
+			}
+			for (const auto& item : movableBaggages)
+			{
+				if (startPos.count(item.first) == 0)
+				{
+					continue;
+				}
+				for (const auto& pos : item.second)
+				{
+					if (std::find(startPos[item.first].begin(), startPos[item.first].end(), pos) == startPos[item.first].end())
+					{
+						--changedMovable;
+					}
+				}
+			}
 
 			// cerRoute.firstは荷物のインデックス、iは経路のインデックス
 			mRates[cerRoute.first][i].m2x2Spaces = count2x2Areas;
 			mRates[cerRoute.first][i].m2x3Spaces = count2x3Areas;
 			mRates[cerRoute.first][i].m3x3Spaces = count3x3Areas;
+			mRates[cerRoute.first][i].mSwitchCount = switchCount;
 			mRates[cerRoute.first][i].mDisCenterToGoal = 0;
 			mRates[cerRoute.first][i].mGoalArround = 0;
 			mRates[cerRoute.first][i].mDeadEnd = deadEnds;
@@ -1298,17 +1598,9 @@ std::pair<int, Route> MySolution::GetBestRoute(
 			mRates[cerRoute.first][i].mSides = sides;
 			mRates[cerRoute.first][i].mCorners = corners;
 			mRates[cerRoute.first][i].mChangedCandidates = changedMovable;
-			mRates[cerRoute.first][i].totalRate =
-				//mRates[cerRoute.first][i].m2x2Spaces +
-				mRates[cerRoute.first][i].m2x3Spaces +
-				//mRates[cerRoute.first][i].m3x3Spaces +
-				mRates[cerRoute.first][i].mDisCenterToGoal / (mSize.x * mSize.y) +
-				mRates[cerRoute.first][i].mGoalArround +
-				mRates[cerRoute.first][i].mDeadEnd +
-				mRates[cerRoute.first][i].mCornerEnd +
-				mRates[cerRoute.first][i].mSides +
-				mRates[cerRoute.first][i].mCorners +
-				mRates[cerRoute.first][i].mChangedCandidates;
+			
+			// 評価値を計算
+			SetEvaluationValue(mRates[cerRoute.first][i], switchCount);
 
 			// レートの最小値が更新できる場合は、更新
 			if (minRate.second.second > mRates[cerRoute.first][i].totalRate)
@@ -1319,8 +1611,13 @@ std::pair<int, Route> MySolution::GetBestRoute(
 	}
 
 	// 最もレートが低い経路からランダムに選ぶ
-	// 最もレートの低い全ての経路を経路の長さをキーとした連想配列に格納
+	// 最もレートの低い全ての経路の荷物と経路のインデックスのペアを経路の長さをキーとした連想配列に格納
 	std::map<int, std::vector<std::pair<int, int>>> candidate;
+
+	// 経路長関係なしに選ばせる
+	std::vector<std::pair<int, int>> minRateRoutes;
+	std::pair<int, int> choosedIndex;
+
 	for (const auto& cerRoute : routes)
 	{
 		auto bSize = cerRoute.second.size();
@@ -1329,27 +1626,214 @@ std::pair<int, Route> MySolution::GetBestRoute(
 			if (mRates[cerRoute.first][i].totalRate == minRate.second.second)
 			{
 				candidate[cerRoute.second.size()].emplace_back(std::make_pair(cerRoute.first, i));
+				minRateRoutes.emplace_back(std::make_pair(cerRoute.first, i));
 			}
 		}
 	}
 
-	// 経路長の長い経路からランダムに選ぶ
+	// 
 	int minKey = -1;
+	std::cout << "Current board : " << std::endl;
+	for (const auto& line : board)
+	{
+		std::cout << line << std::endl;
+	}
+	std::cout << "All candidates : " << std::endl;
 	for (const auto& item : candidate)
 	{
+		// 表示させてみる
+		for (const auto& indexes : item.second)
+		{
+			std::cout << "baggage : " << indexes.first << ", route : " << indexes.second << " > ";
+			for (const auto& pos : routes.at(indexes.first)[indexes.second])
+			{
+				std::cout << "[ " << pos.x << ", " << pos.y << " ] -> ";
+			}
+			std::cout << std::endl;
+		}
+
+		// 経路長の長い経路からランダムに選ぶ場合の
 		if (minKey < item.first)
 		{
 			minKey = item.first;
 		}
 	}
 	
+	/*
 	std::uniform_int_distribution<int> rand(0, candidate[minKey].size() - 1);
 	// 乱数を生成する 
 	auto index = rand(mt);
 	minRate.first = candidate[minKey][index].first;
 	minRate.second.first = candidate[minKey][index].second;
-
 	result = { minRate.first, routes.at(minRate.first)[minRate.second.first] };
+	//*/
+
+	choosedIndex = GetRandomElement(minRateRoutes);
+	result = { choosedIndex.first, routes.at(choosedIndex.first)[choosedIndex.second] };
 
 	return result;
+}
+
+void MySolution::SetEvaluationValue(Rating& rates, const int& switchCount)
+{
+	// 選択された評価関数の値を求める関数
+
+	// 以下メモ
+	// 荷物の数が盤面の広さに対して多い場合は2x2や2x3の数はあまり重要ではない
+	// 逆に荷物の数が盤面の広さに対して少ない場合は2x2や2x3の数は少ない方がいい
+	// 3方向を壁で囲まれている荷物はいつでも許容しない方がいい
+	// 運搬する荷物を切り替えた回数が増えてきた場合は外周の辺や,角の地形に配置された荷物を許容するようにする
+	
+	switch (mStrategyIndex)
+	{
+	case 0:
+		// 2x2のスペースの数
+		// 周囲3方向が壁で囲まれている荷物の数
+		// 未訪問マスの角の荷物の数
+		// 外周の壁に接する荷物の数
+		// 外周の角に配置されている荷物の数
+		// これらの和
+		rates.totalRate =
+			static_cast<double>(rates.m2x2Spaces) +
+			//static_cast<double>(rates.m2x3Spaces) +
+			//static_cast<double>(rates.m3x3Spaces) +
+			static_cast<double>(rates.mDisCenterToGoal / (mSize.x * mSize.y)) +
+			static_cast<double>(rates.mGoalArround) +
+			static_cast<double>(rates.mDeadEnd) +
+			static_cast<double>(rates.mCornerEnd) +
+			static_cast<double>(rates.mSides) +
+			static_cast<double>(rates.mCorners);
+		break;
+	case 1:
+		// 2x3のスペースの数
+		// 周囲3方向が壁で囲まれている荷物の数
+		// 未訪問マスの角の荷物の数
+		// 外周の壁に接する荷物の数
+		// 外周の角に配置されている荷物の数
+		// これらの和
+		rates.totalRate =
+			//static_cast<double>(rates.m2x2Spaces) +
+			static_cast<double>(rates.m2x3Spaces) +
+			//static_cast<double>(rates.m3x3Spaces) +
+			static_cast<double>(rates.mDisCenterToGoal / (mSize.x * mSize.y)) +
+			static_cast<double>(rates.mGoalArround) +
+			static_cast<double>(rates.mDeadEnd) +
+			static_cast<double>(rates.mCornerEnd) +
+			static_cast<double>(rates.mSides) +
+			static_cast<double>(rates.mCorners);
+		break;
+	case 2:
+		// 2x2のスペースの数
+		// 2x3のスペースの数
+		// 周囲3方向が壁で囲まれている荷物の数
+		// 未訪問マスの角の荷物の数
+		// 外周の壁に接する荷物の数
+		// 外周の角に配置されている荷物の数
+		// これらの和
+		rates.totalRate =
+			static_cast<double>(rates.m2x2Spaces) +
+			static_cast<double>(rates.m2x3Spaces) +
+			//static_cast<double>(rates.m3x3Spaces) +
+			static_cast<double>(rates.mDisCenterToGoal / (mSize.x * mSize.y)) +
+			static_cast<double>(rates.mGoalArround) +
+			static_cast<double>(rates.mDeadEnd) +
+			static_cast<double>(rates.mCornerEnd) +
+			static_cast<double>(rates.mSides) +
+			static_cast<double>(rates.mCorners);
+		break;
+	case 3:
+		// 2x2のスペースの数に ((盤面の面積 - 荷物の数) / 盤面の面積) をかけた値
+		// 周囲3方向が壁で囲まれている荷物の数
+		// 未訪問マスの角の荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// 外周の壁に接する荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// 外周の角に配置されている荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// これらの和
+		rates.totalRate =
+			std::floor(
+			static_cast<double>(rates.m2x2Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+			//static_cast<double>(rates.m2x3Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+			//static_cast<double>(rates.m3x3Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+			static_cast<double>(rates.mDisCenterToGoal / (mSize.x * mSize.y)) +
+			static_cast<double>(rates.mGoalArround) +
+			static_cast<double>(rates.mDeadEnd) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+			static_cast<double>(rates.mCornerEnd) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+			static_cast<double>(rates.mSides) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+			static_cast<double>(rates.mCorners) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1)
+				);
+		break;
+	case 4:
+		// 2x3のスペースの数に ((盤面の面積 - 荷物の数) / 盤面の面積) をかけた値
+		// 周囲3方向が壁で囲まれている荷物の数
+		// 未訪問マスの角の荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// 外周の壁に接する荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// 外周の角に配置されている荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// これらの和
+		rates.totalRate =
+			std::floor(
+			//static_cast<double>(rates.m2x2Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+			static_cast<double>(rates.m2x3Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+			//static_cast<double>(rates.m3x3Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+			static_cast<double>(rates.mDisCenterToGoal / (mSize.x * mSize.y)) +
+			static_cast<double>(rates.mGoalArround) +
+			static_cast<double>(rates.mDeadEnd) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+			static_cast<double>(rates.mCornerEnd) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+			static_cast<double>(rates.mSides) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+			static_cast<double>(rates.mCorners) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1)
+				);
+		break;
+	case 5:
+		// 2x2のスペースの数に ((盤面の面積 - 荷物の数) / 盤面の面積) をかけた値
+		// 2x3のスペースの数に ((盤面の面積 - 荷物の数) / 盤面の面積) をかけた値
+		// 周囲3方向が壁で囲まれている荷物の数
+		// 未訪問マスの角の荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// 外周の壁に接する荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// 外周の角に配置されている荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// これらの和
+		rates.totalRate =
+			std::floor(
+			static_cast<double>(rates.m2x2Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+			static_cast<double>(rates.m2x3Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+			//static_cast<double>(rates.m3x3Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+			static_cast<double>(rates.mDisCenterToGoal / (mSize.x * mSize.y)) +
+			static_cast<double>(rates.mGoalArround) +
+			static_cast<double>(rates.mDeadEnd) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+			static_cast<double>(rates.mCornerEnd) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+			static_cast<double>(rates.mSides) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+			static_cast<double>(rates.mCorners) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1)
+				);
+		break;
+	case 6:
+		// 2x3のスペースの数に ((盤面の面積 - 荷物の数) / 盤面の面積) をかけた値
+		// 周囲3方向が壁で囲まれている荷物の数
+		// 未訪問マスの角の荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// 外周の壁に接する荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// 外周の角に配置されている荷物の数に (荷物の数 / 運搬する荷物を切り替えた回数) を掛けたもの
+		// これらの和から
+		rates.totalRate =
+			std::floor(
+				//static_cast<double>(rates.m2x2Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+				static_cast<double>(rates.m2x3Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+				//static_cast<double>(rates.m3x3Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
+				static_cast<double>(rates.mDisCenterToGoal / (mSize.x * mSize.y)) +
+				static_cast<double>(rates.mGoalArround) +
+				static_cast<double>(rates.mDeadEnd) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+				static_cast<double>(rates.mCornerEnd) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+				static_cast<double>(rates.mSides) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+				static_cast<double>(rates.mCorners) * static_cast<double>(mBaggageNum) / static_cast<double>(switchCount + 1) +
+				static_cast<double>(rates.mChangedCandidates)
+			);
+		break;
+	default:
+		rates.totalRate =
+			static_cast<double>(rates.m2x2Spaces) +
+			//static_cast<double>(rates.m2x3Spaces) +
+			//static_cast<double>(rates.m3x3Spaces) +
+			static_cast<double>(rates.mDisCenterToGoal / (mSize.x * mSize.y)) +
+			static_cast<double>(rates.mGoalArround) +
+			static_cast<double>(rates.mDeadEnd) +
+			static_cast<double>(rates.mCornerEnd) +
+			static_cast<double>(rates.mSides) +
+			static_cast<double>(rates.mCorners);
+		break;
+	}
 }

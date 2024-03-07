@@ -11,11 +11,13 @@ Game::Game()
 	, mUpdatingActors(false)
 	, mWindowSize(1600.0, 900.0)
 	, mInputCooldown(0.0f)
-	, mBoardSize(sf::Vector2i{ 10, 10 })
-	, mBaggageNum(5)
+	, mBoardSize(sf::Vector2i{ 9, 9 })
+	, mBaggageNum(6)
 	, mRepetition01(1)
 	, mRepetition02(10)
 	, mRepetition03(0.0)
+	, mRepetition04(0.0)
+	, mRepetition05(0)
 	, mStep(0)
 {
 
@@ -59,7 +61,7 @@ void Game::LoadData()
 	mInfoTxt.setScale(20.0f / static_cast<float>(mWindow->getSize().y), 20.0f / static_cast<float>(mWindow->getSize().y));
 
 	// 盤面データを読み取る
-	//*
+	/*
 	std::string filename = "Assets/board.txt";
 	mFilenames.push_back(filename);
 	std::ifstream file(filename);
@@ -82,9 +84,9 @@ void Game::LoadData()
 
 	// 自動生成の場合
 	// MySolution
-	/*
+	//*
 	InputBoardData();
-	MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03);
+	MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
 	std::vector<std::string> lines = gen->GetBoard();
 	delete(gen);
 	mCurrentKey = GetDateTime();
@@ -757,7 +759,7 @@ void Game::CallReload()
 
 	// プレイヤーと荷物と盤面を更新
 	InputBoardData();
-	MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03);
+	MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
 	std::vector<std::string> lines = gen->GetBoard();
 	delete(gen);
 
@@ -1009,13 +1011,15 @@ void Game::HasComplete()
 void Game::InputBoardData()
 {
 	// 入力位置と、入力項目
-	std::vector<std::string> values(6, "");
+	std::vector<std::string> values(8, "");
 	values[0] = std::to_string(mBoardSize.x);
 	values[1] = std::to_string(mBoardSize.y);
 	values[2] = std::to_string(mBaggageNum);
 	values[3] = std::to_string(mRepetition01);
 	values[4] = std::to_string(mRepetition02);
 	values[5] = std::to_string(mRepetition03);
+	values[6] = std::to_string(mRepetition04);
+	values[7] = std::to_string(mRepetition05);
 	int currentPos = values[0].length() - 1, currentElem = 0;
 
 	// 入力用のウィンドウを作成
@@ -1027,13 +1031,17 @@ void Game::InputBoardData()
 		inputBaggageNum("   Input the number of baggage : " + std::to_string(mBaggageNum), mFont, 36),
 		inputRepet1("   Input repetition rate1 : " + std::to_string(mRepetition01), mFont, 36),
 		inputRepet2("   Input repetition rate2 : " + std::to_string(mRepetition02), mFont, 36),
-		inputRepet3("   Input repetition rate3 : " + std::to_string(mRepetition03), mFont, 36);
+		inputRepet3("   Input repetition rate3 : " + std::to_string(mRepetition03), mFont, 36),
+		inputRepet4("   Input repetition rate4 : " + std::to_string(mRepetition04), mFont, 36),
+		inputRepet5("   Input repetition rate5 : " + std::to_string(mRepetition05), mFont, 36);
 	sf::FloatRect inputWidthRect = inputWidth.getLocalBounds(),
 		inputHeightRect = inputHeight.getLocalBounds(),
 		inputBaggageNumRect = inputBaggageNum.getLocalBounds(),
 		inputRepet1Rect = inputRepet1.getLocalBounds(),
 		inputRepet2Rect = inputRepet2.getLocalBounds(),
-		inputRepet3Rect = inputRepet3.getLocalBounds();
+		inputRepet3Rect = inputRepet3.getLocalBounds(),
+		inputRepet4Rect = inputRepet4.getLocalBounds(),
+		inputRepet5Rect = inputRepet5.getLocalBounds();
 	inputWidth.setOrigin(inputWidthRect.left + inputWidthRect.width / 2.0f, inputWidthRect.top + inputWidthRect.height / 2.0f);
 	inputWidth.setPosition(sf::Vector2f{inputWidthRect.width / 2.0f, inputWidthRect.height / 2.0f + 10.0f });
 	inputHeight.setOrigin(inputHeightRect.left + inputHeightRect.width / 2.0f, inputHeightRect.top + inputHeightRect.height / 2.0f);
@@ -1046,6 +1054,10 @@ void Game::InputBoardData()
 	inputRepet2.setPosition(sf::Vector2f{ inputRepet2Rect.width / 2.0f, inputWidthRect.height + inputHeightRect.height + inputBaggageNumRect.height + inputRepet1Rect.height + inputWidthRect.height / 2.0f + 50.0f });
 	inputRepet3.setOrigin(inputRepet3Rect.left + inputRepet3Rect.width / 2.0f, inputRepet3Rect.top + inputRepet3Rect.height / 2.0f);
 	inputRepet3.setPosition(sf::Vector2f{ inputRepet3Rect.width / 2.0f, inputWidthRect.height + inputHeightRect.height + inputBaggageNumRect.height + inputRepet1Rect.height + inputRepet2Rect.height + inputWidthRect.height / 2.0f + 60.0f });
+	inputRepet4.setOrigin(inputRepet4Rect.left + inputRepet4Rect.width / 2.0f, inputRepet4Rect.top + inputRepet4Rect.height / 2.0f);
+	inputRepet4.setPosition(sf::Vector2f{ inputRepet4Rect.width / 2.0f, inputWidthRect.height + inputHeightRect.height + inputBaggageNumRect.height + inputRepet1Rect.height + inputRepet2Rect.height + inputRepet3Rect.height + inputWidthRect.height / 2.0f + 70.0f });
+	inputRepet5.setOrigin(inputRepet5Rect.left + inputRepet5Rect.width / 2.0f, inputRepet5Rect.top + inputRepet5Rect.height / 2.0f);
+	inputRepet5.setPosition(sf::Vector2f{ inputRepet5Rect.width / 2.0f, inputWidthRect.height + inputHeightRect.height + inputBaggageNumRect.height + inputRepet1Rect.height + inputRepet2Rect.height + inputRepet3Rect.height + inputRepet4Rect.height + inputWidthRect.height / 2.0f + 80.0f });
 
 	// ゲームウィンドウからの位置を設定
 	inputPromptWindow.setPosition(sf::Vector2i(200, 200));
@@ -1187,6 +1199,8 @@ void Game::InputBoardData()
 			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
 			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
 			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
+			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
+			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
 		}
 		else if (currentElem == 1)
 		{
@@ -1196,6 +1210,8 @@ void Game::InputBoardData()
 			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
 			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
 			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
+			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
+			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
 		}
 		else if(currentElem == 2)
 		{
@@ -1205,6 +1221,8 @@ void Game::InputBoardData()
 			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
 			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
 			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
+			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
+			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
 		}
 		else if (currentElem == 3)
 		{
@@ -1214,6 +1232,8 @@ void Game::InputBoardData()
 			inputRepet1.setString(" > Input repetition rate1 : " + values[3]);
 			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
 			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
+			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
+			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
 		}
 		else if (currentElem == 4)
 		{
@@ -1223,6 +1243,8 @@ void Game::InputBoardData()
 			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
 			inputRepet2.setString(" > Input repetition rate2 : " + values[4]);
 			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
+			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
+			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
 		}
 		else if (currentElem == 5)
 		{
@@ -1232,6 +1254,30 @@ void Game::InputBoardData()
 			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
 			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
 			inputRepet3.setString(" > Input repetition rate3 : " + values[5]);
+			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
+			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
+		}
+		else if (currentElem == 6)
+		{
+			inputWidth.setString("   Input width : " + values[0]);
+			inputHeight.setString("   Input height : " + values[1]);
+			inputBaggageNum.setString("   Input the number of baggage : " + values[2]);
+			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
+			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
+			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
+			inputRepet4.setString(" > Input repetition rate4 : " + values[6]);
+			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
+		}
+		else if (currentElem == 7)
+		{
+			inputWidth.setString("   Input width : " + values[0]);
+			inputHeight.setString("   Input height : " + values[1]);
+			inputBaggageNum.setString("   Input the number of baggage : " + values[2]);
+			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
+			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
+			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
+			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
+			inputRepet5.setString(" > Input repetition rate5 : " + values[7]);
 		}
 
 		// ディスプレイ表示
@@ -1242,6 +1288,8 @@ void Game::InputBoardData()
 		inputPromptWindow.draw(inputRepet1);
 		inputPromptWindow.draw(inputRepet2);
 		inputPromptWindow.draw(inputRepet3);
+		inputPromptWindow.draw(inputRepet4);
+		inputPromptWindow.draw(inputRepet5);
 		inputPromptWindow.display();
 	}
 
@@ -1251,6 +1299,8 @@ void Game::InputBoardData()
 	mRepetition01 = std::stoi(values[3]);
 	mRepetition02 = std::stoi(values[4]);
 	mRepetition03 = std::stod(values[5]);
+	mRepetition04 = std::stod(values[6]);
+	mRepetition05 = std::stoi(values[7]);
 
 	// ゲームループを再開
 	mWindow->setActive(true);

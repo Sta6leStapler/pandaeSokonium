@@ -21,16 +21,42 @@ struct History
 	int mSolveUpper;
 };
 
+struct Rating
+{
+	double totalRate;
+	int m2x2Spaces;				// 2x2の数
+	int m2x3Spaces;				// 2x3の数
+	int m3x3Spaces;				// 3x3の数
+	int mSwitchCount;			// 運搬する荷物を切り替えた回数
+	int mDisCenterToGoal;		// 
+	int mGoalArround;			// 
+	int mDeadEnd;				// 周囲の壁が3つ以上の荷物の数
+	int mCornerEnd;				// 角となるような地形にある荷物の数 (座標的な角ではない)
+	int mSides;					// 盤面の外周の辺に配置されている荷物の数
+	int mCorners;				// 盤面の外周の角に配置されている荷物の数
+	int mChangedCandidates;		// 移動前後で動かせるかどうかが変わった荷物の数
+};
+
 class MySolution
 {
 public:
-	MySolution(const sf::Vector2i& size, const int& baggageNum, const int& buildNum, const int& runsNum, const double& visitedRatio);
+	MySolution(
+		const sf::Vector2i& size,
+		const int& baggageNum,
+		const int& buildNum,
+		const int& runsNum,
+		const double& initialWallRatio,
+		const double& visitedRatio,
+		const int& strategyIndex);
 
 	// ゲッターセッター
 	Board GetBoard() { return mBoardStr; }
 	int GetBaggageNum() { return mBaggageNum; }
 	std::vector<std::pair<sf::Vector2i, sf::Vector2i>> GetInitToGoalList() { return mInitToGoalList; }
 	int GetSolveUpper() { return mSolveUpper; }
+	// 解の取得
+	std::vector<sf::Vector2i> GetSolutionPos() { return mSolutionPos; }
+	std::string GetSolutionDirection() { return mSolutionDirection; }
 
 private:
 	enum Direction
@@ -46,6 +72,15 @@ private:
 	
 	// 仮想プレイのシミュレーションを行うフェーズ
 	void RunSimulation();
+
+	// 壁タイルをランダムに配置する関数
+	void SetWallTiles(const int& wallCount);
+
+	// 床タイルの周囲3方向以上が壁タイルで囲まれているかどうかの判定を行う関数
+	bool hasEnclosedFloor(const Board& board);
+
+	// 盤面が2つ以上に分断されていないかを判定する関数
+	bool isBoardPartitioned(const Board& board);
 
 	// 床タイルをランダムに訪問済みに初期化する関数
 	void SetVisitedStatus(std::vector<std::vector<unsigned int>>& visitedCount, const Board& board);
@@ -65,6 +100,7 @@ private:
 	T GetRandomElement(const std::vector<T>& vec);
 	template<typename T, typename U>
 	std::pair<T, U> GetRandomElement(const std::unordered_map<T, U>& map);
+	std::vector<sf::Vector2i> GetRandomDirections();
 
 	// ある座標の周囲のマスを調べる関数
 	std::vector<sf::Vector2i> GetAroundWalls(const sf::Vector2i& point);
@@ -78,7 +114,7 @@ private:
 	bool existsDuplicateHistory(const std::vector<History> history, const Board& board);
 
 	// 押せる荷物の候補と押し始められる位置の全ての候補を求める関数
-	void SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, CandidateItems& outList);
+	void SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, CandidateItems& outList, const int& prevBaggageIndex);
 	void SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, std::vector<int>& outList);
 
 	// プレイヤーとある荷物の可能な移動経路の全ての候補を求める関数
@@ -94,7 +130,8 @@ private:
 		sf::Vector2i& pPos,
 		sf::Vector2i& bPos,
 		std::vector<std::vector<unsigned int>>& pPassCount,
-		std::vector<std::vector<unsigned int>>& bPassCount);
+		std::vector<std::vector<unsigned int>>& bPassCount,
+		const bool& isSave);
 
 	// 経路を評価し、適当なものを選択する関数
 	std::pair<int, Route> GetBestRoute(
@@ -103,7 +140,12 @@ private:
 		const sf::Vector2i& pPos,
 		const std::vector<sf::Vector2i> bPositions,
 		const std::vector<std::vector<unsigned int>>& pPassCount,
-		const std::vector<std::vector<unsigned int>>& bPassCount);
+		const std::vector<std::vector<unsigned int>>& bPassCount,
+		const int& switchCount,
+		const CandidateItems& movableBaggages);
+
+	// 選択された評価関数の値を求める関数
+	void SetEvaluationValue(Rating& rates, const int& switchCount);
 
 	// 方向をインデックスに変換する関数
 	int GetDirectionIndex(const sf::Vector2i& dir)
@@ -161,8 +203,14 @@ private:
 	// 盤面の生成に関する変数
 	const int mBuildsNum;
 	const int mRunsNum;
-	double mVisitedRatio;	// 訪問済みに初期化する割合
+	double mInitialWallRatio;	// 初期設定で壁タイルを配置する割合
+	double mVisitedRatio;		// 訪問済みに初期化する割合
+	const int mStrategyIndex;		// 経路選択の評価関数のインデックス
 	std::vector<std::vector<History>> mBoardHistory;	// 盤面の履歴
+
+	// 生成時に得られる解を記録する変数
+	std::vector<sf::Vector2i> mSolutionPos;
+	std::string mSolutionDirection;
 
 	// 解の上界
 	int mSolveUpper;
