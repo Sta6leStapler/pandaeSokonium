@@ -25,6 +25,8 @@ struct Log
 	std::vector<std::vector<Log>> thread;
 };
 
+using BoundingBox = std::pair<sf::Vector2f, sf::Vector2f>;
+
 class Game
 {
 public:
@@ -95,11 +97,14 @@ public:
 	void DisplayHelpWindow();
 
 	// ゲッターとセッター
+	// ゲーム制御関連
 	sf::Vector2f GetWindowSize() const { return mWindowSize; }
 	std::vector<std::string> GetFilenames() const { return mFilenames; }
 	std::string GetFilename(unsigned int num) const { return mFilenames.at(num); }
 	std::unordered_map<std::string, std::vector<std::string>> GetBoardData() const { return mBoardData; }
+	BoundingBox GetBoardViewArea() const { return mBoardViewArea; }
 
+	// 盤面関連
 	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
 
 	std::vector<std::string> GetBoardState() const { return mBoardState; }
@@ -147,11 +152,11 @@ private:
 	// 盤面の基礎的情報
 	sf::Vector2i mBoardSize;
 	int mBaggageNum;
-	int mRepetition01;
-	int mRepetition02;
-	double mRepetition03;
-	double mRepetition04;
-	int mRepetition05;
+	int mRepetition01;			// 荷物とプレイヤーの配置のリセット回数
+	int mRepetition02;			// 荷物の運搬回数
+	double mRepetition03;		// あらかじめ設置しておく壁マスの割合
+	double mRepetition04;		// 訪問済みにあらかじめ割り振る割合
+	int mRepetition05;			// 評価関数のインデックス
 
 	// ゲーム特有のメンバ変数があれば追加
 	sf::Vector2f mWindowSize;
@@ -167,6 +172,9 @@ private:
 	// プレイヤーと荷物の初期位置
 	sf::Vector2i mInitialPlayerPos;
 	std::unordered_map<Baggage*, sf::Vector2i> mInitialBaggagePos;
+
+	// 盤面の描画範囲
+	BoundingBox mBoardViewArea;
 
 	// 入力のクールダウン
 	float mInputCooldown;

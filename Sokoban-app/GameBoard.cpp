@@ -38,7 +38,8 @@ GameBoard::GameBoard(Game* game)
 
 	// 盤面のテクスチャを作成
 	sf::RenderTexture* boardTexture = new sf::RenderTexture();
-	sf::Vector2f wSize = mGame->GetWindowSize();
+	// 2024_09_05 ウィンドウサイズから描画範囲に変更
+	BoundingBox viewArea = mGame->GetBoardViewArea();
 
 	// 床と壁のスプライトを作成
 	sf::Sprite tmpFloor, tmpWall, tmpGoal;
@@ -95,14 +96,16 @@ GameBoard::GameBoard(Game* game)
 
 	// スケーリングと位置の初期化を行う
 	// ウィンドウのサイズ　/ 盤面のサイズ を求める
+	// *メモ ... UI等を追加する場合、描画範囲をウィンドウのサイズと置き換える
 	// ウィンドウの方が小さければタイルは縮小すべきで、逆なら拡大するべき
 	// まずは盤面をウィンドウいっぱいにスケーリングするための比率を求め、幅に余裕がある方に合わせる
 	// 横に長ければ横方向に少し縮小でき、縦に長ければ縦方向に縮小できる
-	float minScale = std::min(wSize.x / static_cast<float>(tmpTexture->getSize().x), wSize.y / static_cast<float>(tmpTexture->getSize().y));
+	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(tmpTexture->getSize().x), (viewArea.second.y - viewArea.first.y) / static_cast<float>(tmpTexture->getSize().y));
 	mScale = sf::Vector2f(minScale, -minScale);
 
 	// 余白の分中央揃えする
-	mPosition = sf::Vector2f((wSize.x - (static_cast<float>(tmpTexture->getSize().x) * minScale)) / 2.0f, (wSize.y - (wSize.y - (static_cast<float>(tmpTexture->getSize().y) * minScale)) / 2.0f));
+	// *メモ UI等でずれる場合はオフセットを加えておく
+	mPosition = sf::Vector2f(((viewArea.second.x - viewArea.first.x) - (static_cast<float>(tmpTexture->getSize().x) * minScale)) / 2.0f, ((viewArea.second.y - viewArea.first.y) - ((viewArea.second.y - viewArea.first.y) - (static_cast<float>(tmpTexture->getSize().y) * minScale)) / 2.0f));
 }
 
 GameBoard::~GameBoard()

@@ -10,6 +10,7 @@ Game::Game()
 	, mIsComplete(false)
 	, mUpdatingActors(false)
 	, mWindowSize(1600.0, 900.0)
+	, mBoardViewArea(BoundingBox{ sf::Vector2f{ 0.0, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y } })
 	, mInputCooldown(0.0f)
 	, mBoardSize(sf::Vector2i{ 9, 9 })
 	, mBaggageNum(6)
@@ -61,7 +62,7 @@ void Game::LoadData()
 	mInfoTxt.setScale(20.0f / static_cast<float>(mWindow->getSize().y), 20.0f / static_cast<float>(mWindow->getSize().y));
 
 	// 盤面データを読み取る
-	/*
+	//*
 	std::string filename = "Assets/board.txt";
 	mFilenames.push_back(filename);
 	std::ifstream file(filename);
@@ -84,7 +85,7 @@ void Game::LoadData()
 
 	// 自動生成の場合
 	// MySolution
-	//*
+	/*
 	InputBoardData();
 	MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
 	std::vector<std::string> lines = gen->GetBoard();
@@ -208,15 +209,15 @@ void Game::ProcessInput()
 	}
 
 	if (mInputCooldown <= 0.0f) {
-		// Ctrl + z でundo処理
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
+		// z でundo処理
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
 		{
 			mInputCooldown = 0.13f;
 			CallUndo();
 		}
 
-		// Ctrl + y でredo処理
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
+		// y でredo処理
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
 		{
 			mInputCooldown = 0.13f;
 			CallRedo();
@@ -1023,17 +1024,17 @@ void Game::InputBoardData()
 	int currentPos = values[0].length() - 1, currentElem = 0;
 
 	// 入力用のウィンドウを作成
-	sf::RenderWindow inputPromptWindow(sf::VideoMode(640, 360), "Input Prompt");
+	sf::RenderWindow inputPromptWindow(sf::VideoMode(960, 540), "Input Prompt");
 
 	// 各入力フォーム
 	sf::Text inputWidth(" > Input width : " + std::to_string(mBoardSize.x), mFont, 36),
 		inputHeight("   Input height : " + std::to_string(mBoardSize.y), mFont, 36),
-		inputBaggageNum("   Input the number of baggage : " + std::to_string(mBaggageNum), mFont, 36),
-		inputRepet1("   Input repetition rate1 : " + std::to_string(mRepetition01), mFont, 36),
-		inputRepet2("   Input repetition rate2 : " + std::to_string(mRepetition02), mFont, 36),
-		inputRepet3("   Input repetition rate3 : " + std::to_string(mRepetition03), mFont, 36),
-		inputRepet4("   Input repetition rate4 : " + std::to_string(mRepetition04), mFont, 36),
-		inputRepet5("   Input repetition rate5 : " + std::to_string(mRepetition05), mFont, 36);
+		inputBaggageNum("   Input the number of baggage  : " + std::to_string(mBaggageNum), mFont, 36),
+		inputRepet1("   Input number of times reset : " + std::to_string(mRepetition01), mFont, 36),
+		inputRepet2("   Input number of times transportation : " + std::to_string(mRepetition02), mFont, 36),
+		inputRepet3("   Input initial wall tile rate : " + std::to_string(mRepetition03), mFont, 36),
+		inputRepet4("   Input initial visited tile rate : " + std::to_string(mRepetition04), mFont, 36),
+		inputRepet5("   Input index of evaluation function : " + std::to_string(mRepetition05), mFont, 36);
 	sf::FloatRect inputWidthRect = inputWidth.getLocalBounds(),
 		inputHeightRect = inputHeight.getLocalBounds(),
 		inputBaggageNumRect = inputBaggageNum.getLocalBounds(),
@@ -1196,88 +1197,88 @@ void Game::InputBoardData()
 			inputWidth.setString(" > Input width : " + values[0]);
 			inputHeight.setString("   Input height : " + values[1]);
 			inputBaggageNum.setString("   Input the number of baggage : " + values[2]);
-			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
-			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
-			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
-			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
-			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
+			inputRepet1.setString("   Input number of times reset : " + values[3]);
+			inputRepet2.setString("   Input number of times transportation : " + values[4]);
+			inputRepet3.setString("   Input initial wall tile rate : " + values[5]);
+			inputRepet4.setString("   Input initial visited tile rate : " + values[6]);
+			inputRepet5.setString("   Input index of evaluation function : " + values[7]);
 		}
 		else if (currentElem == 1)
 		{
 			inputWidth.setString("   Input width : " + values[0]);
 			inputHeight.setString(" > Input height : " + values[1]);
 			inputBaggageNum.setString("   Input the number of baggage : " + values[2]);
-			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
-			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
-			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
-			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
-			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
+			inputRepet1.setString("   Input number of times reset : " + values[3]);
+			inputRepet2.setString("   Input number of times transportation : " + values[4]);
+			inputRepet3.setString("   Input initial wall tile rate : " + values[5]);
+			inputRepet4.setString("   Input initial visited tile rate : " + values[6]);
+			inputRepet5.setString("   Input index of evaluation function : " + values[7]);
 		}
 		else if(currentElem == 2)
 		{
 			inputWidth.setString("   Input width : " + values[0]);
 			inputHeight.setString("   Input height : " + values[1]);
 			inputBaggageNum.setString(" > Input the number of baggage : " + values[2]);
-			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
-			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
-			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
-			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
-			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
+			inputRepet1.setString("   Input number of times reset : " + values[3]);
+			inputRepet2.setString("   Input number of times transportation : " + values[4]);
+			inputRepet3.setString("   Input initial wall tile rate : " + values[5]);
+			inputRepet4.setString("   Input initial visited tile rate : " + values[6]);
+			inputRepet5.setString("   Input index of evaluation function : " + values[7]);
 		}
 		else if (currentElem == 3)
 		{
 			inputWidth.setString("   Input width : " + values[0]);
 			inputHeight.setString("   Input height : " + values[1]);
 			inputBaggageNum.setString("   Input the number of baggage : " + values[2]);
-			inputRepet1.setString(" > Input repetition rate1 : " + values[3]);
-			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
-			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
-			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
-			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
+			inputRepet1.setString(" > Input number of times reset : " + values[3]);
+			inputRepet2.setString("   Input number of times transportation : " + values[4]);
+			inputRepet3.setString("   Input initial wall tile rate : " + values[5]);
+			inputRepet4.setString("   Input initial visited tile rate : " + values[6]);
+			inputRepet5.setString("   Input index of evaluation function : " + values[7]);
 		}
 		else if (currentElem == 4)
 		{
 			inputWidth.setString("   Input width : " + values[0]);
 			inputHeight.setString("   Input height : " + values[1]);
 			inputBaggageNum.setString("   Input the number of baggage : " + values[2]);
-			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
-			inputRepet2.setString(" > Input repetition rate2 : " + values[4]);
-			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
-			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
-			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
+			inputRepet1.setString("   Input number of times reset : " + values[3]);
+			inputRepet2.setString(" > Input number of times transportation : " + values[4]);
+			inputRepet3.setString("   Input initial wall tile rate : " + values[5]);
+			inputRepet4.setString("   Input initial visited tile rate : " + values[6]);
+			inputRepet5.setString("   Input index of evaluation function : " + values[7]);
 		}
 		else if (currentElem == 5)
 		{
 			inputWidth.setString("   Input width : " + values[0]);
 			inputHeight.setString("   Input height : " + values[1]);
 			inputBaggageNum.setString("   Input the number of baggage : " + values[2]);
-			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
-			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
-			inputRepet3.setString(" > Input repetition rate3 : " + values[5]);
-			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
-			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
+			inputRepet1.setString("   Input number of times reset : " + values[3]);
+			inputRepet2.setString("   Input number of times transportation : " + values[4]);
+			inputRepet3.setString(" > Input initial wall tile rate : " + values[5]);
+			inputRepet4.setString("   Input initial visited tile rate : " + values[6]);
+			inputRepet5.setString("   Input index of evaluation function : " + values[7]);
 		}
 		else if (currentElem == 6)
 		{
 			inputWidth.setString("   Input width : " + values[0]);
 			inputHeight.setString("   Input height : " + values[1]);
 			inputBaggageNum.setString("   Input the number of baggage : " + values[2]);
-			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
-			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
-			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
-			inputRepet4.setString(" > Input repetition rate4 : " + values[6]);
-			inputRepet5.setString("   Input repetition rate5 : " + values[7]);
+			inputRepet1.setString("   Input number of times reset : " + values[3]);
+			inputRepet2.setString("   Input number of times transportation : " + values[4]);
+			inputRepet3.setString("   Input initial wall tile rate : " + values[5]);
+			inputRepet4.setString(" > Input initial visited tile rate : " + values[6]);
+			inputRepet5.setString("   Input index of evaluation function : " + values[7]);
 		}
 		else if (currentElem == 7)
 		{
 			inputWidth.setString("   Input width : " + values[0]);
 			inputHeight.setString("   Input height : " + values[1]);
 			inputBaggageNum.setString("   Input the number of baggage : " + values[2]);
-			inputRepet1.setString("   Input repetition rate1 : " + values[3]);
-			inputRepet2.setString("   Input repetition rate2 : " + values[4]);
-			inputRepet3.setString("   Input repetition rate3 : " + values[5]);
-			inputRepet4.setString("   Input repetition rate4 : " + values[6]);
-			inputRepet5.setString(" > Input repetition rate5 : " + values[7]);
+			inputRepet1.setString("   Input number of times reset : " + values[3]);
+			inputRepet2.setString("   Input number of times transportation : " + values[4]);
+			inputRepet3.setString("   Input initial wall tile rate : " + values[5]);
+			inputRepet4.setString("   Input initial visited tile rate : " + values[6]);
+			inputRepet5.setString(" > Input index of evaluation function : " + values[7]);
 		}
 
 		// ディスプレイ表示

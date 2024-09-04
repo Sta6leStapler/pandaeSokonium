@@ -1,7 +1,7 @@
 Commands :
 D-pad  ->  Move player
-Ctrl + z  ->  undo
-Ctrl + y  ->  redo
+z  ->  undo
+y  ->  redo
 Fn + down key  ->  Restore initial state
 Fn + up key  ->  restore latest state
 F5  ->  generate new board
