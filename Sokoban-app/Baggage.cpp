@@ -27,7 +27,8 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	}
 
 	// ウィンドウサイズ
-	sf::Vector2f wSize = mGame->GetWindowSize();
+	// 2024_09_05 描画範囲に修正
+	BoundingBox viewArea = mGame->GetBoardViewArea();
 
 	// プレイヤーのタイルを用意
 	// コンポーネントを作成
@@ -53,13 +54,15 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	mComponent = pc;
 
 	// スケーリングと位置の初期化を行う
-	float minScale = std::min(wSize.x / static_cast<float>(mTextures[bState]->getSize().x * maxX), wSize.y / static_cast<float>(mTextures[bState]->getSize().y * lines.size()));
+	// 2024_09_05 盤面と同様に修正
+	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[bState]->getSize().x * maxX), (viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[bState]->getSize().y * lines.size()));
 	mScale = sf::Vector2f(minScale, minScale);
 
 	// 盤面の余白の分中央揃え
+	// 2024_09_05 盤面と同様に修正
 	mPosition = sf::Vector2f(
-		(wSize.x - (static_cast<float>(mTextures[bState]->getSize().x * maxX) * minScale)) / 2.0f + static_cast<float>(mTextures[bState]->getSize().x * mBoardCoordinate.x) * mScale.x,
-		(wSize.y - (static_cast<float>(mTextures[bState]->getSize().y * lines.size()) * minScale)) / 2.0f + static_cast<float>(mTextures[bState]->getSize().y * mBoardCoordinate.y) * mScale.y
+		((viewArea.second.x - viewArea.first.x) - (static_cast<float>(mTextures[bState]->getSize().x * maxX) * minScale)) / 2.0f + static_cast<float>(mTextures[bState]->getSize().x * mBoardCoordinate.x) * mScale.x,
+		((viewArea.second.y - viewArea.first.y) - (static_cast<float>(mTextures[bState]->getSize().y * lines.size()) * minScale)) / 2.0f + static_cast<float>(mTextures[bState]->getSize().y * mBoardCoordinate.y) * mScale.y
 	);
 }
 
