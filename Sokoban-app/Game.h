@@ -13,6 +13,8 @@
 #include "PlayerComponent.h"
 #include "Baggage.h"
 #include "BaggageComponent.h"
+#include "Menu.h"
+#include "MenuComponent.h"
 #include "PuzzleGenerator.h"
 
 // ˆê“®ì‚ÌƒƒO

@@ -142,6 +142,8 @@
     <ClCompile Include="GameBoardComponent.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MCTS.cpp" />
+    <ClCompile Include="Menu.cpp" />
+    <ClCompile Include="MenuComponent.cpp" />
     <ClCompile Include="MySolution.cpp" />
     <ClCompile Include="PGSL.cpp" />
     <ClCompile Include="Player.cpp" />
@@ -158,6 +160,8 @@
     <ClInclude Include="GameBoard.h" />
     <ClInclude Include="GameBoardComponent.h" />
     <ClInclude Include="MCTS.h" />
+    <ClInclude Include="Menu.h" />
+    <ClInclude Include="MenuComponent.h" />
     <ClInclude Include="MySolution.h" />
     <ClInclude Include="PGSL.h" />
     <ClInclude Include="Player.h" />
