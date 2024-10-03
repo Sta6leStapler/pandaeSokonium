@@ -203,6 +203,7 @@ void Game::ProcessInput()
 
 	// ゲーム全体に関する各種入力処理
 	// Escキーでゲーム終了
+	// TODO そのうちポーズ画面に遷移するように変える
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
 	{
 		mGameState = GameState::EQuit;

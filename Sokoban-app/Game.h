@@ -114,6 +114,7 @@ public:
 
 	// ゲッターとセッター
 	// ゲーム制御関連
+	void SetState(const GameState& gameState) { mGameState = gameState; }
 	sf::Vector2f GetWindowSize() const { return mWindowSize; }
 	std::vector<std::string> GetFilenames() const { return mFilenames; }
 	std::string GetFilename(unsigned int num) const { return mFilenames.at(num); }

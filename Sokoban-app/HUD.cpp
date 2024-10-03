@@ -8,8 +8,7 @@ HUD::HUD(class Game* game)
 
 HUD::~HUD()
 {
-	mGame = nullptr;
-	delete mGame;
+
 }
 
 void HUD::Update(float deltaTime)
