@@ -3,7 +3,7 @@
 HUD::HUD(class Game* game)
 	: mGame(game)
 {
-
+	mGame->PushUI(this);
 }
 
 HUD::~HUD()
@@ -25,11 +25,6 @@ void HUD::Draw()
 void HUD::ProcessInput(const sf::Event::KeyEvent* keyState)
 {
 
-}
-
-void HUD::Close()
-{
-	mState = UIState::EClosing;
 }
 
 void HUD::SetTitle(const std::string& text, const sf::Color& color = sf::Color::White, int pointSize = 40)

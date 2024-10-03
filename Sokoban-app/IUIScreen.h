@@ -15,4 +15,13 @@ public:
 
     // ユーザー入力の処理
     virtual void ProcessInput(const sf::Event::KeyEvent* keyState) = 0;
+
+    // 状態がアクティブかクロージングか管理
+    enum UIState { EActive, EClosing };
+
+    // 状態をクロージングにする
+    virtual void Close() = 0;
+
+    // 状態を取得
+    virtual UIState GetState() = 0;
 };

@@ -303,6 +303,25 @@ void Game::UpdateGame()
 	}
 
 	mUpdatingActors = false;
+	// アクターの更新はここまで
+
+	// スタックのUI画面を更新する
+	for (auto& ui : mUIStack)
+	{
+		if (ui->GetState() == IUIScreen::EActive)
+		{
+			ui->Update(deltaTime);
+		}
+	}
+
+	// クロージング状態のUI画面をすべて破棄する
+	for (int i = mUIStack.size() - 1; i >= 0; --i)
+	{
+		if (mUIStack[i]->GetState() == IUIScreen::EClosing)
+		{
+			mUIStack.erase(mUIStack.begin() + i);
+		}
+	}
 
 	// 待機中のアクターを実行可能状態にする
 	if (mPendingGameBoard != nullptr)
@@ -366,6 +385,12 @@ void Game::GenerateOutput()
 	mGameInfo = "Steps : " + std::to_string(mStep);
 	mInfoTxt.setString(mGameInfo);
 	mWindow->draw(mInfoTxt);
+
+	// UIはゲームオブジェクトの上に描画するのでここに処理を書く
+	for (const auto& ui : mUIStack)
+	{
+		ui->Draw();
+	}
 	
 	mWindow->display();
 

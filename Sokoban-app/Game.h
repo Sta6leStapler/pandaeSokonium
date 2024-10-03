@@ -13,8 +13,7 @@
 #include "PlayerComponent.h"
 #include "Baggage.h"
 #include "BaggageComponent.h"
-#include "Menu.h"
-#include "MenuComponent.h"
+#include "IUIScreen.h"
 #include "PuzzleGenerator.h"
 
 // 一動作のログ
@@ -58,6 +57,12 @@ public:
 	void RemoveSprite(class PlayerComponent* PComp);
 	void AddSprite(class BaggageComponent* BComp);
 	void RemoveSprite(class BaggageComponent* BComp);
+
+	// UI画面のスタックに関する処理
+	// スタック全体を参照で返す
+	const std::vector<class IUIScreen*>& GetUIStack();
+	// 指定のUIScreenをスタックにプッシュする
+	void PushUI(class IUIScreen* screen);
 
 	// ゲーム特有のメンバ関数があれば追加
 	// ステップを加算
@@ -150,6 +155,9 @@ private:
 
 	// アクターが更新中かどうかの追跡 (true : あり / false : なし)
 	bool mUpdatingActors;
+
+	// UIのスプライト処理を行うためのスタック
+	std::vector<class IUIScreen*> mUIStack;
 
 	// 盤面の基礎的情報
 	sf::Vector2i mBoardSize;
