@@ -36,6 +36,15 @@ public:
 	void RunLoop();
 	void Shutdown();
 
+	// ゲームの状態
+	enum GameState
+	{
+		EGamePlay,
+		EPaused,
+		EQuit
+	};
+
+	// テクスチャのロード
 	sf::Texture* LoadTexture(const std::string& fileName);
 
 	// アクターの追加と削除
@@ -150,7 +159,8 @@ private:
 	std::string mGameInfo;
 	sf::Text mInfoTxt;
 
-	bool mIsRunning;
+	// ゲーム状態を格納する変数
+	GameState mGameState;
 	bool mIsComplete;
 
 	// アクターが更新中かどうかの追跡 (true : あり / false : なし)

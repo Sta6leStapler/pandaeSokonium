@@ -6,8 +6,7 @@
 
 Game::Game()
 	: mWindow(nullptr)
-	, mIsRunning(true)
-	, mIsComplete(false)
+	, mGameState(GameState::EGamePlay)
 	, mUpdatingActors(false)
 	, mWindowSize(1600.0, 900.0)
 	, mBoardViewArea(BoundingBox{ sf::Vector2f{ 0.0, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y } })
@@ -42,7 +41,7 @@ bool Game::Initialize()
 
 void Game::RunLoop()
 {
-	while (mIsRunning)
+	while (mGameState != GameState::EQuit)
 	{
 		ProcessInput();
 		UpdateGame();
@@ -167,6 +166,7 @@ void Game::LoadData()
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
 
+	// TODO UI関連のクラスのインスタンス作成の処理を書く
 }
 
 void Game::UnloadData()
@@ -196,7 +196,7 @@ void Game::ProcessInput()
 		switch (event.type)
 		{
 		case sf::Event::Closed:
-			mIsRunning = false;
+			mGameState = GameState::EQuit;
 			break;
 		}
 	}
@@ -205,7 +205,7 @@ void Game::ProcessInput()
 	// Escキーでゲーム終了
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
 	{
-		mIsRunning = false;
+		mGameState = GameState::EQuit;
 	}
 
 	if (mInputCooldown <= 0.0f) {
@@ -263,18 +263,29 @@ void Game::ProcessInput()
 		}
 	}
 
-	// 全てのActorの入力処理を行う
-	mUpdatingActors = true;
-	
-	mGameBoard->ProcessInput(&event.key);
-	mBackGround->ProcessInput(&event.key);
-	mPlayer->ProcessInput(&event.key);
-	for (auto& item : mBaggages)
+	// ゲームプレイ状態ならアクターの入力処理を行う
+	if (mGameState == GameState::EGamePlay)
 	{
-		item->ProcessInput(&event.key);
+		// 全てのActorの入力処理を行う
+		mUpdatingActors = true;
+
+		mGameBoard->ProcessInput(&event.key);
+		mBackGround->ProcessInput(&event.key);
+		mPlayer->ProcessInput(&event.key);
+		for (auto& item : mBaggages)
+		{
+			item->ProcessInput(&event.key);
+		}
+
+		mUpdatingActors = false;
+		// アクターの入力処理はここまで
 	}
-	
-	mUpdatingActors = false;
+	// その他の状態ではUIの入力処理を行う
+	else if (!mUIStack.empty())
+	{
+		// 一番手前のレイヤのUIの入力処理のみ行う
+		mUIStack.back()->ProcessInput(&event.key);
+	}
 }
 
 void Game::UpdateGame()
@@ -430,7 +441,7 @@ void Game::GenerateOutput()
 					// ログをセーブ
 					OutputLogs();
 					notificationWindow.close();
-					mIsRunning = false;
+					mGameState = GameState::EQuit;
 				}
 
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::F5))
