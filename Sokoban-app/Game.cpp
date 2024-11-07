@@ -9,10 +9,10 @@ Game::Game()
 	, mGameState(GameState::EGamePlay)
 	, mUpdatingActors(false)
 	, mWindowSize(1600.0, 900.0)
-	, mBoardViewArea(BoundingBox{ sf::Vector2f{ 0.0, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y } })
+	, mBoardViewArea(BoundingBox{ sf::Vector2f{ - mWindowSize.x + mWindowSize.y, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y } })
 	, mInputCooldown(0.0f)
-	, mBoardSize(sf::Vector2i{ 9, 9 })
-	, mBaggageNum(6)
+	, mBoardSize(sf::Vector2i{ 8, 8 })
+	, mBaggageNum(5)
 	, mRepetition01(1)
 	, mRepetition02(10)
 	, mRepetition03(0.0)
@@ -35,6 +35,8 @@ bool Game::Initialize()
 	mClock.restart();
 
 	mTicksCount = mClock.getElapsedTime();
+
+	mStart = std::chrono::system_clock::now();
 
 	return true;
 }
@@ -167,6 +169,8 @@ void Game::LoadData()
 	}
 
 	// TODO UI関連のクラスのインスタンス作成の処理を書く
+	// HUDのインスタンス作成
+	new HUD(this);
 }
 
 void Game::UnloadData()
@@ -202,14 +206,16 @@ void Game::ProcessInput()
 	}
 
 	// ゲーム全体に関する各種入力処理
-	// Escキーでゲーム終了
-	// TODO そのうちポーズ画面に遷移するように変える
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+	if (mInputCooldown <= 0.0f)
 	{
-		mGameState = GameState::EQuit;
-	}
+		// Escキーでゲーム終了
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+		{
+			mInputCooldown = 0.13f;
+			new PauseMenu(this);
+			mGameState = GameState::EPaused;
+		}
 
-	if (mInputCooldown <= 0.0f) {
 		// z でundo処理
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
 		{
@@ -227,19 +233,13 @@ void Game::ProcessInput()
 		// PGUPで最新の状態にする
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
 		{
-			while (mLogs.size() > mStep)
-			{
-				CallRedo();
-			}
+			CallRedoAll();
 		}
 
 		// PGDNで初期状態にする
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
 		{
-			while (mStep > 0)
-			{
-				CallUndo();
-			}
+			CallReset();
 		}
 
 		// Ctrl + s で現在の盤面をセーブ
@@ -281,11 +281,13 @@ void Game::ProcessInput()
 		mUpdatingActors = false;
 		// アクターの入力処理はここまで
 	}
+
 	// その他の状態ではUIの入力処理を行う
-	else if (!mUIStack.empty())
+	// ゲームプレイ中に使えるUIは未実装
+	if (!mUIStack.empty())
 	{
 		// 一番手前のレイヤのUIの入力処理のみ行う
-		mUIStack.back()->ProcessInput(&event.key);
+		mUIStack.back()->ProcessInput(&event.key, &event.mouseButton, sf::Mouse::getPosition(*mWindow));
 	}
 }
 
@@ -327,10 +329,12 @@ void Game::UpdateGame()
 	}
 
 	// クロージング状態のUI画面をすべて破棄する
+	// スタックと同等の処理をするため、リストの末尾から削除をしていく
 	for (int i = mUIStack.size() - 1; i >= 0; --i)
 	{
 		if (mUIStack[i]->GetState() == IUIScreen::EClosing)
 		{
+			delete mUIStack[i];
 			mUIStack.erase(mUIStack.begin() + i);
 		}
 	}
@@ -393,15 +397,10 @@ void Game::GenerateOutput()
 		item->Draw(mWindow);
 	}
 
-	// ゲーム全体に関する情報の描画
-	mGameInfo = "Steps : " + std::to_string(mStep);
-	mInfoTxt.setString(mGameInfo);
-	mWindow->draw(mInfoTxt);
-
 	// UIはゲームオブジェクトの上に描画するのでここに処理を書く
 	for (const auto& ui : mUIStack)
 	{
-		ui->Draw();
+		ui->Draw(mWindow);
 	}
 	
 	mWindow->display();
@@ -759,6 +758,22 @@ void Game::CallRedo()
 	}
 }
 
+void Game::CallReset()
+{
+	while (mStep > 0)
+	{
+		CallUndo();
+	}
+}
+
+void Game::CallRedoAll()
+{
+	while (mLogs.size() > mStep)
+	{
+		CallRedo();
+	}
+}
+
 void Game::CallSave()
 {
 	auto now = std::chrono::system_clock::now();
@@ -886,6 +901,8 @@ void Game::CallReload()
 		new Baggage(this, item);
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
+
+	mStart = std::chrono::system_clock::now();
 }
 
 void Game::RemoveRedo()

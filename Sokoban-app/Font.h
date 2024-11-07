@@ -16,6 +16,10 @@ public:
 
 	// 文字列をテクスチャに描画
 	class sf::Texture* RenderText(const std::string& text, const sf::Color& color = sf::Color::White, int pointSize = 30);
+	class sf::Texture* RenderTextOnCenter(const std::string& text, const sf::Vector2f& boundingBox, const sf::Color& color = sf::Color::White, int pointSize = 30);
+
+	// ゲッターセッター
+	sf::Font* GetFont() const { return mFont.get(); }
 
 private:
 	// フォントデータ

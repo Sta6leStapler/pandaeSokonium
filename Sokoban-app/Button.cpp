@@ -1,30 +1,40 @@
 #include "Button.h"
 
-Button::Button(const std::string& name, class Font* font, std::function<void()> onClick, const sf::Vector2i& pos, const sf::Vector2i& dims)
-	: mName(name)
+Button::Button(const std::string& name, class Font* font, std::function<void()> onClick, const sf::Vector2f& pos, const sf::Vector2f& dims)
+	: mOnClick(onClick)
+	, mName(name)
 	, mFont(font)
 	, mPosition(pos)
 	, mDimensions(dims)
+	, mHighlighted(false)
+	, mNameTex(nullptr)
 {
 	
 }
 
 Button::~Button()
 {
-	
+	delete mNameTex;
+	// フォントはUIクラスから指定されているので、ここでは消さない
+	mFont = nullptr;
 }
 
-void Button::SetName(const std::string& name)
+void Button::SetName(const std::string& name, const sf::Color& color, int pointSize)
 {
-	mNameTex = mFont->RenderText(name);
+	mNameTex = mFont->RenderText(name, color, pointSize);
 }
 
-bool Button::ContainsPoint(const sf::Vector2i& pt) const
+void Button::SetNameCenter(const std::string& name, const sf::Vector2f& boundingBox, const sf::Color& color, int pointSize)
 {
-	bool no = pt.x < (mPosition.x - mDimensions.x / 2.0f) ||
-		pt.x >(mPosition.x + mDimensions.x / 2.0f) ||
-		pt.y < (mPosition.y - mDimensions.y / 2.0f) ||
-		pt.y >(mPosition.y + mDimensions.y / 2.0f);
+	mNameTex = mFont->RenderTextOnCenter(name, boundingBox, color, pointSize);
+}
+
+bool Button::ContainsPoint(const sf::Vector2f& pt) const
+{
+	bool no = pt.x < (mPosition.x) ||
+		pt.x > (mPosition.x + mDimensions.x) ||
+		pt.y < (mPosition.y) ||
+		pt.y > (mPosition.y + mDimensions.y);
 
 	return !no;
 }

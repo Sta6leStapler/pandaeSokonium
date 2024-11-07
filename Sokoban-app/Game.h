@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <chrono>
 
 #include "GameBoard.h"
 #include "GameBoardComponent.h"
@@ -14,6 +15,8 @@
 #include "Baggage.h"
 #include "BaggageComponent.h"
 #include "IUIScreen.h"
+#include "PauseMenu.h"
+#include "HUD.h"
 #include "PuzzleGenerator.h"
 
 // 一動作のログ
@@ -69,9 +72,9 @@ public:
 
 	// UI画面のスタックに関する処理
 	// スタック全体を参照で返す
-	const std::vector<class IUIScreen*>& GetUIStack();
+	const std::vector<class IUIScreen*>& GetUIStack() { return mUIStack; }
 	// 指定のUIScreenをスタックにプッシュする
-	void PushUI(class IUIScreen* screen);
+	void PushUI(class IUIScreen* screen) { mUIStack.emplace_back(screen); }
 
 	// ゲーム特有のメンバ関数があれば追加
 	// ステップを加算
@@ -80,6 +83,8 @@ public:
 	// undo/redo処理
 	void CallUndo();
 	void CallRedo();
+	void CallReset();
+	void CallRedoAll();
 
 	// 盤面をセーブ
 	void CallSave();
@@ -120,6 +125,9 @@ public:
 	std::string GetFilename(unsigned int num) const { return mFilenames.at(num); }
 	std::unordered_map<std::string, std::vector<std::string>> GetBoardData() const { return mBoardData; }
 	BoundingBox GetBoardViewArea() const { return mBoardViewArea; }
+	unsigned int GetStep() const { return mStep; }
+	double GetSecTime() const { return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - mStart).count(); };
+	double GetMSecTime() const { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - mStart).count(); };
 
 	// 盤面関連
 	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
@@ -157,7 +165,6 @@ private:
 	sf::Clock mClock;
 	sf::Time mTicksCount;
 	sf::Font mFont;
-	std::string mGameInfo;
 	sf::Text mInfoTxt;
 
 	// ゲーム状態を格納する変数
@@ -189,6 +196,7 @@ private:
 	std::vector<sf::Vector2i> mGoalPos;
 	const sf::Vector2i mSizeMax{ 1024, 1024 };
 	const sf::Vector2i mSizeMin{ 5, 5 };
+	std::chrono::system_clock::time_point mStart;
 
 	// プレイヤーと荷物の初期位置
 	sf::Vector2i mInitialPlayerPos;
