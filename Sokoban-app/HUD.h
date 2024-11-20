@@ -76,6 +76,9 @@ private:
 	sf::Text* mMoveCountText;
 	sf::Text* mTimeText;
 	sf::Text* mStateText;
+	sf::Text* mMovableBaggagesText;
+	sf::Text* mGoaledBaggagesText;
+	sf::Text* mDeadlockedBaggagesText;
 
 	// ゲームの情報とテキストのリスト
 	std::vector<sf::Text*> mTextInfoes;

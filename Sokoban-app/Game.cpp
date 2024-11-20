@@ -11,7 +11,7 @@ Game::Game()
 	, mWindowSize(1600.0, 900.0)
 	, mBoardViewArea(BoundingBox{ sf::Vector2f{ - mWindowSize.x + mWindowSize.y, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y } })
 	, mInputCooldown(0.0f)
-	, mBoardSize(sf::Vector2i{ 8, 8 })
+	, mBoardSize(sf::Vector2i{ 0, 0 })
 	, mBaggageNum(5)
 	, mRepetition01(1)
 	, mRepetition02(10)
@@ -28,6 +28,8 @@ bool Game::Initialize()
 	// ウィンドウの作成
 	sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(static_cast<unsigned int>(mWindowSize.x), static_cast<unsigned int>(mWindowSize.y)), "SFML Window");
 	mWindow = window;
+
+	mGui = new tgui::Gui(*mWindow);
 	
 	// ファイルの読み込み
 	LoadData();
@@ -65,6 +67,7 @@ void Game::LoadData()
 	// 盤面データを読み取る
 	//*
 	std::string filename = "Assets/board.txt";
+	mCurrentKey = filename;
 	mFilenames.push_back(filename);
 	std::ifstream file(filename);
 	if (!file.is_open())
@@ -156,6 +159,7 @@ void Game::LoadData()
 
 	// ボードを作成
 	new GameBoard(this);
+	mBoardSize = sf::Vector2i{ static_cast<int>(lines.front().size()), static_cast<int>(lines.size()) };
 
 	// プレイヤーの作成
 	new Player(this);
@@ -168,9 +172,17 @@ void Game::LoadData()
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
 
+	// HUD補助のクラスを宣言
+	mHUDHelper = new HUDHelper(this);
+
 	// TODO UI関連のクラスのインスタンス作成の処理を書く
 	// HUDのインスタンス作成
-	new HUD(this);
+	// 盤面の情報を得てから作成する
+	// tguiを用いる場合は以下に書く
+	// ゲームループ部分の処理は未実装
+
+	// 自作のHUDクラスを用いる場合は以下のコメントアウトを戻す
+	// new HUD(this);
 }
 
 void Game::UnloadData()
@@ -182,6 +194,19 @@ void Game::UnloadData()
 	while (!mBaggages.empty())
 	{
 		delete mBaggages.back();
+	}
+
+	// GUiを削除
+	delete mGui;
+
+	// HUDヘルパーを削除
+	delete mHUDHelper;
+
+	// UIスタックをすべて削除
+	while (!mUIStack.empty())
+	{
+		delete mUIStack.back();
+		mUIStack.pop_back();
 	}
 
 	// テクスチャを削除
@@ -208,8 +233,8 @@ void Game::ProcessInput()
 	// ゲーム全体に関する各種入力処理
 	if (mInputCooldown <= 0.0f)
 	{
-		// Escキーでゲーム終了
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+		// Escキーでポーズメニューを開く
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && mGameState == GameState::EGamePlay)
 		{
 			mInputCooldown = 0.13f;
 			new PauseMenu(this);
@@ -240,6 +265,13 @@ void Game::ProcessInput()
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
 		{
 			CallReset();
+		}
+
+		// Ctrl + rで全てリセット
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+		{
+			mInputCooldown = 0.13f;
+			CallRestart();
 		}
 
 		// Ctrl + s で現在の盤面をセーブ
@@ -316,6 +348,9 @@ void Game::UpdateGame()
 		item->Update(deltaTime);
 	}
 
+	// 盤面の更新を行ったので、HUDHelperの内容も更新
+	mHUDHelper->Update();
+
 	mUpdatingActors = false;
 	// アクターの更新はここまで
 
@@ -381,6 +416,9 @@ void Game::UpdateGame()
 			delete item;
 		}
 	}
+
+	// ゲームのクリア判定を呼び出す
+	HasComplete();
 }
 
 void Game::GenerateOutput()
@@ -405,58 +443,10 @@ void Game::GenerateOutput()
 	
 	mWindow->display();
 
-	// ゲームの終了判定を呼び出す
-	HasComplete();
-
+	// ゲームクリア状態ならリザルト画面を出力
 	if (mIsComplete)
 	{
-		// 通知用のウィンドウを作成
-		sf::RenderWindow notificationWindow(sf::VideoMode(400, 200), "Notice");
-
-		std::string message = "Congratulations!\nScore : " + std::to_string(mStep) + " steps";
-		sf::Text text(message, mFont, 50);
-		sf::FloatRect textRect = text.getLocalBounds();
-		text.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
-		text.setPosition(sf::Vector2f(notificationWindow.getSize().x / 2.0f, notificationWindow.getSize().y / 2.0f));
-
-		// ゲームウィンドウからの位置を設定
-		notificationWindow.setPosition(sf::Vector2i(200, 200));
-
-		// ゲームループを停止
-		mWindow->setActive(false);
-
-		// 通知用のウィンドウを表示
-		while (notificationWindow.isOpen())
-		{
-			sf::Event notificationEvent;
-			while (notificationWindow.pollEvent(notificationEvent))
-			{
-				if (
-					notificationEvent.type == sf::Event::Closed ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) ||
-					sf::Keyboard::isKeyPressed(sf::Keyboard::Space)
-					)
-				{
-					// ログをセーブ
-					OutputLogs();
-					notificationWindow.close();
-					mGameState = GameState::EQuit;
-				}
-
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::F5))
-				{
-					notificationWindow.close();
-					CallReload();
-				}
-			}
-			notificationWindow.clear();
-			notificationWindow.draw(text);
-			notificationWindow.display();
-		}
-
-		// ゲームループを再開
-		mWindow->setActive(true);
+		DisplayResult();
 	}
 }
 
@@ -825,11 +815,131 @@ void Game::CallReload()
 	mBoardState.clear();
 	mCurrentKey.clear();
 	mStep = 0;
+	delete  mHUDHelper;
 	
 	mCurrentKey = GetDateTime();
 	mFilenames.emplace_back(mCurrentKey);
 	mBoardData.emplace(mCurrentKey, lines);
 	mInitBoardData.emplace(mCurrentKey, lines);
+	mHUDHelper = new HUDHelper(this);
+
+	// 盤面の初期状態をセット
+	std::vector<sf::Vector2i> mBoxesPos;
+	{
+		int i = 0, j = 0;
+		std::string tmpstr = "";
+		for (const auto& line : lines)
+		{
+
+			for (const auto& item : line)
+			{
+				switch (item)
+				{
+				case ' ':
+					tmpstr += ' ';
+					break;
+				case '#':
+					tmpstr += '#';
+					break;
+				case '$':
+					tmpstr += ' ';
+					mBoxesPos.push_back(sf::Vector2i(j, i));
+					break;
+				case '.':
+					tmpstr += '.';
+					mGoalPos.push_back(sf::Vector2i(j, i));
+					break;
+				case '*':
+					tmpstr += '.';
+					mBoxesPos.push_back(sf::Vector2i(j, i));
+					mGoalPos.push_back(sf::Vector2i(j, i));
+					break;
+				case '@':
+					tmpstr += ' ';
+					mInitialPlayerPos = sf::Vector2i(j, i);
+					break;
+				case '+':
+					tmpstr += '.';
+					mInitialPlayerPos = sf::Vector2i(j, i);
+					mGoalPos.push_back(sf::Vector2i(j, i));
+					break;
+				default:
+					break;
+				}
+				j++;
+			}
+			mBoardState.push_back(tmpstr);
+			tmpstr = "";
+			i++;
+			j = 0;
+		}
+	}
+
+	// ボードを再構築
+	mGameBoard->Reload();
+
+	// プレイヤーを再構築
+	mPlayer->Reload();
+
+	// 荷物を再構築
+	while (!mBaggages.empty())
+	{
+		delete mBaggages.back();
+	}
+	mBaggages.clear();
+
+	for (const auto& item : mBoxesPos)
+	{
+		new Baggage(this, item);
+		mInitialBaggagePos.emplace(mBaggages.back(), item);
+	}
+
+	mStart = std::chrono::system_clock::now();
+}
+
+void Game::CallRestart()
+{
+	// ログをファイル出力してから全て消す
+	OutputLogs();
+	mLogs.clear();
+
+	// プレイヤーと荷物と盤面を更新
+	std::string filename = "Assets/board.txt";
+	mCurrentKey = filename;
+	mFilenames.push_back(filename);
+	std::ifstream file(filename);
+	if (!file.is_open())
+	{
+		std::cerr << "Failed to open file" << std::endl;
+		return;
+	}
+
+	std::vector<std::string> lines{};
+	std::string line{};
+	while (std::getline(file, line))
+	{
+		lines.push_back(line);
+	}
+
+	mBoardData.emplace(filename, lines);
+	file.close();
+
+	mFilenames.pop_back();
+	mInitialPlayerPos = sf::Vector2i{ -1, -1 };
+	mInitialBaggagePos.clear();
+	mGoalPos.clear();
+	mInitBoardData.erase(mCurrentKey);
+	mBoardData.erase(mCurrentKey);
+	mBoardState.clear();
+	mCurrentKey.clear();
+	mStep = 0;
+	delete  mHUDHelper;
+
+	mCurrentKey = filename;
+	mFilenames.emplace_back(mCurrentKey);
+	mBoardData.emplace(mCurrentKey, lines);
+	mInitBoardData.emplace(mCurrentKey, lines);
+	mHUDHelper = new HUDHelper(this);
 
 	// 盤面の初期状態をセット
 	std::vector<sf::Vector2i> mBoxesPos;
@@ -1061,6 +1171,68 @@ void Game::HasComplete()
 			break;
 		}
 	}
+}
+
+void Game::DisplayResult()
+{
+		// 通知用のウィンドウを作成
+		sf::RenderWindow notificationWindow(sf::VideoMode(400, 200), "Notice");
+
+		std::string message = "Congratulations!\nScore : " + std::to_string(mStep) + " steps";
+		sf::Text text(message, mFont, 50);
+		sf::FloatRect textRect = text.getLocalBounds();
+		text.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
+		text.setPosition(sf::Vector2f(notificationWindow.getSize().x / 2.0f, notificationWindow.getSize().y / 2.0f));
+
+		// ゲームウィンドウからの位置を設定
+		notificationWindow.setPosition(sf::Vector2i(200, 200));
+
+		// ゲームループを停止
+		mWindow->setActive(false);
+
+		// 通知用のウィンドウを表示
+		while (notificationWindow.isOpen())
+		{
+			sf::Event notificationEvent;
+			while (notificationWindow.pollEvent(notificationEvent))
+			{
+				if (
+					notificationEvent.type == sf::Event::Closed ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) ||
+					sf::Keyboard::isKeyPressed(sf::Keyboard::Space)
+					)
+				{
+					// ログをセーブ
+					OutputLogs();
+					notificationWindow.close();
+
+					if (mStep > 0)
+					{
+						// ゴール直前の状態に戻す
+						CallUndo();
+					}
+					else
+					{
+						// ゴールまでの手数が0以下ならゲーム終了させる
+						// これは万が一盤面の生成が失敗して最初からすべての荷物がゴールに配置されたとき用の処理
+						mGameState = GameState::EQuit;
+					}
+				}
+
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::F5))
+				{
+					notificationWindow.close();
+					CallReload();
+				}
+			}
+			notificationWindow.clear();
+			notificationWindow.draw(text);
+			notificationWindow.display();
+		}
+
+		// ゲームループを再開
+		mWindow->setActive(true);
 }
 
 void Game::InputBoardData()
@@ -1419,4 +1591,16 @@ void Game::DisplayHelpWindow()
 
 	// ゲームループを再開
 	mWindow->setActive(true);
+}
+
+std::vector<sf::Vector2i> Game::GetBaggagesPos() const
+{
+	std::vector<sf::Vector2i> result{};
+
+	for (const auto& baggage : mBaggages)
+	{
+		result.emplace_back(baggage->GetBoardCoordinate());
+	}
+
+	return result;
 }

@@ -10,7 +10,8 @@ public:
 	enum BState
 	{
 		OnGoal,
-		OnFloor
+		OnFloor,
+		Deadlock
 	};
 
 	Baggage(class Game* game, sf::Vector2i bCoordinate);

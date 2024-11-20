@@ -48,6 +48,9 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	filename = "Assets/ShinyBox.png";
 	image.loadFromFile(filename);
 	mTextures.emplace(BState::OnGoal, game->LoadTexture(filename));
+	filename = "Assets/DeadlockedBox.png";
+	image.loadFromFile(filename);
+	mTextures.emplace(BState::Deadlock, game->LoadTexture(filename));
 
 	// コンポーネントにテクスチャをセット
 	pc->SetTexture(mTextures[bState]);
@@ -80,17 +83,18 @@ void Baggage::Update(float deltaTime)
 		UpdateComponents(deltaTime);
 
 		// このアクター特有の更新処理があれば書く
-		// このアクターがある床に合わせてテクスチャを変える
-		switch (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x])
+		// このアクターの位置に応じてテクスチャを変える
+		if (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x] == '.')
 		{
-		case ' ':
-			mComponent->SetTexture(mTextures[BState::OnFloor]);
-			break;
-		case '.':
 			mComponent->SetTexture(mTextures[BState::OnGoal]);
-			break;
-		default:
-			break;
+		}
+		else if (mGame->GetHUDHelper()->isDeadlockedBaggage(mBoardCoordinate))
+		{
+			mComponent->SetTexture(mTextures[BState::Deadlock]);
+		}
+		else
+		{
+			mComponent->SetTexture(mTextures[BState::OnFloor]);
 		}
 	}
 }

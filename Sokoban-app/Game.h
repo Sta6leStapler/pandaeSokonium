@@ -17,7 +17,10 @@
 #include "IUIScreen.h"
 #include "PauseMenu.h"
 #include "HUD.h"
+#include "HUDHelper.h"
 #include "PuzzleGenerator.h"
+#include "TGUI/TGUI.hpp"
+#include "TGUI/Backend/SFML-Graphics.hpp"
 
 // 一動作のログ
 struct Log
@@ -92,6 +95,9 @@ public:
 	// 盤面のリロード
 	void CallReload();
 
+	// 全てのリセット
+	void CallRestart();
+
 	// 先のログを削除 (プレイヤーの移動処理時に呼び出す)
 	void RemoveRedo();
 
@@ -110,6 +116,7 @@ public:
 
 	// 終了判定を行い、ウィンドウで通知
 	void HasComplete();
+	void DisplayResult();
 
 	// 盤面の規模の入力
 	void InputBoardData();
@@ -122,8 +129,10 @@ public:
 	void SetState(const GameState& gameState) { mGameState = gameState; }
 	sf::Vector2f GetWindowSize() const { return mWindowSize; }
 	std::vector<std::string> GetFilenames() const { return mFilenames; }
+	std::string GetCurrentKey() const { return mCurrentKey; }
 	std::string GetFilename(unsigned int num) const { return mFilenames.at(num); }
 	std::unordered_map<std::string, std::vector<std::string>> GetBoardData() const { return mBoardData; }
+	sf::Vector2i GetBoardSize() const { return mBoardSize; }
 	BoundingBox GetBoardViewArea() const { return mBoardViewArea; }
 	unsigned int GetStep() const { return mStep; }
 	double GetSecTime() const { return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - mStart).count(); };
@@ -131,7 +140,10 @@ public:
 
 	// 盤面関連
 	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
+	std::vector<sf::Vector2i> GetBaggagesPos() const;
+	class Player* GetPlayer() const { return mPlayer; }
 
+	class HUDHelper* GetHUDHelper() const { return mHUDHelper; }
 	std::vector<std::string> GetBoardState() const { return mBoardState; }
 
 private:
@@ -177,6 +189,12 @@ private:
 	// UIのスプライト処理を行うためのスタック
 	std::vector<class IUIScreen*> mUIStack;
 
+	// TGUIのGUIクラス
+	tgui::Gui* mGui;
+
+	// HUDの補助を行うHUDHelperクラス
+	HUDHelper* mHUDHelper;
+
 	// 盤面の基礎的情報
 	sf::Vector2i mBoardSize;
 	int mBaggageNum;
@@ -197,6 +215,7 @@ private:
 	const sf::Vector2i mSizeMax{ 1024, 1024 };
 	const sf::Vector2i mSizeMin{ 5, 5 };
 	std::chrono::system_clock::time_point mStart;
+	std::string mActiveBoardName;
 
 	// プレイヤーと荷物の初期位置
 	sf::Vector2i mInitialPlayerPos;

@@ -105,7 +105,7 @@ HUD::HUD(class Game* game)
 	mTextInfoBox->setPosition(20, mSaveBoardButtonPos.y + mButtonOn->getSize().y + 20); // 左側に配置
 	mTextInfoBox->setFillColor(sf::Color(200, 200, 200)); // 薄いグレー
 
-	// テキストの設定（情報エリアの座標を基準に相対座標で設定）
+	// テキストの初期設定（情報エリアの座標を基準に相対座標で設定）
 	mMoveCountText = new sf::Text();
 	AddText(mMoveCountText, "Moves : " + std::to_string(mGame->GetStep()), mTextInfoBox->getPosition() + sf::Vector2f(10, 10));
 	
@@ -114,6 +114,15 @@ HUD::HUD(class Game* game)
 
 	mStateText = new sf::Text();
 	AddText(mStateText, "Status : ", mTextInfoBox->getPosition() + sf::Vector2f(10, 70));
+	
+	mMovableBaggagesText = new sf::Text();
+	AddText(mMovableBaggagesText, "Movable bagggages : ", mTextInfoBox->getPosition() + sf::Vector2f(10, 100));
+
+	mGoaledBaggagesText = new sf::Text();
+	AddText(mGoaledBaggagesText, "Goaled baggages : ", mTextInfoBox->getPosition() + sf::Vector2f(10, 130));
+
+	mDeadlockedBaggagesText = new sf::Text();
+	AddText(mDeadlockedBaggagesText, "Deadlocked baggages : ", mTextInfoBox->getPosition() + sf::Vector2f(10, 160));
 }
 
 HUD::~HUD()
@@ -128,13 +137,6 @@ HUD::~HUD()
 	delete mFont;
 	delete mButtonOn;
 	delete mButtonOff;
-	delete mUndoTex;
-	delete mRedoTex;
-	delete mResetTex;
-	delete mRedoAllTex;
-	delete mSaveBoardTex;
-	delete mSaveLogTex;
-	delete mTextInfoBox;
 	while (!mTextInfoes.empty())
 	{
 		delete mTextInfoes.back();
@@ -152,6 +154,42 @@ void HUD::Update(float deltaTime)
 	m << std::setw(2) << std::setfill('0') << time / 60;
 	s << std::setw(2) << std::setfill('0') << time % 60;
 	mTimeText->setString("Time : " + m.str() + ":" + s.str());
+
+	std::unordered_map<int, sf::Vector2i> deadlockedBaggages{ mGame->GetHUDHelper()->GetDeadlockedBaggages() },
+		goaledBaggages{ mGame->GetHUDHelper()->GetGoaledBaggages() };
+	std::vector<sf::Vector2i> movableBaggages{ mGame->GetHUDHelper()->GetCandidates() };
+	if (!deadlockedBaggages.empty())
+	{
+		mStateText->setString("Status : Deadlocked!");
+		mStateText->setFillColor(sf::Color::Red);
+	}
+	else
+	{
+		mStateText->setString("Status : ");
+		mStateText->setFillColor(sf::Color::Black);
+	}
+
+	std::string tmpStr{};
+	for (const auto& baggage : goaledBaggages)
+	{
+		tmpStr += "( " + std::to_string(baggage.second.x) + ", " + std::to_string(baggage.second.y) + ") ";
+	}
+	mGoaledBaggagesText->setString("Goaled baggages : " + tmpStr);
+	tmpStr = "";
+
+	for (const auto& baggage : movableBaggages)
+	{
+		tmpStr += "( " + std::to_string(baggage.x) + ", " + std::to_string(baggage.y) + ") ";
+	}
+	mMovableBaggagesText->setString("Movable baggages : " + tmpStr);
+	tmpStr = "";
+
+	for (const auto& baggage : deadlockedBaggages)
+	{
+		tmpStr += "( " + std::to_string(baggage.second.x) + ", " + std::to_string(baggage.second.y) + ") ";
+	}
+	mDeadlockedBaggagesText->setString("Deadlocked baggages : " + tmpStr);
+	tmpStr = "";
 }
 
 void HUD::Draw(sf::RenderWindow* mWindow)
