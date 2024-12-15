@@ -1,48 +1,42 @@
 #include "SpriteComponent.h"
-#include "Game.h"
 
-#include <iostream>
-
-SpriteComponent::SpriteComponent(Mediator* owner, int updateOrder, int drawOrder)
-	:mOwner(owner)
+SpriteComponent::SpriteComponent(IActor* owner, int updateOrder, int drawOrder)
+	: mOwner(owner)
 	, mUpdateOrder(updateOrder)
-	, mTexture(nullptr)
 	, mDrawOrder(drawOrder)
+	, mTexture(nullptr)
+	, mBoundingBox(sf::Vector2u{ 0, 0 })
+	, mCoordinate(sf::Vector2i{ 0, 0 })
 {
-	// アクターのリストをコンポーネントに追加
-	mOwner->AccessActor()->AddComponent(this);
+	// アクターのコンポーネントのリストに追加
+	mOwner->AddComponent(this);
 
 	// Gameクラスで盤面のスプライトを追加
-	mOwner->AccessActor()->GetGame()->AddSprite(this);
+	mOwner->GetGame()->AddSprite(this);
 }
 
 SpriteComponent::~SpriteComponent()
 {
-	mOwner->AccessActor()->RemoveComponent(this);
+	mOwner->GetGame()->RemoveSprite(this);
+	mOwner->RemoveComponent(this);
 }
 
 void SpriteComponent::Update(float deltaTime)
 {
-	// 盤面は時間経過で変化しない
-}
 
-void SpriteComponent::ProcessInput(const sf::Event::KeyEvent* keyState)
-{
-	// 盤面はキーボード操作で変化しない
 }
 
 void SpriteComponent::Draw(sf::RenderWindow* mWindow)
 {
-
 	if (mTexture)
 	{
-		// ウィンドウの中央に盤面のテクスチャを描画
+		// テクスチャからスプライトを作成
 		sf::Sprite spr;
 		spr.setTexture(*mTexture);
 
-		// 
-		spr.setScale(mOwner->AccessActor()->GetScale().x, mOwner->AccessActor()->GetScale().y);
-		spr.setPosition(mOwner->AccessActor()->GetPosition().x, mOwner->AccessActor()->GetPosition().y);
+		// アクター側に設定されているスケーリングとオフセットを調整
+		spr.setScale(mOwner->GetScale().x, mOwner->GetScale().y);
+		spr.setPosition(mOwner->GetPosition().x, mOwner->GetPosition().y);
 
 		mWindow->draw(spr);
 	}
@@ -51,4 +45,6 @@ void SpriteComponent::Draw(sf::RenderWindow* mWindow)
 void SpriteComponent::SetTexture(sf::Texture* texture)
 {
 	mTexture = texture;
+	// 幅と高さを設定
+	mBoundingBox = texture->getSize();
 }

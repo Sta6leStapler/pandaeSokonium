@@ -1,3 +1,0 @@
-easy:32
-normal:93
-hard:110

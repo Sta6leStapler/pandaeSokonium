@@ -6,6 +6,10 @@
 #include <vector>
 #include <chrono>
 
+#include "IActor.h"
+#include "IComponent.h"
+#include "SpriteComponent.h"
+
 #include "GameBoard.h"
 #include "GameBoardComponent.h"
 #include "BackGround.h"
@@ -17,10 +21,11 @@
 #include "IUIScreen.h"
 #include "PauseMenu.h"
 #include "HUD.h"
+#include "THUD.h"
 #include "HUDHelper.h"
-#include "PuzzleGenerator.h"
 #include "TGUI/TGUI.hpp"
 #include "TGUI/Backend/SFML-Graphics.hpp"
+#include "MySolution.h"
 
 // 一動作のログ
 struct Log
@@ -54,6 +59,13 @@ public:
 	sf::Texture* LoadTexture(const std::string& fileName);
 
 	// アクターの追加と削除
+	void AddActor(class IActor* actor);
+	void RemoveActor(class IActor* actor);
+
+	// スプライトの追加と削除
+	void AddSprite(class SpriteComponent* sprite);
+	void RemoveSprite(class SpriteComponent* sprite);
+	
 	void AddActor(class GameBoard* gameboard);
 	void RemoveActor(class GameBoard* gameboard);
 	void AddActor(class BackGround* gameboard);
@@ -119,10 +131,14 @@ public:
 	void DisplayResult();
 
 	// 盤面の規模の入力
-	void InputBoardData();
+	bool InputBoardData();
 
 	// ヘルプウィンドウの表示
 	void DisplayHelpWindow();
+
+	// 盤面リストを表示し、選択した盤面に変更する
+	void SelectBoards();
+	void ChangeBoard();
 
 	// ゲッターとセッター
 	// ゲーム制御関連
@@ -142,6 +158,7 @@ public:
 	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
 	std::vector<sf::Vector2i> GetBaggagesPos() const;
 	class Player* GetPlayer() const { return mPlayer; }
+	int GetBaggageNumLimit(const sf::Vector2i& size, const double& wallRate = 0.0) const;
 
 	class HUDHelper* GetHUDHelper() const { return mHUDHelper; }
 	std::vector<std::string> GetBoardState() const { return mBoardState; }
@@ -153,8 +170,15 @@ private:
 	void LoadData();
 	void UnloadData();
 
+	// ヘルパー関数は以下に定義
+	void SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr editBox, const bool& isInteger);
+
 	// ロードされたテクスチャのマップ
 	std::unordered_map<std::string, sf::Texture*> mTextures;
+
+	// アクティブなアクターと待機中のアクター
+	std::vector<IActor*> mActiveActors;
+	std::vector<IActor*> mPendingActors;
 
 	// ゲームのすべてのアクター
 	class GameBoard* mGameBoard;
@@ -189,11 +213,12 @@ private:
 	// UIのスプライト処理を行うためのスタック
 	std::vector<class IUIScreen*> mUIStack;
 
-	// TGUIのGUIクラス
-	tgui::Gui* mGui;
-
 	// HUDの補助を行うHUDHelperクラス
 	HUDHelper* mHUDHelper;
+
+	// ベースとなるgui
+	std::unique_ptr<tgui::Gui> mGui;
+	std::unique_ptr<tgui::Theme> mTheme;
 
 	// 盤面の基礎的情報
 	sf::Vector2i mBoardSize;
@@ -212,10 +237,13 @@ private:
 	std::unordered_map<std::string, std::vector<std::string>> mInitBoardData;	// 初期盤面
 	std::vector<std::string> mBoardState;	// プレイヤーと荷物を除いた盤面情報
 	std::vector<sf::Vector2i> mGoalPos;
-	const sf::Vector2i mSizeMax{ 1024, 1024 };
+	const sf::Vector2i mSizeMax{ 48, 48 };
 	const sf::Vector2i mSizeMin{ 5, 5 };
+	int mBaggageLimit;
+	const double mWallRateLimit = 0.5;
+	const double mVisitedRateLimit = 1.0;
+	const std::pair<int, int> mEvaluateFancIndexRange = std::pair<int, int>{ 0, 6 };
 	std::chrono::system_clock::time_point mStart;
-	std::string mActiveBoardName;
 
 	// プレイヤーと荷物の初期位置
 	sf::Vector2i mInitialPlayerPos;

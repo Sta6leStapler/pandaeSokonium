@@ -17,7 +17,7 @@ public:
 	// インターフェースからオーバーライドした関数
 	void Update(float deltaTime) override;
 	void Draw(sf::RenderWindow* mWindow) override;
-	void ProcessInput(const sf::Event::KeyEvent* keyState, const sf::Event::MouseButtonEvent* mouseState, const sf::Vector2i& mousePos) override;
+	void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) override;
 
 	// タイトルの文字列を変更
 	void SetTitle(const std::string& text, const sf::Color& color = sf::Color::White, int pointSize = 40);

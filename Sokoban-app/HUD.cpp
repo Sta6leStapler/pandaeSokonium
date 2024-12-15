@@ -35,7 +35,7 @@ HUD::HUD(class Game* game)
 	mSaveBoardTex->loadFromFile("Assets/SaveBoard.png");
 	mSaveLogTex->loadFromFile("Assets/SaveLog.png");
 
-	// ポーズ解除とゲーム終了のボタンを追加
+	// 各種ボタンを追加
 	// TODO ボタンの座標を絶対座標から相対座標に変える
 	// Note: SetTitle関数はmFont->Loadを呼び出した後
 	SetTitle(" ");
@@ -224,7 +224,7 @@ void HUD::Draw(sf::RenderWindow* mWindow)
 	}
 }
 
-void HUD::ProcessInput(const sf::Event::KeyEvent* keyState, const sf::Event::MouseButtonEvent* mouseState, const sf::Vector2i& mousePos)
+void HUD::ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos)
 {
 	// ボタンがあるか？
 	if (!mButtons.empty())
@@ -247,7 +247,7 @@ void HUD::ProcessInput(const sf::Event::KeyEvent* keyState, const sf::Event::Mou
 	}
 
 	// ボタン上でマウス左ボタンが押されたら、そのボタンの処理を行う
-	switch (mouseState->button)
+	switch (event->mouseButton.button)
 	{
 	case sf::Mouse::Left:
 		// アクティブなボタンがあるか調べる

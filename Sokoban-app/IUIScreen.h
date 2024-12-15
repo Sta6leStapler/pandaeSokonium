@@ -14,7 +14,7 @@ public:
     virtual void Draw(sf::RenderWindow* mWindow) = 0;
 
     // ユーザー入力の処理
-    virtual void ProcessInput(const sf::Event::KeyEvent* keyState, const sf::Event::MouseButtonEvent* mouseState, const sf::Vector2i& mousePos) = 0;
+    virtual void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) = 0;
 
     // 状態がアクティブかクロージングか待機中か管理
     enum UIState { EActive, EClosing, EPending };

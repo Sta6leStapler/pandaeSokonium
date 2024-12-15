@@ -8,7 +8,7 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	, mScale(sf::Vector2f(1.0f, 1.0f))
 	, mRotation(0.0f)
 	, mGame(game)
-	, mBoardName(game->GetFilename(0))
+	, mBoardName(game->GetCurrentKey())
 	, mBoardCoordinate(bCoordinate)
 {
 	mGame->AddActor(this);
@@ -57,16 +57,20 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	mComponent = pc;
 
 	// スケーリングと位置の初期化を行う
-	// 2024_09_05 盤面と同様に修正
-	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[bState]->getSize().x * maxX), (viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[bState]->getSize().y * lines.size()));
+	// 表示エリアのサイズ　/ 盤面のサイズ を求める
+	// 表示エリアの方が小さければタイルは縮小すべきで、逆なら拡大するべき
+	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[bState]->getSize().x * mGame->GetBoardSize().x),
+		(viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[bState]->getSize().y * mGame->GetBoardSize().y));
+
 	mScale = sf::Vector2f(minScale, minScale);
 
-	// 盤面の余白の分中央揃え
-	// 2024_09_05 盤面と同様に修正
-	mPosition = sf::Vector2f(
-		((viewArea.second.x - viewArea.first.x) - (static_cast<float>(mTextures[bState]->getSize().x * maxX) * minScale)) / 2.0f + static_cast<float>(mTextures[bState]->getSize().x * mBoardCoordinate.x) * mScale.x,
-		((viewArea.second.y - viewArea.first.y) - (static_cast<float>(mTextures[bState]->getSize().y * lines.size()) * minScale)) / 2.0f + static_cast<float>(mTextures[bState]->getSize().y * mBoardCoordinate.y) * mScale.y
-	);
+	// 余白の分中央揃えする
+	// *メモ UI等でずれる場合はオフセットを加えておく
+	mPosition = sf::Vector2f
+	{
+		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(mTextures[bState]->getSize().x * mGame->GetBoardSize().x) * mScale.x) / 2.0f + static_cast<float>(mTextures[bState]->getSize().x * mBoardCoordinate.x) * mScale.x,
+		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(mTextures[bState]->getSize().x * mGame->GetBoardSize().y) * mScale.y) / 2.0f + static_cast<float>(mTextures[bState]->getSize().y * mBoardCoordinate.y) * mScale.y
+	};
 }
 
 Baggage::~Baggage()

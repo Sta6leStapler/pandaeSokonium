@@ -81,7 +81,7 @@ void PauseMenu::Draw(sf::RenderWindow* mWindow)
 	}
 }
 
-void PauseMenu::ProcessInput(const sf::Event::KeyEvent* keyState, const sf::Event::MouseButtonEvent* mouseState, const sf::Vector2i& mousePos)
+void PauseMenu::ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos)
 {
 	// ボタンがあるか？
 	if (!mButtons.empty())
@@ -104,7 +104,7 @@ void PauseMenu::ProcessInput(const sf::Event::KeyEvent* keyState, const sf::Even
 	}
 
 	// Escキーが押されたらポーズメニューを閉じる
-	switch (keyState->code)
+	switch (event->key.code)
 	{
 	case sf::Keyboard::Escape:
 		//Close();
@@ -117,7 +117,7 @@ void PauseMenu::ProcessInput(const sf::Event::KeyEvent* keyState, const sf::Even
 	}
 
 	// ボタン上でマウス左ボタンが押されたら、そのボタンの処理を行う
-	switch (mouseState->button)
+	switch (event->mouseButton.button)
 	{
 	case sf::Mouse::Left:
 		// アクティブなボタンがあるか調べる

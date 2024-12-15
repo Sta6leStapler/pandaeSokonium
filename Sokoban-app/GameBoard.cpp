@@ -9,7 +9,7 @@ GameBoard::GameBoard(Game* game)
 	, mScale(sf::Vector2f(1.0f, 1.0f))
 	, mRotation(0.0f)
 	, mGame(game)
-	, mBoardName(game->GetFilename(0))
+	, mBoardName(game->GetCurrentKey())
 {
 	mGame->AddActor(this);
 
@@ -95,17 +95,20 @@ GameBoard::GameBoard(Game* game)
 	mGameBoardComponent = gbc;
 
 	// スケーリングと位置の初期化を行う
-	// ウィンドウのサイズ　/ 盤面のサイズ を求める
-	// *メモ ... UI等を追加する場合、描画範囲をウィンドウのサイズと置き換える
-	// ウィンドウの方が小さければタイルは縮小すべきで、逆なら拡大するべき
-	// まずは盤面をウィンドウいっぱいにスケーリングするための比率を求め、幅に余裕がある方に合わせる
-	// 横に長ければ横方向に少し縮小でき、縦に長ければ縦方向に縮小できる
-	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(tmpTexture->getSize().x), (viewArea.second.y - viewArea.first.y) / static_cast<float>(tmpTexture->getSize().y));
+	// 表示エリアのサイズ　/ 盤面のサイズ を求める
+	// 表示エリアの方が小さければタイルは縮小すべきで、逆なら拡大するべき
+	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(tmpTexture->getSize().x),
+		(viewArea.second.y - viewArea.first.y) / static_cast<float>(tmpTexture->getSize().y));
+
 	mScale = sf::Vector2f(minScale, -minScale);
 
 	// 余白の分中央揃えする
 	// *メモ UI等でずれる場合はオフセットを加えておく
-	mPosition = sf::Vector2f(((viewArea.second.x - viewArea.first.x) - (static_cast<float>(tmpTexture->getSize().x) * minScale)) / 2.0f, ((viewArea.second.y - viewArea.first.y) - ((viewArea.second.y - viewArea.first.y) - (static_cast<float>(tmpTexture->getSize().y) * minScale)) / 2.0f));
+	mPosition = sf::Vector2f
+	{
+		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(tmpTexture->getSize().x) * mScale.x) / 2.0f,
+		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(tmpTexture->getSize().y) * mScale.y) / 2.0f
+	};
 }
 
 GameBoard::~GameBoard()
@@ -156,7 +159,7 @@ void GameBoard::RemoveComponent(GameBoardComponent* component)
 
 void GameBoard::Reload()
 {
-	mBoardName = mGame->GetFilename(0);
+	mBoardName = mGame->GetCurrentKey();
 	std::vector<std::string> lines = mGame->GetBoardData()[mBoardName];
 
 	// 盤面の横幅を揃える
@@ -229,15 +232,19 @@ void GameBoard::Reload()
 	BoundingBox viewArea = mGame->GetBoardViewArea();
 
 	// スケーリングと位置の初期化を行う
-	// ウィンドウのサイズ　/ 盤面のサイズ を求める
-	// ウィンドウの方が小さければタイルは縮小すべきで、逆なら拡大するべき
-	// まずは盤面をウィンドウいっぱいにスケーリングするための比率を求め、幅に余裕がある方に合わせる
-	// 横に長ければ横方向に少し縮小でき、縦に長ければ縦方向に縮小できる
-	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(tmpTexture->getSize().x), (viewArea.second.y - viewArea.first.y) / static_cast<float>(tmpTexture->getSize().y));
+	// 表示エリアのサイズ　/ 盤面のサイズ を求める
+	// 表示エリアの方が小さければタイルは縮小すべきで、逆なら拡大するべき
+	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(tmpTexture->getSize().x),
+		(viewArea.second.y - viewArea.first.y) / static_cast<float>(tmpTexture->getSize().y));
+
 	mScale = sf::Vector2f(minScale, -minScale);
 
 	// 余白の分中央揃えする
 	// *メモ UI等でずれる場合はオフセットを加えておく
-	mPosition = sf::Vector2f(((viewArea.second.x - viewArea.first.x) - (static_cast<float>(tmpTexture->getSize().x) * minScale)) / 2.0f, ((viewArea.second.y - viewArea.first.y) - ((viewArea.second.y - viewArea.first.y) - (static_cast<float>(tmpTexture->getSize().y) * minScale)) / 2.0f));
+	mPosition = sf::Vector2f
+	{
+		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(tmpTexture->getSize().x) * mScale.x) / 2.0f,
+		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(tmpTexture->getSize().y) * mScale.y) / 2.0f
+	};
 
 }

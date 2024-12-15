@@ -186,18 +186,34 @@ void HUDHelper::Update()
 			mBaggagesPos[item.first.first] = item.second;
 
 			// ゴールに配置されているかどうかが変わる場合、そちらも更新
+			// itemはfirst.secondが移動前の位置、secondが移動後の位置
 			// ゴール -> 普通の床の場合
+			// 移動前がゴール済み荷物のリストに存在し、移動後がゴールリストに存在しない
 			if (mGoaledBaggages.count(item.first.first) && std::find(mGoals.begin(), mGoals.end(), item.second) == mGoals.end())
 			{
 				mGoaledBaggages.erase(item.first.first);
 				mNonGoaledBaggages.emplace(item.first.first, item.second);
 			}
 			// 普通の床 -> ゴールの場合
-			if (mNonGoaledBaggages.count(item.first.first) && std::find(mGoals.begin(), mGoals.end(), item.second) != mGoals.end())
+			// 移動前が未ゴール荷物のリストに存在し、移動後がゴールリストに存在する
+			else if (mNonGoaledBaggages.count(item.first.first) && std::find(mGoals.begin(), mGoals.end(), item.second) != mGoals.end())
 			{
 				mNonGoaledBaggages.erase(item.first.first);
 				mGoaledBaggages.emplace(item.first.first, item.second);
 			}
+			// 普通の床 -> 普通の床の場合
+			// 移動前が未ゴール荷物のリストに存在し、移動後がゴールリストに存在しない
+			else if (mNonGoaledBaggages.count(item.first.first) && std::find(mGoals.begin(), mGoals.end(), item.second) == mGoals.end())
+			{
+				mNonGoaledBaggages[item.first.first] = item.second;
+			}
+			// ゴール -> ゴールの場合
+			// 移動前がゴール済み荷物のリストに存在し、移動後がゴールリストに存在する
+			else if (mGoaledBaggages.count(item.first.first) && std::find(mGoals.begin(), mGoals.end(), item.second) != mGoals.end())
+			{
+				mGoaledBaggages[item.first.first] = item.second;
+			}
+
 		}
 		// プレイヤーと荷物の位置の変更を盤面データに反映させる
 		UpdateBoardStr();
@@ -229,7 +245,6 @@ void HUDHelper::Update()
 			mPlayerPos = nextPlayerPos;
 			// プレイヤーと荷物の位置の変更を盤面データに反映させる
 			UpdateBoardStr();
-
 
 			// 荷物が移動しておらず、プレイヤーも床エリアが変わっていないため、盤面構造 (mBoardStates) もそのまま
 			// ただし、プレイヤーは移動しているので、履歴には追加する
@@ -569,7 +584,7 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 
 	// 荷物の移動可能な範囲内にゴールがあるか調べる
 	// ゴールに到達できないのならば詰みで、そうでなければ詰みかどうかはわからない
-	// 探索用の盤面
+	// 探索用の盤面 (荷物とプレイヤーを取り除いた盤面を用いる)
 	bool nonExistsRoute = true;
 	Board currentBoard = mBoardMapStr;
 	std::set<std::pair<int, int>> targetPosSet{};
@@ -604,6 +619,8 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 	// 荷物の上下もしくは左右に移動可能な余裕があれば続行
 	if (!targetPosSet.empty())
 	{
+		// 探索用の盤面にプレイヤーと荷物を設置する
+		currentBoard[mPlayerPos.y][mPlayerPos.x] = '@';
 		currentBoard[baggagePos.y][baggagePos.x] = '$';
 
 		// 荷物の運搬をシミュレートするためのプレイヤーの初期位置を取得する
@@ -622,7 +639,7 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 		if (existsRoute)
 		{
 			// 方向を加味した探索履歴
-			// 荷物の位置から、各方向へ移動したかどうか
+			// ex. explored[4][7][1] = true なら、(7,4)の位置にある荷物を下方向に動かす動きを既にしたことを表す
 			std::vector<std::vector<std::vector<bool>>> explored(mSize.y, std::vector<std::vector<bool>>(mSize.x, std::vector<bool>(directions.size(), false)));
 			
 			// 幅優先探索に用いるキューの要素
@@ -665,7 +682,7 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 				for (const auto& dir : directions)
 				{
 					sf::Vector2i nextBaggagePos{ current.mBaggage + dir };
-					if (!explored[nextBaggagePos.y][nextBaggagePos.x][GetDirectionIndex(dir)])
+					if (!explored[current.mBaggage.y][current.mBaggage.x][GetDirectionIndex(dir)])
 					{
 						// 荷物の次の移動先が壁マスでなく、かつプレイヤーが運搬開始位置に移動できるのならば、キューに追加
 						if (current.mBoard[nextBaggagePos.y][nextBaggagePos.x] != '#')
@@ -731,7 +748,6 @@ bool HUDHelper::isMovableArea(const sf::Vector2i& pos1, const sf::Vector2i& pos2
 
 	return false;
 }
-
 
 bool HUDHelper::isMovableArea(const sf::Vector2i& pos1, const sf::Vector2i& pos2, const Board& board)
 {
@@ -818,11 +834,11 @@ void HUDHelper::UpdateBoardStr()
 	}
 	for (const auto& mBaggagePos : mGoaledBaggages)
 	{
-		mBoardStr[mBaggagePos.second.y][mBaggagePos.second.x] = '$';
+		mBoardStr[mBaggagePos.second.y][mBaggagePos.second.x] = '*';
 	}
 	for (const auto& mBaggagePos : mNonGoaledBaggages)
 	{
-		mBoardStr[mBaggagePos.second.y][mBaggagePos.second.x] = '*';
+		mBoardStr[mBaggagePos.second.y][mBaggagePos.second.x] = '$';
 	}
 	
 }
