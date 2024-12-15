@@ -1,5 +1,9 @@
 #include "PauseMenu.h"
 
+#include "Game.h"
+#include "Font.h"
+#include "Button.h"
+
 PauseMenu::PauseMenu(class Game* game)
 	: mGame(game)
 	, mFont(new Font())

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SFML/Window/Event.hpp"
+#include "SFML/Window.hpp"
 
 // UI画面共通のインターフェースクラス
 class IUIScreen {

@@ -5,7 +5,6 @@
 #include "TGUI/Backend/SFML-Graphics.hpp"
 
 #include "IUIScreen.h"
-#include "Game.h"
 
 class THUD : public IUIScreen
 {

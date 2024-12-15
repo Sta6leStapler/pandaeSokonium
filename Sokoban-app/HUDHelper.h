@@ -8,8 +8,6 @@
 #include <random>
 #include "SFML/Graphics.hpp"
 
-#include "Game.h"
-
 using Board = std::vector<std::string>;
 struct BoardStates
 {

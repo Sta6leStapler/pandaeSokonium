@@ -3,14 +3,13 @@
 #include <string>
 #include <functional>
 #include "SFML/Graphics.hpp"
-#include "Font.h"
 
 class Button
 {
 public:
 	// コンストラクタは、ボタン名称と、フォントと、コールバック関数と、
 	// ボタンの位置および寸法を受け取る
-	Button(const std::string& name, Font* font, std::function<void()> onClick, const sf::Vector2f& pos, const sf::Vector2f& dims);
+	Button(const std::string& name, class Font* font, std::function<void()> onClick, const sf::Vector2f& pos, const sf::Vector2f& dims);
 	~Button();
 
 	// 表示テキストを設定し、テクスチャを生成する

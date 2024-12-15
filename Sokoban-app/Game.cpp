@@ -1,4 +1,18 @@
 #include "Game.h"
+
+#include "IActor.h"
+#include "IComponent.h"
+#include "SpriteComponent.h"
+
+#include "GameBoard.h"
+#include "BackGround.h"
+#include "Baggage.h"
+#include "IUIScreen.h"
+#include "PauseMenu.h"
+#include "MySolution.h"
+#include "THUD.h"
+#include "HUDHelper.h"
+
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -191,21 +205,20 @@ void Game::LoadData()
 
 	// 背景の作成
 	// 背景は画面の中央に配置
-	mBackGround = new BackGround(this);
-	mBackGround->SetPosition(sf::Vector2f(mWindow->getSize().x / 2.0f, mWindow->getSize().y / 2.0f));
+	new BackGround(this);
 
 	// ボードを作成
-	new GameBoard(this);
+	mGameBoard = new GameBoard(this);
 	mBoardSize = sf::Vector2i{ static_cast<int>(lines.front().size()), static_cast<int>(lines.size()) };
 
 	// プレイヤーの作成
-	new Player(this);
+	mPlayer = new Player(this);
 
 	// 荷物を作成
 	// 荷物の初期座標を得る
 	for (const auto& item : mBoxesPos)
 	{
-		new Baggage(this, item);
+		mBaggages.emplace_back(new Baggage(this, item));
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
 
@@ -226,14 +239,10 @@ void Game::LoadData()
 void Game::UnloadData()
 {
 	// アクターを削除
-	delete mBackGround;
-	delete mGameBoard;
-	delete mPlayer;
-	while (!mBaggages.empty())
+	while (!mActiveActors.empty())
 	{
-		delete mBaggages.back();
+		delete mActiveActors.back();
 	}
-	mBaggages.clear();
 
 	// HUDヘルパーを削除
 	delete mHUDHelper;
@@ -264,90 +273,87 @@ void Game::ProcessInput()
 			mGameState = GameState::EQuit;
 			break;
 		}
-	}
 
-	// ゲーム全体に関する各種入力処理
-	if (mInputCooldown <= 0.0f)
-	{
-		// Escキーでポーズメニューを開く
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && mGameState == GameState::EGamePlay)
+		// ゲーム全体に関する各種入力処理
+		if (mInputCooldown <= 0.0f)
 		{
-			mInputCooldown = 0.13f;
-			new PauseMenu(this);
-			mGameState = GameState::EPaused;
+			// Escキーでポーズメニューを開く
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && mGameState == GameState::EGamePlay)
+			{
+				mInputCooldown = 0.13f;
+				new PauseMenu(this);
+				mGameState = GameState::EPaused;
+			}
+
+			// z でundo処理
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
+			{
+				mInputCooldown = 0.13f;
+				CallUndo();
+			}
+
+			// y でredo処理
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
+			{
+				mInputCooldown = 0.13f;
+				CallRedo();
+			}
+
+			// PGUPで最新の状態にする
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
+			{
+				CallRedoAll();
+			}
+
+			// PGDNで初期状態にする
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
+			{
+				CallReset();
+			}
+
+			// Ctrl + rで全てリセット
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+			{
+				mInputCooldown = 0.13f;
+				CallRestart();
+			}
+
+			// Ctrl + s で現在の盤面をセーブ
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+			{
+				mInputCooldown = 0.13f;
+				CallSave();
+			}
+
+			// H でヘルプ画面の表示
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::H))
+			{
+				mInputCooldown = 0.13f;
+				DisplayHelpWindow();
+			}
+
+			// F5 で盤面のリロード（自動生成の盤面なら新たな盤面の生成）
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::F5))
+			{
+				mInputCooldown = 0.13f;
+				CallReload();
+			}
 		}
 
-		// z でundo処理
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
+		// ゲームプレイ状態ならアクターの入力処理を行う
+		if (mGameState == GameState::EGamePlay)
 		{
-			mInputCooldown = 0.13f;
-			CallUndo();
+			// 全てのActorの入力処理を行う
+			mUpdatingActors = true;
+
+			for (auto& actor : mActiveActors)
+			{
+				actor->ProcessInput(&event);
+			}
+
+			mUpdatingActors = false;
+			// アクターの入力処理はここまで
 		}
-
-		// y でredo処理
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
-		{
-			mInputCooldown = 0.13f;
-			CallRedo();
-		}
-
-		// PGUPで最新の状態にする
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
-		{
-			CallRedoAll();
-		}
-
-		// PGDNで初期状態にする
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
-		{
-			CallReset();
-		}
-
-		// Ctrl + rで全てリセット
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::R))
-		{
-			mInputCooldown = 0.13f;
-			CallRestart();
-		}
-
-		// Ctrl + s で現在の盤面をセーブ
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-		{
-			mInputCooldown = 0.13f;
-			CallSave();
-		}
-
-		// H でヘルプ画面の表示
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::H))
-		{
-			mInputCooldown = 0.13f;
-			DisplayHelpWindow();
-		}
-
-		// F5 で盤面のリロード（自動生成の盤面なら新たな盤面の生成）
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::F5))
-		{
-			mInputCooldown = 0.13f;
-			CallReload();
-		}
-	}
-
-	// ゲームプレイ状態ならアクターの入力処理を行う
-	if (mGameState == GameState::EGamePlay)
-	{
-		// 全てのActorの入力処理を行う
-		mUpdatingActors = true;
-
-		mGameBoard->ProcessInput(&event.key);
-		mBackGround->ProcessInput(&event.key);
-		mPlayer->ProcessInput(&event.key);
-		for (auto& item : mBaggages)
-		{
-			item->ProcessInput(&event.key);
-		}
-
-		mUpdatingActors = false;
-		// アクターの入力処理はここまで
 	}
 
 	// その他の状態ではUIの入力処理を行う
@@ -376,9 +382,11 @@ void Game::UpdateGame()
 	// 全てのアクターを更新
 	mUpdatingActors = true;
 
-	mGameBoard->Update(deltaTime);
-	mBackGround->Update(deltaTime);
-	mPlayer->Update(deltaTime);
+	for (auto& actor : mActiveActors)
+	{
+		actor->Update(deltaTime);
+	}
+	//mPlayer->Update(deltaTime);
 	for (auto& item : mBaggages)
 	{
 		item->Update(deltaTime);
@@ -401,7 +409,7 @@ void Game::UpdateGame()
 
 	// クロージング状態のUI画面をすべて破棄する
 	// スタックと同等の処理をするため、リストの末尾から削除をしていく
-	for (int i = mUIStack.size() - 1; i >= 0; --i)
+	for (int i = static_cast<int>(mUIStack.size()) - 1; i >= 0; --i)
 	{
 		if (mUIStack[i]->GetState() == IUIScreen::EClosing)
 		{
@@ -411,46 +419,24 @@ void Game::UpdateGame()
 	}
 
 	// 待機中のアクターを実行可能状態にする
-	if (mPendingGameBoard != nullptr)
+	for (auto& pendingActor : mPendingActors)
 	{
-		mGameBoard = mPendingGameBoard;
-		mPendingGameBoard = nullptr;
+		mActiveActors.emplace_back(pendingActor);
 	}
-	if (mPendingBackGround != nullptr)
-	{
-		mBackGround = mPendingBackGround;
-		mPendingBackGround = nullptr;
-	}
-	if (mPendingPlayer != nullptr)
-	{
-		mPlayer = mPendingPlayer;
-		mPendingPlayer = nullptr;
-	}
-	for (auto item : mPendingBaggages)
-	{
-		mBaggages.push_back(item);
-	}
-	mPendingBaggages.clear();
 
 	// 死んだアクターを削除する
-	if (mGameBoard->GetState().GetEState() == State::EDead)
+	std::vector<IActor*> deadActors;
+	for (auto actor : mActiveActors)
 	{
-		delete mGameBoard;
-	}
-	if (mBackGround->GetState().GetEState() == State::EDead)
-	{
-		delete mBackGround;
-	}
-	if (mPlayer->GetState().GetEState() == State::EDead)
-	{
-		delete mPlayer;
-	}
-	for (auto& item : mBaggages)
-	{
-		if (item->GetState().GetEState() == State::EDead)
+		if (actor->GetState() == IActor::ActorState::EClosing)
 		{
-			delete item;
+			deadActors.emplace_back(actor);
 		}
+	}
+
+	for (auto actor : deadActors)
+	{
+		delete actor;
 	}
 
 	// ゲームのクリア判定を呼び出す
@@ -463,12 +449,9 @@ void Game::GenerateOutput()
 	mWindow->clear();
 
 	// 背面から描画
-	mBackGroundComponent->Draw(mWindow);
-	mGameBoardComponent->Draw(mWindow);
-	mPlayerComponent->Draw(mWindow);
-	for (const auto& item : mBaggageComponents)
+	for (auto& sprite : mSprites)
 	{
-		item->Draw(mWindow);
+		sprite->Draw(mWindow);
 	}
 
 	// UIはゲームオブジェクトの上に描画するのでここに処理を書く
@@ -586,177 +569,6 @@ void Game::RemoveSprite(SpriteComponent* sprite)
 	{
 		mSprites.erase(iter);
 	}
-}
-
-// ゲームボードの追加と削除
-void Game::AddActor(GameBoard* gameboard)
-{
-	// 更新中のアクターがあれば、待機中に追加する
-	if (mUpdatingActors)
-	{
-		mPendingGameBoard = gameboard;
-	}
-	else
-	{
-		mGameBoard = gameboard;
-	}
-}
-
-void Game::RemoveActor(GameBoard* gameboard)
-{
-	// 待機中のアクターにあるか？
-	if (mPendingGameBoard == gameboard)
-	{
-		mPendingGameBoard = nullptr;
-	}
-	// アクターにあるか？
-	if (mGameBoard == gameboard)
-	{
-		mGameBoard = nullptr;
-	}
-}
-
-// 背景の追加と削除
-void Game::AddActor(BackGround* background)
-{
-	// 更新中のアクターがあれば、待機中に追加する
-	if (mUpdatingActors)
-	{
-		mPendingBackGround = background;
-	}
-	else
-	{
-		mBackGround = background;
-	}
-}
-
-void Game::RemoveActor(BackGround* background)
-{
-	// 待機中のアクターにあるか？
-	if (mPendingBackGround == background)
-	{
-		mPendingBackGround = nullptr;
-	}
-	// アクターにあるか？
-	if (mBackGround == background)
-	{
-		mBackGround = nullptr;
-	}
-}
-
-// プレイヤーの追加と削除
-void Game::AddActor(Player* player)
-{
-	// 更新中のアクターがあれば、待機中に追加する
-	if (mUpdatingActors)
-	{
-		mPendingPlayer = player;
-	}
-	else
-	{
-		mPlayer = player;
-	}
-}
-
-void Game::RemoveActor(Player* player)
-{
-	// 待機中のアクターにあるか？
-	if (mPendingPlayer == player)
-	{
-		mPendingPlayer = nullptr;
-	}
-	// アクターにあるか？
-	if (mPlayer == player)
-	{
-		mPlayer = nullptr;
-	}
-}
-
-// 荷物の追加と削除
-void Game::AddActor(Baggage* baggage)
-{
-	// 更新中のアクターがあれば、待機中に追加する
-	if (mUpdatingActors)
-	{
-		mPendingBaggages.push_back(baggage);
-	}
-	else
-	{
-		mBaggages.push_back(baggage);
-	}
-}
-
-void Game::RemoveActor(Baggage* baggage)
-{
-	// 待機中か？
-	auto iter = std::find(mPendingBaggages.begin(), mPendingBaggages.end(), baggage);
-	if (iter != mPendingBaggages.end())
-	{
-		std::iter_swap(iter, mPendingBaggages.end() - 1);
-		mPendingBaggages.pop_back();
-	}
-
-	// アクターにあるか？
-	iter = std::find(mBaggages.begin(), mBaggages.end(), baggage);
-	if (iter != mBaggages.end())
-	{
-		std::iter_swap(iter, mBaggages.end() - 1);
-		mBaggages.pop_back();
-	}
-}
-
-// スプライトの追加と削除
-void Game::AddSprite(class GameBoardComponent* GBComp)
-{
-	mGameBoardComponent = GBComp;
-}
-
-void Game::RemoveSprite(class GameBoardComponent* GBComp)
-{
-	mGameBoardComponent = nullptr;
-}
-
-void Game::AddSprite(class BackGroundComponent* BGComp)
-{
-	mBackGroundComponent = BGComp;
-}
-
-void Game::RemoveSprite(class BackGroundComponent* BGComp)
-{
-	mBackGroundComponent = nullptr;
-}
-
-void Game::AddSprite(class PlayerComponent* PComp)
-{
-	mPlayerComponent = PComp;
-}
-
-void Game::RemoveSprite(class PlayerComponent* PComp)
-{
-	mPlayerComponent = nullptr;
-}
-
-void Game::AddSprite(class BaggageComponent* BComp)
-{
-	int myDrawOrder = BComp->GetDrawOrder();
-	auto iter = mBaggageComponents.begin();
-	for (;
-		iter != mBaggageComponents.end();
-		++iter)
-	{
-		if (myDrawOrder < (*iter)->GetDrawOrder())
-		{
-			break;
-		}
-	}
-
-	mBaggageComponents.insert(iter, BComp);
-}
-
-void Game::RemoveSprite(class BaggageComponent* BComp)
-{
-	auto iter = std::find(mBaggageComponents.begin(), mBaggageComponents.end(), BComp);
-	mBaggageComponents.erase(iter);
 }
 
 void Game::CallUndo()
@@ -1205,7 +1017,7 @@ void Game::DisplayResult()
 	listBox->setTextSize(20);
 	listBox->addItem("Result");
 	listBox->addItem("Steps : " + std::to_string(mStep));
-	long time = GetSecTime();
+	long time = static_cast<long>(GetSecTime());
 	std::stringstream m{}, s{};
 	m << std::setw(2) << std::setfill('0') << time / 60;
 	s << std::setw(2) << std::setfill('0') << time % 60;
@@ -1262,12 +1074,9 @@ void Game::DisplayResult()
 		mWindow->clear();
 
 		// 背面から描画
-		mBackGroundComponent->Draw(mWindow);
-		mGameBoardComponent->Draw(mWindow);
-		mPlayerComponent->Draw(mWindow);
-		for (const auto& item : mBaggageComponents)
+		for (auto& sprite : mSprites)
 		{
-			item->Draw(mWindow);
+			sprite->Draw(mWindow);
 		}
 
 		// UIはゲームオブジェクトの上に描画するのでここに処理を書く
@@ -1328,7 +1137,7 @@ bool Game::InputBoardData()
 	listBox->setSize(960, 500);
 	listBox->setItemHeight(36);
 	listBox->setPosition(0, 0);
-	for (int i = 0, size = textInfoes.size(); i < size; ++i)
+	for (int i = 0, size = static_cast<int>(textInfoes.size()); i < size; ++i)
 	{
 		listBox->addItem(textInfoes[i].mName, std::to_string(i));
 	}
@@ -1344,17 +1153,17 @@ bool Game::InputBoardData()
 		slider->setRenderer(mTheme->getRenderer("Slider"));
 		slider->setPosition(textInfo.mPos.x, textInfo.mPos.y);
 		slider->setSize(400, 18);
-		slider->setValue(textInfo.mInitialValue);
-		slider->setMinimum(textInfo.mMin);
-		slider->setMaximum(textInfo.mMax);
+		slider->setValue(static_cast<float>(textInfo.mInitialValue));
+		slider->setMinimum(static_cast<float>(textInfo.mMin));
+		slider->setMaximum(static_cast<float>(textInfo.mMax));
 		// 入力を整数と実数で分ける
 		if (textInfo.mIsInteger)
 		{
-			slider->setStep(1.0);
+			slider->setStep(1.0f);
 		}
 		else
 		{
-			slider->setStep(0.001);
+			slider->setStep(0.001f);
 		}
 		child->add(slider);
 
@@ -1456,12 +1265,9 @@ bool Game::InputBoardData()
 		mWindow->clear();
 
 		// 背面から描画
-		mBackGroundComponent->Draw(mWindow);
-		mGameBoardComponent->Draw(mWindow);
-		mPlayerComponent->Draw(mWindow);
-		for (const auto& item : mBaggageComponents)
+		for (auto& sprite : mSprites)
 		{
-			item->Draw(mWindow);
+			sprite->Draw(mWindow);
 		}
 
 		// UIはゲームオブジェクトの上に描画するのでここに処理を書く
@@ -1649,12 +1455,9 @@ void Game::DisplayHelpWindow()
 		mWindow->clear();
 
 		// 背面から描画
-		mBackGroundComponent->Draw(mWindow);
-		mGameBoardComponent->Draw(mWindow);
-		mPlayerComponent->Draw(mWindow);
-		for (const auto& item : mBaggageComponents)
+		for (auto& sprite : mSprites)
 		{
-			item->Draw(mWindow);
+			sprite->Draw(mWindow);
 		}
 
 		// UIはゲームオブジェクトの上に描画するのでここに処理を書く
@@ -1708,12 +1511,12 @@ void Game::SelectBoards()
 					while (std::getline(file, line))
 					{
 						lines.push_back(line);
-						if (totalSize.x < line.length())
+						if (totalSize.x < static_cast<unsigned int>(line.length()))
 						{
-							totalSize.x = line.length();
+							totalSize.x = static_cast<unsigned int>(line.length());
 						}
 					}
-					totalSize.y = lines.size();
+					totalSize.y = static_cast<unsigned int>(lines.size());
 
 					// 読みこんだ内容から、盤面のテクスチャを作成
 					sf::Texture tmpBoardTex{};
@@ -1727,7 +1530,7 @@ void Game::SelectBoards()
 					renderTexture.clear(sf::Color::Transparent); // 背景を透明に
 
 					// スプライトをrender textureに貼り付けていき、タイル画像を配置
-					for (int y = 0; y < totalSize.y; ++y)
+					for (int y = 0; y < static_cast<int>(totalSize.y); ++y)
 					{
 						for (int x = 0; x < line.length(); ++x)
 						{
@@ -1766,7 +1569,7 @@ void Game::SelectBoards()
 							for (auto& tmpTex : currentTex)
 							{
 								sf::Sprite tmpSprite(*tmpTex);
-								tmpSprite.setPosition(x * tileSize.x, y * tileSize.y);
+								tmpSprite.setPosition(static_cast<float>(x * tileSize.x), static_cast<float>(y * tileSize.y));
 								renderTexture.draw(tmpSprite);
 							}
 						}
@@ -1920,12 +1723,9 @@ void Game::SelectBoards()
 		mWindow->clear();
 
 		// 背面から描画
-		mBackGroundComponent->Draw(mWindow);
-		mGameBoardComponent->Draw(mWindow);
-		mPlayerComponent->Draw(mWindow);
-		for (const auto& item : mBaggageComponents)
+		for (auto& sprite : mSprites)
 		{
-			item->Draw(mWindow);
+			sprite->Draw(mWindow);
 		}
 
 		// UIはゲームオブジェクトの上に描画するのでここに処理を書く

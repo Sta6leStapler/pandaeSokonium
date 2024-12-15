@@ -136,35 +136,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BackGround.cpp" />
-    <ClCompile Include="BackGroundComponent.cpp" />
     <ClCompile Include="Baggage.cpp" />
-    <ClCompile Include="BaggageComponent.cpp" />
     <ClCompile Include="Button.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameBoard.cpp" />
-    <ClCompile Include="GameBoardComponent.cpp" />
     <ClCompile Include="HUDHelper.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MySolution.cpp" />
     <ClCompile Include="PauseMenu.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="PlayerComponent.cpp" />
     <ClCompile Include="SpriteComponent.cpp" />
     <ClCompile Include="State.cpp" />
-    <ClCompile Include="HUD.cpp" />
     <ClCompile Include="THUD.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BackGround.h" />
-    <ClInclude Include="BackGroundComponent.h" />
     <ClInclude Include="Baggage.h" />
-    <ClInclude Include="BaggageComponent.h" />
     <ClInclude Include="Button.h" />
     <ClInclude Include="Font.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameBoard.h" />
-    <ClInclude Include="GameBoardComponent.h" />
     <ClInclude Include="HUDHelper.h" />
     <ClInclude Include="IActor.h" />
     <ClInclude Include="IComponent.h" />
@@ -172,10 +164,8 @@
     <ClInclude Include="MySolution.h" />
     <ClInclude Include="PauseMenu.h" />
     <ClInclude Include="Player.h" />
-    <ClInclude Include="PlayerComponent.h" />
     <ClInclude Include="SpriteComponent.h" />
     <ClInclude Include="State.h" />
-    <ClInclude Include="HUD.h" />
     <ClInclude Include="THUD.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

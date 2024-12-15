@@ -1,4 +1,9 @@
 #include "HUDHelper.h"
+
+#include "Game.h"
+#include "Player.h"
+#include "Baggage.h"
+
 #include <queue>
 #include <algorithm>
 
@@ -18,7 +23,7 @@ HUDHelper::HUDHelper(class Game* game)
 	for (const auto& baggage : mGame->GetBaggages())
 	{
 		sf::Vector2i tmpPos{ baggage->GetBoardCoordinate() };
-		int tmpIndex = mBaggagesPos.size();
+		int tmpIndex = static_cast<int>(mBaggagesPos.size());
 		mBaggagesPos.emplace(tmpIndex, tmpPos);
 
 		if (mBoardStr[tmpPos.y][tmpPos.x] == '$')
@@ -31,7 +36,7 @@ HUDHelper::HUDHelper(class Game* game)
 		}
 	}
 	mInitialBaggagesPos = mBaggagesPos;
-	mBaggageNum = mBaggagesPos.size();
+	mBaggageNum = static_cast<int>(mBaggagesPos.size());
 	// ÉSÅ[Éãç¿ïWÇÃèâä˙âª
 	for (int y = 0; y < mSize.y; ++y)
 	{

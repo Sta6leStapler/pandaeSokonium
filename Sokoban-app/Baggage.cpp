@@ -1,15 +1,23 @@
 #include "Baggage.h"
+
 #include "Game.h"
+#include "SpriteComponent.h"
+#include "HUDHelper.h"
+
 #include <fstream>
 
 Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
-	: mState(State::EActive)
+	: mState(IActor::ActorState::EActive)
 	, mPosition(0.0, 0.0)
 	, mScale(sf::Vector2f(1.0f, 1.0f))
 	, mRotation(0.0f)
+	, mComponents(std::vector<IComponent*>{})
+	, mSpriteComponent(nullptr)
+	, mTextures(std::unordered_map<BState, sf::Texture*>{})
 	, mGame(game)
 	, mBoardName(game->GetCurrentKey())
 	, mBoardCoordinate(bCoordinate)
+	, bState(BState::OnFloor)
 {
 	mGame->AddActor(this);
 
@@ -32,7 +40,7 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 
 	// プレイヤーのタイルを用意
 	// コンポーネントを作成
-	BaggageComponent* pc = new BaggageComponent(this, 100, 150);
+	mSpriteComponent = new SpriteComponent(this, 100, 100);
 	// 初期位置がゴール上にあるかどうか
 	bState = BState::OnFloor;
 	if (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x] == '.')
@@ -53,8 +61,7 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	mTextures.emplace(BState::Deadlock, game->LoadTexture(filename));
 
 	// コンポーネントにテクスチャをセット
-	pc->SetTexture(mTextures[bState]);
-	mComponent = pc;
+	mSpriteComponent->SetTexture(mTextures[bState]);
 
 	// スケーリングと位置の初期化を行う
 	// 表示エリアのサイズ　/ 盤面のサイズ を求める
@@ -77,12 +84,15 @@ Baggage::~Baggage()
 {
 	mGame->RemoveActor(this);
 	// コンポーネントを削除する
-	delete mComponent;
+	while (!mComponents.empty())
+	{
+		delete mComponents.back();
+	}
 }
 
 void Baggage::Update(float deltaTime)
 {
-	if (mState.GetEState() == State::EActive)
+	if (mState == IActor::ActorState::EActive)
 	{
 		UpdateComponents(deltaTime);
 
@@ -90,47 +100,73 @@ void Baggage::Update(float deltaTime)
 		// このアクターの位置に応じてテクスチャを変える
 		if (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x] == '.')
 		{
-			mComponent->SetTexture(mTextures[BState::OnGoal]);
+			mSpriteComponent->SetTexture(mTextures[BState::OnGoal]);
 		}
 		else if (mGame->GetHUDHelper()->isDeadlockedBaggage(mBoardCoordinate))
 		{
-			mComponent->SetTexture(mTextures[BState::Deadlock]);
+			mSpriteComponent->SetTexture(mTextures[BState::Deadlock]);
 		}
 		else
 		{
-			mComponent->SetTexture(mTextures[BState::OnFloor]);
+			mSpriteComponent->SetTexture(mTextures[BState::OnFloor]);
 		}
 	}
 }
 
 void Baggage::UpdateComponents(float deltaTime)
 {
-	mComponent->Update(deltaTime);
+	for (auto item : mComponents)
+	{
+		item->Update(deltaTime);
+	}
 }
 
-void Baggage::ProcessInput(const sf::Event::KeyEvent* keyState)
+void Baggage::ProcessInput(const sf::Event* event)
 {
-	if (mState.GetEState() == State::EActive)
+	if (mState == IActor::ActorState::EActive)
 	{
 		// アクターが持つ全てのComponentの入力処理を行う
 		// どのComponentも特に独自の処理を実装していなければ何もしない
-		mComponent->ProcessInput(keyState);
+		ProcessInputComponents(event);
 
 		// このアクター特有の振る舞いがあれば書く
-		// 荷物はキーボード入力によって自発的には動かない
 
 	}
 
 }
 
-void Baggage::AddComponent(BaggageComponent* component)
+void Baggage::ProcessInputComponents(const sf::Event* event)
 {
-	mComponent = component;
+	for (auto& component : mComponents)
+	{
+		component->ProcessInput(event);
+	}
 }
 
-void Baggage::RemoveComponent(BaggageComponent* component)
+void Baggage::AddComponent(IComponent* component)
 {
-	mComponent = nullptr;
+	int myOrder = component->GetUpdateOrder();
+	auto iter = mComponents.begin();
+	for (;
+		iter != mComponents.end();
+		++iter)
+	{
+		if (myOrder < (*iter)->GetUpdateOrder())
+		{
+			break;
+		}
+	}
+
+	mComponents.insert(iter, component);
+}
+
+void Baggage::RemoveComponent(IComponent* component)
+{
+	auto iter = std::find(mComponents.begin(), mComponents.end(), component);
+	if (iter != mComponents.end())
+	{
+		mComponents.erase(iter);
+	}
 }
 
 void Baggage::SetBoardCoordinate(const sf::Vector2i boardCoordinate)

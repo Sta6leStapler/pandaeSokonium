@@ -1,13 +1,19 @@
 #include "GameBoard.h"
+
 #include "Game.h"
+#include "SpriteComponent.h"
+
 #include <iostream>
 #include <fstream>
 
 GameBoard::GameBoard(Game* game)
-	: mState(State::EActive)
+	: mState(IActor::ActorState::EActive)
 	, mPosition(0.0, 0.0)
 	, mScale(sf::Vector2f(1.0f, 1.0f))
 	, mRotation(0.0f)
+	, mComponents(std::vector<IComponent*>{})
+	, mSpriteComponent(nullptr)
+	, mTextures(std::unordered_map<std::string, sf::Texture*>{})
 	, mGame(game)
 	, mBoardName(game->GetCurrentKey())
 {
@@ -16,7 +22,7 @@ GameBoard::GameBoard(Game* game)
 	// SpriteComponentを作成する
 	// 床と壁のタイルを用意
 	// 読み込んだ盤面データに応じたステージのテクスチャを作成する
-	GameBoardComponent* gbc = new GameBoardComponent(this, 100, 150);
+	mSpriteComponent = new SpriteComponent(this, 100, 50);
 	std::string filename = "Assets/Floor.png";
 	mTextures.emplace(filename, game->LoadTexture(filename));
 	filename = "Assets/Wall.png";
@@ -91,8 +97,7 @@ GameBoard::GameBoard(Game* game)
 	sf::Texture* tmpTexture = new sf::Texture(boardTexture->getTexture());
 	delete boardTexture;
 
-	gbc->SetTexture(tmpTexture);
-	mGameBoardComponent = gbc;
+	mSpriteComponent->SetTexture(tmpTexture);
 
 	// スケーリングと位置の初期化を行う
 	// 表示エリアのサイズ　/ 盤面のサイズ を求める
@@ -115,12 +120,15 @@ GameBoard::~GameBoard()
 {
 	mGame->RemoveActor(this);
 	// コンポーネントを削除する
-	delete mGameBoardComponent;
+	while (!mComponents.empty())
+	{
+		delete mComponents.back();
+	}
 }
 
 void GameBoard::Update(float deltaTime)
 {
-	if (mState.GetEState() == State::EActive)
+	if (mState == IActor::ActorState::EActive)
 	{
 		UpdateComponents(deltaTime);
 
@@ -130,16 +138,19 @@ void GameBoard::Update(float deltaTime)
 
 void GameBoard::UpdateComponents(float deltaTime)
 {
-	mGameBoardComponent->Update(deltaTime);
+	for (auto item : mComponents)
+	{
+		item->Update(deltaTime);
+	}
 }
 
-void GameBoard::ProcessInput(const sf::Event::KeyEvent* keyState)
+void GameBoard::ProcessInput(const sf::Event* event)
 {
-	if (mState.GetEState() == State::EActive)
+	if (mState == IActor::ActorState::EActive)
 	{
 		// アクターが持つ全てのComponentの入力処理を行う
 		// どのComponentも特に独自の処理を実装していなければ何もしない
-		mGameBoardComponent->ProcessInput(keyState);
+		ProcessInputComponents(event);
 
 		// このアクター特有の振る舞いがあれば書く
 		
@@ -147,14 +158,38 @@ void GameBoard::ProcessInput(const sf::Event::KeyEvent* keyState)
 
 }
 
-void GameBoard::AddComponent(GameBoardComponent* component)
+void GameBoard::ProcessInputComponents(const sf::Event* event)
 {
-	mGameBoardComponent = component;
+	for (auto& component : mComponents)
+	{
+		component->ProcessInput(event);
+	}
 }
 
-void GameBoard::RemoveComponent(GameBoardComponent* component)
+void GameBoard::AddComponent(IComponent* component)
 {
-	mGameBoardComponent = nullptr;
+	int myOrder = component->GetUpdateOrder();
+	auto iter = mComponents.begin();
+	for (;
+		iter != mComponents.end();
+		++iter)
+	{
+		if (myOrder < (*iter)->GetUpdateOrder())
+		{
+			break;
+		}
+	}
+
+	mComponents.insert(iter, component);
+}
+
+void GameBoard::RemoveComponent(IComponent* component)
+{
+	auto iter = std::find(mComponents.begin(), mComponents.end(), component);
+	if (iter != mComponents.end())
+	{
+		mComponents.erase(iter);
+	}
 }
 
 void GameBoard::Reload()
@@ -226,7 +261,7 @@ void GameBoard::Reload()
 	sf::Texture* tmpTexture = new sf::Texture(boardTexture->getTexture());
 	delete boardTexture;
 
-	mGameBoardComponent->SetTexture(tmpTexture);
+	mSpriteComponent->SetTexture(tmpTexture);
 
 	// 2024_09_05 ウィンドウサイズから描画範囲に変更
 	BoundingBox viewArea = mGame->GetBoardViewArea();

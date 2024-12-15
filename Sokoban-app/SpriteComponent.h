@@ -50,6 +50,5 @@ private:
 	int mDrawOrder;
 	sf::Vector2u mBoundingBox;
 	sf::Vector2i mCoordinate;
-{
 };
 

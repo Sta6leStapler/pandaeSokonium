@@ -1,18 +1,25 @@
 #include "Player.h"
-#include "Game.h"
+
+#include "Baggage.h"
+#include "SpriteComponent.h"
+
 #include <fstream>
 
 #include <iostream>
 
 Player::Player(Game* game)
-	: mState(State::EActive)
+	: mState(IActor::ActorState::EActive)
 	, mPosition(0.0f, 0.0f)
 	, mScale(sf::Vector2f(1.0f, 1.0f))
 	, mRotation(0.0f)
 	, mGame(game)
+	, mComponents(std::vector<IComponent*>{})
+	, mSpriteComponent(nullptr)
 	, mBoardName(game->GetCurrentKey())
+	, mBoardCoordinate(sf::Vector2i{ 0, 0 })
 	, mDirection(ESouth)
 	, prevDirection(ESouth)
+	, prevKeys(sf::Event::KeyEvent{})
 	, mMoveCooldown(0.0f)
 	, mDetection(false)
 {
@@ -60,8 +67,8 @@ Player::Player(Game* game)
 	BoundingBox viewArea = mGame->GetBoardViewArea();
 
 	// プレイヤーのタイルを用意
-	// コンポーネントを作成
-	PlayerComponent* pc = new PlayerComponent(this, 100, 150);
+	// スプライトコンポーネントを作成
+	mSpriteComponent = new SpriteComponent(this, 100, 150);
 	
 	// ファイルを読み込む
 	std::string filename = "Assets/playerE.png";
@@ -78,10 +85,8 @@ Player::Player(Game* game)
 	image.loadFromFile(filename);
 	mTextures.emplace(Direction::ESouth, game->LoadTexture(filename));
 
-
 	// コンポーネントにテクスチャをセット
-	pc->SetTexture(mTextures[Direction::ESouth]);
-	mComponent = pc;
+	mSpriteComponent->SetTexture(mTextures[Direction::ESouth]);
 
 	// スケーリングと位置の初期化を行う
 	// 表示エリアのサイズ　/ 盤面のサイズ を求める
@@ -104,7 +109,10 @@ Player::~Player()
 {
 	mGame->RemoveActor(this);
 	// コンポーネントを削除する
-	delete mComponent;
+	while (!mComponents.empty())
+	{
+		delete mComponents.back();
+	}
 }
 
 void Player::Update(float deltaTime)
@@ -113,13 +121,13 @@ void Player::Update(float deltaTime)
 
 	mMoveCooldown -= deltaTime;
 
-	if (mState.GetEState() == State::EActive)
+	if (mState == IActor::ActorState::EActive)
 	{
 		UpdateComponents(deltaTime);
 
 		// このアクター特有の更新処理があれば書く
 		// 向きの更新が入ったらコンポーネントのスプライトを切り替える
-		mComponent->SetTexture(mTextures[mDirection]);
+		mSpriteComponent->SetTexture(mTextures[mDirection]);
 
 		// プレイヤーや荷物を抜いた盤面の情報
 		std::vector<std::string> boardState = mGame->GetBoardState();
@@ -223,16 +231,19 @@ void Player::Update(float deltaTime)
 
 void Player::UpdateComponents(float deltaTime)
 {
-	mComponent->Update(deltaTime);
+	for (auto& component : mComponents)
+	{
+		component->Update(deltaTime);
+	}
 }
 
-void Player::ProcessInput(const sf::Event::KeyEvent* keyState)
+void Player::ProcessInput(const sf::Event* event)
 {
-	if (mState.GetEState() == State::EActive)
+	if (mState == IActor::ActorState::EActive)
 	{
 		// アクターが持つ全てのComponentの入力処理を行う
 		// どのComponentも特に独自の処理を実装していなければ何もしない
-		mComponent->ProcessInput(keyState);
+		ProcessInputComponents(event);
 
 		// このアクター特有の振る舞いがあれば書く
 		// 移動入力のクールダウンが0以下なら入力を受け付ける
@@ -240,7 +251,7 @@ void Player::ProcessInput(const sf::Event::KeyEvent* keyState)
 		{
 			mMoveCooldown = 0.13f;
 			mDetection = true;
-			switch (keyState->code)
+			switch (event->key.code)
 			{
 			case sf::Keyboard::Right:
 				if (prevKeys.code != sf::Keyboard::Right)
@@ -278,17 +289,40 @@ void Player::ProcessInput(const sf::Event::KeyEvent* keyState)
 		}
 	}
 
-	prevKeys = *keyState;
+	prevKeys = event->key;
 }
 
-void Player::AddComponent(PlayerComponent* component)
+void Player::ProcessInputComponents(const sf::Event* event)
 {
-	mComponent = component;
+	for (auto& component : mComponents)
+	{
+		component->ProcessInput(event);
+	}
 }
 
-void Player::RemoveComponent(PlayerComponent* component)
+void Player::AddComponent(IComponent* component)
 {
-	mComponent = nullptr;
+	// 更新優先度でソートされたリストから挿入する場所を探す
+	int myOrder = component->GetUpdateOrder();
+	auto iter = mComponents.begin();
+	for (;
+		iter != mComponents.end();
+		++iter)
+	{
+		if (myOrder < (*iter)->GetUpdateOrder())
+		{
+			break;
+		}
+	}
+}
+
+void Player::RemoveComponent(IComponent* component)
+{
+	auto iter = std::find(mComponents.begin(), mComponents.end(), component);
+	if (iter != mComponents.end())
+	{
+		mComponents.erase(iter);
+	}
 }
 
 void Player::SetBoardCoordinate(const sf::Vector2i boardCoordinate)
@@ -343,13 +377,8 @@ void Player::Reload()
 	// ウィンドウサイズ
 	sf::Vector2f wSize = mGame->GetWindowSize();
 
-	// プレイヤーのタイルを用意
-	// コンポーネントを作成
-	PlayerComponent* pc = new PlayerComponent(this, 100, 150);
-
-	// コンポーネントにテクスチャをセット
-	pc->SetTexture(mTextures[Direction::ESouth]);
-	mComponent = pc;
+	// プレイヤーの向きを下方向に初期化
+	mSpriteComponent->SetTexture(mTextures[Direction::ESouth]);
 
 	// 2024_09_05 描画範囲に修正
 	BoundingBox viewArea = mGame->GetBoardViewArea();

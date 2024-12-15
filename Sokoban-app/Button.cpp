@@ -1,6 +1,8 @@
 #include "Button.h"
 
-Button::Button(const std::string& name, class Font* font, std::function<void()> onClick, const sf::Vector2f& pos, const sf::Vector2f& dims)
+#include "Font.h"
+
+Button::Button(const std::string& name, Font* font, std::function<void()> onClick, const sf::Vector2f& pos, const sf::Vector2f& dims)
 	: mOnClick(onClick)
 	, mName(name)
 	, mFont(font)

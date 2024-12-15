@@ -3,10 +3,10 @@
 #include <functional>
 
 #include "SFML/Window.hpp"
-#include "Game.h"
+#include "SFML/Graphics.hpp"
 #include "IUIScreen.h"
-#include "Font.h"
-#include "Button.h"
+
+class Button;
 
 class PauseMenu : public IUIScreen
 {

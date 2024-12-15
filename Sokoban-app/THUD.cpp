@@ -1,6 +1,9 @@
 #include "THUD.h"
 
-THUD::THUD(class Game* game, sf::RenderWindow* window)
+#include "Game.h"
+#include "HUDHelper.h"
+
+THUD::THUD(Game* game, sf::RenderWindow* window)
 	: mGame(game)
 	, mGui(std::make_unique<tgui::Gui>(*window))
 	, mTheme(std::make_unique<tgui::Theme>("Assets/themes/Black.txt"))

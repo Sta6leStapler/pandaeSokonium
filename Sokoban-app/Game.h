@@ -6,26 +6,12 @@
 #include <vector>
 #include <chrono>
 
-#include "IActor.h"
-#include "IComponent.h"
-#include "SpriteComponent.h"
-
-#include "GameBoard.h"
-#include "GameBoardComponent.h"
-#include "BackGround.h"
-#include "BackGroundComponent.h"
 #include "Player.h"
-#include "PlayerComponent.h"
-#include "Baggage.h"
-#include "BaggageComponent.h"
-#include "IUIScreen.h"
-#include "PauseMenu.h"
-#include "HUD.h"
-#include "THUD.h"
-#include "HUDHelper.h"
+
 #include "TGUI/TGUI.hpp"
 #include "TGUI/Backend/SFML-Graphics.hpp"
-#include "MySolution.h"
+
+class Player;
 
 // 一動作のログ
 struct Log
@@ -65,25 +51,6 @@ public:
 	// スプライトの追加と削除
 	void AddSprite(class SpriteComponent* sprite);
 	void RemoveSprite(class SpriteComponent* sprite);
-	
-	void AddActor(class GameBoard* gameboard);
-	void RemoveActor(class GameBoard* gameboard);
-	void AddActor(class BackGround* gameboard);
-	void RemoveActor(class BackGround* gameboard);
-	void AddActor(class Player* player);
-	void RemoveActor(class Player* player);
-	void AddActor(class Baggage* baggage);
-	void RemoveActor(class Baggage* baggage);
-
-	// スプライトの追加と削除
-	void AddSprite(class GameBoardComponent* GBComp);
-	void RemoveSprite(class GameBoardComponent* GBcomp);
-	void AddSprite(class BackGroundComponent* GBComp);
-	void RemoveSprite(class BackGroundComponent* GBcomp);
-	void AddSprite(class PlayerComponent* PComp);
-	void RemoveSprite(class PlayerComponent* PComp);
-	void AddSprite(class BaggageComponent* BComp);
-	void RemoveSprite(class BaggageComponent* BComp);
 
 	// UI画面のスタックに関する処理
 	// スタック全体を参照で返す
@@ -151,8 +118,8 @@ public:
 	sf::Vector2i GetBoardSize() const { return mBoardSize; }
 	BoundingBox GetBoardViewArea() const { return mBoardViewArea; }
 	unsigned int GetStep() const { return mStep; }
-	double GetSecTime() const { return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - mStart).count(); };
-	double GetMSecTime() const { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - mStart).count(); };
+	double GetSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - mStart).count()); };
+	double GetMSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - mStart).count()); };
 
 	// 盤面関連
 	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
@@ -179,23 +146,14 @@ private:
 	// アクティブなアクターと待機中のアクター
 	std::vector<IActor*> mActiveActors;
 	std::vector<IActor*> mPendingActors;
-
-	// ゲームのすべてのアクター
-	class GameBoard* mGameBoard;
-	class BackGround* mBackGround;
+	// ゲームクラスからアクセス可能なアクター
+	// (入力や更新の処理でこれらを用いることはない)
 	class Player* mPlayer;
+	class GameBoard* mGameBoard;
 	std::vector<class Baggage*> mBaggages;
-	// 待機中のアクター
-	class GameBoard* mPendingGameBoard;
-	class BackGround* mPendingBackGround;
-	class Player* mPendingPlayer;
-	std::vector<class Baggage*> mPendingBaggages;
 
 	// 描画を行うコンポーネント
-	GameBoardComponent* mGameBoardComponent;
-	BackGroundComponent* mBackGroundComponent;
-	PlayerComponent* mPlayerComponent;
-	std::vector<BaggageComponent*> mBaggageComponents;
+	std::vector<class SpriteComponent*> mSprites;
 
 	sf::RenderWindow* mWindow;
 	sf::Clock mClock;
