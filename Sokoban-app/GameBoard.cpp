@@ -1,22 +1,28 @@
 #include "GameBoard.h"
+
 #include "Game.h"
+#include "SpriteComponent.h"
+
 #include <iostream>
 #include <fstream>
 
 GameBoard::GameBoard(Game* game)
-	: mState(State::EActive)
+	: mState(IActor::ActorState::EActive)
 	, mPosition(0.0, 0.0)
 	, mScale(sf::Vector2f(1.0f, 1.0f))
 	, mRotation(0.0f)
+	, mComponents(std::vector<IComponent*>{})
+	, mSpriteComponent(nullptr)
+	, mTextures(std::unordered_map<std::string, sf::Texture*>{})
 	, mGame(game)
-	, mBoardName(game->GetFilename(0))
+	, mBoardName(game->GetCurrentKey())
 {
 	mGame->AddActor(this);
 
 	// SpriteComponentを作成する
 	// 床と壁のタイルを用意
 	// 読み込んだ盤面データに応じたステージのテクスチャを作成する
-	GameBoardComponent* gbc = new GameBoardComponent(this, 100, 150);
+	mSpriteComponent = new SpriteComponent(this, 100, 50);
 	std::string filename = "Assets/Floor.png";
 	mTextures.emplace(filename, game->LoadTexture(filename));
 	filename = "Assets/Wall.png";
@@ -38,7 +44,8 @@ GameBoard::GameBoard(Game* game)
 
 	// 盤面のテクスチャを作成
 	sf::RenderTexture* boardTexture = new sf::RenderTexture();
-	sf::Vector2f wSize = mGame->GetWindowSize();
+	// 2024_09_05 ウィンドウサイズから描画範囲に変更
+	BoundingBox viewArea = mGame->GetBoardViewArea();
 
 	// 床と壁のスプライトを作成
 	sf::Sprite tmpFloor, tmpWall, tmpGoal;
@@ -90,31 +97,38 @@ GameBoard::GameBoard(Game* game)
 	sf::Texture* tmpTexture = new sf::Texture(boardTexture->getTexture());
 	delete boardTexture;
 
-	gbc->SetTexture(tmpTexture);
-	mGameBoardComponent = gbc;
+	mSpriteComponent->SetTexture(tmpTexture);
 
 	// スケーリングと位置の初期化を行う
-	// ウィンドウのサイズ　/ 盤面のサイズ を求める
-	// ウィンドウの方が小さければタイルは縮小すべきで、逆なら拡大するべき
-	// まずは盤面をウィンドウいっぱいにスケーリングするための比率を求め、幅に余裕がある方に合わせる
-	// 横に長ければ横方向に少し縮小でき、縦に長ければ縦方向に縮小できる
-	float minScale = std::min(wSize.x / static_cast<float>(tmpTexture->getSize().x), wSize.y / static_cast<float>(tmpTexture->getSize().y));
+	// 表示エリアのサイズ　/ 盤面のサイズ を求める
+	// 表示エリアの方が小さければタイルは縮小すべきで、逆なら拡大するべき
+	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(tmpTexture->getSize().x),
+		(viewArea.second.y - viewArea.first.y) / static_cast<float>(tmpTexture->getSize().y));
+
 	mScale = sf::Vector2f(minScale, -minScale);
 
 	// 余白の分中央揃えする
-	mPosition = sf::Vector2f((wSize.x - (static_cast<float>(tmpTexture->getSize().x) * minScale)) / 2.0f, (wSize.y - (wSize.y - (static_cast<float>(tmpTexture->getSize().y) * minScale)) / 2.0f));
+	// *メモ UI等でずれる場合はオフセットを加えておく
+	mPosition = sf::Vector2f
+	{
+		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(tmpTexture->getSize().x) * mScale.x) / 2.0f,
+		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(tmpTexture->getSize().y) * mScale.y) / 2.0f
+	};
 }
 
 GameBoard::~GameBoard()
 {
 	mGame->RemoveActor(this);
 	// コンポーネントを削除する
-	delete mGameBoardComponent;
+	while (!mComponents.empty())
+	{
+		delete mComponents.back();
+	}
 }
 
 void GameBoard::Update(float deltaTime)
 {
-	if (mState.GetEState() == State::EActive)
+	if (mState == IActor::ActorState::EActive)
 	{
 		UpdateComponents(deltaTime);
 
@@ -124,16 +138,19 @@ void GameBoard::Update(float deltaTime)
 
 void GameBoard::UpdateComponents(float deltaTime)
 {
-	mGameBoardComponent->Update(deltaTime);
+	for (auto item : mComponents)
+	{
+		item->Update(deltaTime);
+	}
 }
 
-void GameBoard::ProcessInput(const sf::Event::KeyEvent* keyState)
+void GameBoard::ProcessInput(const sf::Event* event)
 {
-	if (mState.GetEState() == State::EActive)
+	if (mState == IActor::ActorState::EActive)
 	{
 		// アクターが持つ全てのComponentの入力処理を行う
 		// どのComponentも特に独自の処理を実装していなければ何もしない
-		mGameBoardComponent->ProcessInput(keyState);
+		ProcessInputComponents(event);
 
 		// このアクター特有の振る舞いがあれば書く
 		
@@ -141,19 +158,43 @@ void GameBoard::ProcessInput(const sf::Event::KeyEvent* keyState)
 
 }
 
-void GameBoard::AddComponent(GameBoardComponent* component)
+void GameBoard::ProcessInputComponents(const sf::Event* event)
 {
-	mGameBoardComponent = component;
+	for (auto& component : mComponents)
+	{
+		component->ProcessInput(event);
+	}
 }
 
-void GameBoard::RemoveComponent(GameBoardComponent* component)
+void GameBoard::AddComponent(IComponent* component)
 {
-	mGameBoardComponent = nullptr;
+	int myOrder = component->GetUpdateOrder();
+	auto iter = mComponents.begin();
+	for (;
+		iter != mComponents.end();
+		++iter)
+	{
+		if (myOrder < (*iter)->GetUpdateOrder())
+		{
+			break;
+		}
+	}
+
+	mComponents.insert(iter, component);
+}
+
+void GameBoard::RemoveComponent(IComponent* component)
+{
+	auto iter = std::find(mComponents.begin(), mComponents.end(), component);
+	if (iter != mComponents.end())
+	{
+		mComponents.erase(iter);
+	}
 }
 
 void GameBoard::Reload()
 {
-	mBoardName = mGame->GetFilename(0);
+	mBoardName = mGame->GetCurrentKey();
 	std::vector<std::string> lines = mGame->GetBoardData()[mBoardName];
 
 	// 盤面の横幅を揃える
@@ -220,17 +261,25 @@ void GameBoard::Reload()
 	sf::Texture* tmpTexture = new sf::Texture(boardTexture->getTexture());
 	delete boardTexture;
 
-	mGameBoardComponent->SetTexture(tmpTexture);
+	mSpriteComponent->SetTexture(tmpTexture);
+
+	// 2024_09_05 ウィンドウサイズから描画範囲に変更
+	BoundingBox viewArea = mGame->GetBoardViewArea();
 
 	// スケーリングと位置の初期化を行う
-	// ウィンドウのサイズ　/ 盤面のサイズ を求める
-	// ウィンドウの方が小さければタイルは縮小すべきで、逆なら拡大するべき
-	// まずは盤面をウィンドウいっぱいにスケーリングするための比率を求め、幅に余裕がある方に合わせる
-	// 横に長ければ横方向に少し縮小でき、縦に長ければ縦方向に縮小できる
-	float minScale = std::min(wSize.x / static_cast<float>(tmpTexture->getSize().x), wSize.y / static_cast<float>(tmpTexture->getSize().y));
+	// 表示エリアのサイズ　/ 盤面のサイズ を求める
+	// 表示エリアの方が小さければタイルは縮小すべきで、逆なら拡大するべき
+	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(tmpTexture->getSize().x),
+		(viewArea.second.y - viewArea.first.y) / static_cast<float>(tmpTexture->getSize().y));
+
 	mScale = sf::Vector2f(minScale, -minScale);
 
 	// 余白の分中央揃えする
-	mPosition = sf::Vector2f((wSize.x - (static_cast<float>(tmpTexture->getSize().x) * minScale)) / 2.0f, (wSize.y - (wSize.y - (static_cast<float>(tmpTexture->getSize().y) * minScale)) / 2.0f));
+	// *メモ UI等でずれる場合はオフセットを加えておく
+	mPosition = sf::Vector2f
+	{
+		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(tmpTexture->getSize().x) * mScale.x) / 2.0f,
+		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(tmpTexture->getSize().y) * mScale.y) / 2.0f
+	};
 
 }
