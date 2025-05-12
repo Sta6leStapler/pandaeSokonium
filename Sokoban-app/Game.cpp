@@ -22,7 +22,12 @@
 Game::Game()
 	: mWindow(nullptr)
 	, mGameState(GameState::EGamePlay)
+	, mPlayer(nullptr)
+	, mGameBoard(nullptr)
+	, mBaggages(std::vector<Baggage*>{})
+	, mHUDHelper(nullptr)
 	, mUpdatingActors(false)
+	, mIsComplete(false)
 	, mWindowSize(1600.0, 900.0)
 	, mBoardViewArea(BoundingBox{ sf::Vector2f{ mWindowSize.x - mWindowSize.y, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y } })
 	, mInputCooldown(0.0f)
@@ -74,7 +79,8 @@ Game::Game()
 bool Game::Initialize()
 {
 	// ウィンドウの作成
-	sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(static_cast<unsigned int>(mWindowSize.x), static_cast<unsigned int>(mWindowSize.y)), "SFML Window");
+	// 最後2つの引数は画面サイズ固定のためのおまじない
+	sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(static_cast<unsigned int>(mWindowSize.x), static_cast<unsigned int>(mWindowSize.y)), "SFML Window", sf::Style::Titlebar | sf::Style::Close);
 	mWindow = window;
 	
 	// ファイルの読み込み
@@ -116,7 +122,7 @@ void Game::LoadData()
 
 	// 盤面データを読み取る
 	//*
-	std::string filename = "Assets/Boards/easy01.txt", name = "easy01";
+	std::string filename = "Assets/Boards/default.txt", name = "default";
 	mCurrentKey = name;
 	mFilenames.push_back(name);
 	std::ifstream file(filename);
@@ -354,14 +360,14 @@ void Game::ProcessInput()
 			mUpdatingActors = false;
 			// アクターの入力処理はここまで
 		}
-	}
 
-	// その他の状態ではUIの入力処理を行う
-	// ゲームプレイ中に使えるUIは未実装
-	if (!mUIStack.empty())
-	{
-		// 一番手前のレイヤのUIの入力処理のみ行う
-		mUIStack.back()->ProcessInput(&event, sf::Mouse::getPosition(*mWindow));
+		// その他の状態ではUIの入力処理を行う
+		// ゲームプレイ中に使えるUIは未実装
+		if (!mUIStack.empty())
+		{
+			// 一番手前のレイヤのUIの入力処理のみ行う
+			mUIStack.back()->ProcessInput(&event, sf::Mouse::getPosition(*mWindow));
+		}
 	}
 }
 
@@ -449,16 +455,10 @@ void Game::GenerateOutput()
 	mWindow->clear();
 
 	// 背面から描画
-	for (auto& sprite : mSprites)
-	{
-		sprite->Draw(mWindow);
-	}
+	DrawSprites();
 
 	// UIはゲームオブジェクトの上に描画するのでここに処理を書く
-	for (const auto& ui : mUIStack)
-	{
-		ui->Draw(mWindow);
-	}
+	DrawUI();
 	
 	mWindow->display();
 
@@ -568,6 +568,35 @@ void Game::RemoveSprite(SpriteComponent* sprite)
 	if (iter != mSprites.end())
 	{
 		mSprites.erase(iter);
+	}
+}
+
+// スプライトの描画
+void Game::DrawSprites()
+{
+	for (auto& sprite : mSprites)
+	{
+		sprite->Draw(mWindow);
+	}
+}
+
+// UIの描画
+void Game::DrawUI()
+{
+	for (const auto& ui : mUIStack)
+	{
+		ui->Draw(mWindow);
+	}
+}
+
+// 盤面リストに新しい盤面を追加
+void Game::AddBoard(const std::string& key, const std::vector<std::string>& lines)
+{
+	if (!mInitBoardData.count(key))
+	{
+		mInitBoardData.emplace(key, lines);
+		mBoardData.emplace(key, lines);
+		mFilenames.emplace_back(key);
 	}
 }
 
@@ -711,20 +740,12 @@ void Game::CallReload()
 	{
 		// ログをファイル出力してから全て消す
 		OutputLogs();
-		mLogs.clear();
+		ResetParameters();
 
 		// 更新されたGameクラスのメンバ変数を参照して盤面を生成
 		MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
 		std::vector<std::string> lines = gen->GetBoard();
 		delete(gen);
-
-		mInitialPlayerPos = sf::Vector2i{ -1, -1 };
-		mInitialBaggagePos.clear();
-		mGoalPos.clear();
-		mBoardState.clear();
-		mCurrentKey.clear();
-		mStep = 0;
-		delete  mHUDHelper;
 
 		// 生成された盤面のキーは時刻を文字列に変換したものにする
 		mCurrentKey = GetDateTime();
@@ -815,9 +836,7 @@ void Game::CallRestart()
 {
 	// ログをファイル出力してから全て消す
 	OutputLogs();
-	mLogs.clear();
-
-	mStep = 0;
+	ResetParameters();
 
 	mBoardData[mCurrentKey] = mInitBoardData[mCurrentKey];
 
@@ -927,6 +946,10 @@ void Game::OutputLogs()
 
 	if (outFile.is_open())
 	{
+		for (const auto& row : mInitBoardData[mGameBoard->GetBoardName()])
+		{
+			outFile << row << std::endl;
+		}
 		outFile << ConvertLogToStr(mLogs, 0);
 		outFile.close();
 	}
@@ -951,6 +974,7 @@ std::string Game::GetDateTime()
 
 std::string Game::ConvertLogToStr(const std::vector<Log>& logs, const unsigned long long& current)
 {
+	// currentは現在のステップ数
 	std::string result = "";
 
 	result += "( ";
@@ -964,6 +988,7 @@ std::string Game::ConvertLogToStr(const std::vector<Log>& logs, const unsigned l
 			result += "[" + std::to_string(logs[i].bCoordinate.second.x) + ", " + std::to_string(logs[i].bCoordinate.second.y) + "] ";
 		}
 
+		// 分岐した部分は、分岐地点でカットし、全ての分岐を丸括弧で囲ってカンマ区切りで並べる
 		if (!logs[i].thread.empty())
 		{
 			for (const auto& log : logs[i].thread)
@@ -997,6 +1022,7 @@ void Game::HasComplete()
 void Game::DisplayResult()
 {
 	bool isChildWindowOpened = true;
+	bool isPlayLog = false;
 	// 表示用のウィンドウを作成
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
@@ -1036,6 +1062,18 @@ void Game::DisplayResult()
 		isChildWindowOpened = false;
 		});
 	child->add(exitButton);
+
+	// プレイ履歴を再生するモードに移るボタン
+	auto playLogButton = tgui::Button::create("Play Log");
+	playLogButton->setRenderer(mTheme->getRenderer("Button"));
+	playLogButton->setSize(120, 30);
+	playLogButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 2.0f) - 30, static_cast<int>(listBox->getSize().y) + 5);
+	playLogButton->onPress([&]() {
+		std::cout << "Play Log action triggered!" << std::endl;
+		isChildWindowOpened = false;
+		isPlayLog = true;
+		});
+	child->add(playLogButton);
 
 	// ゲームループを停止
 	mWindow->setActive(false);
@@ -1090,6 +1128,11 @@ void Game::DisplayResult()
 	}
 
 	child->close();
+
+	if (isPlayLog)
+	{
+		DisplayPlayLogs(mCurrentKey);
+	}
 
 	// 1手戻す
 	CallUndo();
@@ -1366,7 +1409,6 @@ void Game::DisplayHelpWindow()
 {
 	// テキストデータの読み込み
 	std::string filename = "Assets/help.txt";
-	mFilenames.push_back(filename);
 	std::ifstream file(filename);
 	if (!file.is_open())
 	{
@@ -1748,6 +1790,7 @@ void Game::SelectBoards()
 void Game::ChangeBoard()
 {
 	// ログをファイル出力してから全て消す
+	// TODO 盤面が変わった後のものになってしまっている
 	OutputLogs();
 	mLogs.clear();
 
@@ -1831,12 +1874,13 @@ void Game::ChangeBoard()
 	while (!mBaggages.empty())
 	{
 		delete mBaggages.back();
+		mBaggages.pop_back();
 	}
 	mBaggages.clear();
 
 	for (const auto& item : mBoxesPos)
 	{
-		new Baggage(this, item);
+		mBaggages.emplace_back(new Baggage(this, item));
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
 
@@ -1844,6 +1888,131 @@ void Game::ChangeBoard()
 	mHUDHelper = new HUDHelper(this);
 
 	mStart = std::chrono::system_clock::now();
+}
+
+void Game::DisplayPlayLogs(const std::string& boardKey)
+{
+	// 履歴データを読みこむ
+	// 空でなければログデータをそのまま持ってくる
+	std::map<std::string, std::pair<Board, std::vector<Log>>> loadedPlayLogs{};
+	if (!boardKey.empty())
+	{
+		loadedPlayLogs.emplace(mCurrentKey, std::make_pair(mInitBoardData[mCurrentKey], mLogs));
+	}
+	else
+	{
+		// TODO フォルダから読みこむ
+	}
+
+	if (!loadedPlayLogs.empty())
+	{
+		// 表示用のウィンドウを作成
+		bool isChildWindowOpened = true;
+		auto child = tgui::ChildWindow::create();
+		child->setRenderer(mTheme->getRenderer("ChildWindow"));
+		child->setClientSize({ 960, 540 });
+		child->setPosition(420, 80);
+		child->setTitle("Play Log Viewer");
+		child->onClose([&isChildWindowOpened]() {
+			isChildWindowOpened = false;
+			});
+		mGui->add(child);
+
+		// ListBoxでログのリストを表示
+		auto logListBox = tgui::ListBox::create();
+		logListBox->setRenderer(mTheme->getRenderer("ListBox"));
+		logListBox->setSize(240, 260);
+		logListBox->setItemHeight(20);
+		logListBox->setPosition(0, 0);
+		logListBox->setTextSize(16);
+		logListBox->setAutoScroll(false);
+		for (const auto& item : loadedPlayLogs)
+		{
+			logListBox->addItem(item.first, item.first);
+		}
+		child->add(logListBox);
+
+		// ListBoxで再生中のログの情報を表示
+		auto infoListBox = tgui::ListBox::create();
+		infoListBox->setRenderer(mTheme->getRenderer("ListBox"));
+		infoListBox->setSize(240, 240);
+		infoListBox->setItemHeight(20);
+		infoListBox->setPosition(0, logListBox->getSize().y);
+		infoListBox->setTextSize(16);
+		infoListBox->setAutoScroll(false);
+		child->add(infoListBox);
+
+		// プレイヤー終了用ボタン
+		auto exitButton = tgui::Button::create("exit");
+		exitButton->setRenderer(mTheme->getRenderer("Button"));
+		exitButton->setSize(120, 30);
+		exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - 10, static_cast<int>(logListBox->getSize().y + infoListBox->getSize().y) + 5);
+		exitButton->onPress([&]() {
+			std::cout << "Exit selection action triggered!" << std::endl;
+			isChildWindowOpened = false;
+			});
+		child->add(exitButton);
+
+		// TODO その他の
+
+		// ゲームループを停止
+		mWindow->setActive(false);
+
+		// デルタタイム関連
+		sf::Time ticksCount = mClock.getElapsedTime();
+
+		// 入力と更新とウィンドウの終了処理
+		// ウィンドウが閉じるまでループ
+		while (isChildWindowOpened)
+		{
+			// 60FPSに合わせて遅延をかける
+			while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+
+			float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
+			if (deltaTime > 0.05f)
+			{
+				deltaTime = 0.05f;
+			}
+			ticksCount = mClock.getElapsedTime();
+
+			// イベントキューが存在する場合、それに応じた処理を全て行う
+			sf::Event event;
+			while (mWindow->pollEvent(event))
+			{
+				if (event.type == sf::Event::Closed ||
+					event.key.code == sf::Keyboard::Escape ||
+					event.key.code == sf::Keyboard::Enter)
+				{
+					isChildWindowOpened = false;
+				}
+
+				mGui->handleEvent(event);
+			}
+
+			mWindow->clear();
+
+			// 背面から描画
+			for (auto& sprite : mSprites)
+			{
+				sprite->Draw(mWindow);
+			}
+
+			// UIはゲームオブジェクトの上に描画するのでここに処理を書く
+			for (const auto& ui : mUIStack)
+			{
+				ui->Draw(mWindow);
+			}
+
+			mGui->draw(); // TGUIの描画
+			mWindow->display();
+		}
+
+		// ウィンドウのメモリ解放
+		child->close();
+
+		// ゲームループを再開
+		mWindow->setActive(true);
+	}
 }
 
 std::vector<sf::Vector2i> Game::GetBaggagesPos() const
@@ -1865,4 +2034,22 @@ int Game::GetBaggageNumLimit(const sf::Vector2i& size, const double& wallRate) c
 	result = static_cast<int>(std::floor(static_cast<double>((size.x - 1) * (size.y - 1)) * (1.0 - wallRate)));
 
 	return result;
+}
+
+void Game::ResetParameters()
+{
+	// ログをクリア
+	mLogs.clear();
+
+	// 初期化処理
+	mInitialPlayerPos = sf::Vector2i{ -1, -1 };
+	mInitialBaggagePos.clear();
+	mGoalPos.clear();
+	mBoardState.clear();
+	mCurrentKey.clear();
+	mStep = 0;
+
+	// HUDHelperを削除
+	delete mHUDHelper;
+	mHUDHelper = nullptr;
 }

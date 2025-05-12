@@ -16,10 +16,15 @@ class Player;
 // 一動作のログ
 struct Log
 {
+	// プレイヤーと荷物の移動前後の座標
 	std::pair<sf::Vector2i, sf::Vector2i> pCoordinate, bCoordinate;
+	// 荷物が移動したかどうか
 	bool isBMoved;
+	// プレイヤーの移動前後の向き
 	Player::Direction direction1, direction2;
+	// 入力時の時刻の文字列
 	std::string time;
+	// 現在の状態から派生した、次状態のリスト
 	std::vector<std::vector<Log>> thread;
 };
 
@@ -52,6 +57,10 @@ public:
 	void AddSprite(class SpriteComponent* sprite);
 	void RemoveSprite(class SpriteComponent* sprite);
 
+	// スプライトとUIの描画
+	void DrawSprites();
+	void DrawUI();
+
 	// UI画面のスタックに関する処理
 	// スタック全体を参照で返す
 	const std::vector<class IUIScreen*>& GetUIStack() { return mUIStack; }
@@ -59,6 +68,9 @@ public:
 	void PushUI(class IUIScreen* screen) { mUIStack.emplace_back(screen); }
 
 	// ゲーム特有のメンバ関数があれば追加
+	// 盤面リストに新しい盤面を追加
+	void AddBoard(const std::string& boardName, const std::vector<std::string>& boardData);
+	
 	// ステップを加算
 	void AddStep() { mStep++; }
 
@@ -85,7 +97,7 @@ public:
 	void AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2, const sf::Vector2i& baggagePos1, const sf::Vector2i& baggagePos2, const Player::Direction& direction1, const Player::Direction& direction2);
 
 	// ログをテキストに変換
-	std::string ConvertLogToStr(const std::vector<Log>& logs, const unsigned long long& current);
+	std::string ConvertLogToStr(const std::vector<Log>& logs, const unsigned long long& current = 0);
 
 	// ログの出力
 	void OutputLogs();
@@ -107,6 +119,14 @@ public:
 	void SelectBoards();
 	void ChangeBoard();
 
+	// プレイ履歴の再生
+	// リザルト画面から呼び出すときは引数に盤面のキーを入れ、
+	// そうでないときは引数無しで呼び出す
+	void DisplayPlayLogs(const std::string& boardKey = "");
+
+	// パラメータのリセットを行う処理
+	void ResetParameters();
+
 	// ゲッターとセッター
 	// ゲーム制御関連
 	void SetState(const GameState& gameState) { mGameState = gameState; }
@@ -121,11 +141,18 @@ public:
 	double GetSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - mStart).count()); };
 	double GetMSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - mStart).count()); };
 
+	// テクスチャ関連
+	sf::Texture* GetTexture(const std::string& fileName) const { return mTextures.at(fileName); }
+	std::unordered_map<std::string, sf::Texture*> GetTextures() const { return mTextures; }
+
 	// 盤面関連
 	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
 	std::vector<sf::Vector2i> GetBaggagesPos() const;
 	class Player* GetPlayer() const { return mPlayer; }
 	int GetBaggageNumLimit(const sf::Vector2i& size, const double& wallRate = 0.0) const;
+	void SetCurrentKey(const std::string& key) { mCurrentKey = key; }
+	std::vector<std::string> GetCurrentInitBoardData() const { return mInitBoardData.at(mCurrentKey); }
+	std::vector<std::string> GetInitBoardData(const std::string& boardKey) const { return mInitBoardData.at(boardKey); }
 
 	class HUDHelper* GetHUDHelper() const { return mHUDHelper; }
 	std::vector<std::string> GetBoardState() const { return mBoardState; }
@@ -151,7 +178,7 @@ private:
 	class Player* mPlayer;
 	class GameBoard* mGameBoard;
 	std::vector<class Baggage*> mBaggages;
-
+	
 	// 描画を行うコンポーネント
 	std::vector<class SpriteComponent*> mSprites;
 
@@ -217,5 +244,8 @@ private:
 	unsigned int mStep;
 
 	// ログを座標のリストで表す
+	// (プレイヤーの初期座標から1マス動くことで、ログが初めて追加される)
+	// (初期状態から遷移できる状態は基本的に複数あるので、リスト形式)
+	// (つまり、このリストに格納されるログは、プレイヤーの移動前の座標が必ず初期座標になる)
 	std::vector<Log> mLogs;
 };

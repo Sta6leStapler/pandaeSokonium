@@ -41,6 +41,7 @@ public:
 	void Reload();
 
 	// ゲッターとセッター
+	std::string GetBoardName() const { return this->mBoardName; }
 	sf::Vector2f GetForward() const { return sf::Vector2f(std::cos(mRotation), -std::sin(mRotation)); }
 
 private:

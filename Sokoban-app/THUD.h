@@ -52,7 +52,8 @@ private:
 	sf::Vector2i mButtonMergin;
 	sf::Vector2i mListBoxSize;
 	sf::Vector2i mListBoxPos;
-	int mListBoxItemHeight;
+	unsigned int mListBoxItemHeight;
+	float mIconImageScale;
 
 	// èÛë‘
 	UIState mState;
