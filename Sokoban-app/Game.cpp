@@ -1,4 +1,4 @@
-#include "Game.h"
+ï»¿#include "Game.h"
 
 #include "IActor.h"
 #include "IComponent.h"
@@ -18,6 +18,7 @@
 #include <fstream>
 #include <chrono>
 #include <ctime>
+#include <Windows.h>
 
 Game::Game()
 	: mWindow(nullptr)
@@ -41,55 +42,67 @@ Game::Game()
 	, mRepetition05(0)
 	, mStep(0)
 {
-	// ”Õ–Ê‚ğƒ[ƒh‚·‚é“x‚ÉXV‚·‚é‚Ì‚ÍˆÈ‰º‚Ìƒƒ“ƒo•Ï”
+	// ç›¤é¢ã‚’ãƒ­ãƒ¼ãƒ‰ã™ã‚‹åº¦ã«æ›´æ–°ã™ã‚‹ã®ã¯ä»¥ä¸‹ã®ãƒ¡ãƒ³ãƒå¤‰æ•°
 	// mBoardSize
-	// Œ»İ‚Ì”Õ–ÊƒTƒCƒY
+	// ç¾åœ¨ã®ç›¤é¢ã‚µã‚¤ã‚º
 	// mBaggageNum
-	// Œ»İ‚Ì”Õ–Ê‚Ì‰×•¨‚Ì”
+	// ç¾åœ¨ã®ç›¤é¢ã®è·ç‰©ã®æ•°
 	// mRepetition01
 	// mRepetition02
 	// mRepetition03
 	// mRepetition04
 	// mRepetition05
-	// ”Õ–Ê‚Ì©“®¶¬‚ğs‚¤Û‚Ìƒpƒ‰ƒ[ƒ^
+	// ç›¤é¢ã®è‡ªå‹•ç”Ÿæˆã‚’è¡Œã†éš›ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
 	// mCurrentKey
-	// Œ»İ‚Ì”Õ–Ê‚ÌƒL[ (ƒQ[ƒ€‹N“®‚©‚çƒ[ƒh‚³‚ê‚½”Õ–Ê‚ğ“Ç‚İ‚Ş‚Ì‚Ég‚¤)
+	// ç¾åœ¨ã®ç›¤é¢ã®ã‚­ãƒ¼ (ã‚²ãƒ¼ãƒ èµ·å‹•æ™‚ã‹ã‚‰ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸç›¤é¢ã‚’èª­ã¿è¾¼ã‚€ã®ã«ä½¿ã†)
 	// mFilenames
-	// ƒQ[ƒ€‹N“®‚©‚çƒ[ƒh‚³‚ê‚½”Õ–Ê‚ÌƒL[‚ÌƒŠƒXƒg
+	// ã‚²ãƒ¼ãƒ èµ·å‹•æ™‚ã‹ã‚‰ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸç›¤é¢ã®ã‚­ãƒ¼ã®ãƒªã‚¹ãƒˆ
 	// mBoardData
-	// ƒQ[ƒ€‹N“®‚©‚çƒ[ƒh‚³‚ê‚½”Õ–Ê‚ÌƒŠƒXƒg (isó‘Ô‚ğ”½‰f)
+	// ã‚²ãƒ¼ãƒ èµ·å‹•æ™‚ã‹ã‚‰ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸç›¤é¢ã®ãƒªã‚¹ãƒˆ (é€²è¡ŒçŠ¶æ…‹ã‚’åæ˜ )
 	// mInitBoardData
-	// ƒQ[ƒ€‹N“®‚©‚çƒ[ƒh‚³‚ê‚½”Õ–Ê‚Ì‰Šúó‘ÔƒŠƒXƒg
+	// ã‚²ãƒ¼ãƒ èµ·å‹•æ™‚ã‹ã‚‰ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸç›¤é¢ã®åˆæœŸçŠ¶æ…‹ãƒªã‚¹ãƒˆ
 	// mBoardState
-	// Œ»İ‚Ì”Õ–Ê‚ÌƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğœ‚¢‚½’nŒ`î•ñ
+	// ç¾åœ¨ã®ç›¤é¢ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’é™¤ã„ãŸåœ°å½¢æƒ…å ±
 	// mGoalPos
-	// Œ»İ‚Ì”Õ–Ê‚ÌƒS[ƒ‹ˆÊ’u‚ÌƒŠƒXƒg
+	// ç¾åœ¨ã®ç›¤é¢ã®ã‚´ãƒ¼ãƒ«ä½ç½®ã®ãƒªã‚¹ãƒˆ
 	// mBaggageLimit
-	// Œ»İ‚Ì”Õ–Ê‚ÌL‚³‚Æ‰Šú•Çƒ}ƒX‚Ì¶¬Š„‡‚©‚çŒvZ‚³‚ê‚éAİ’u‚Å‚«‚é‰×•¨‚Ì”
+	// ç¾åœ¨ã®ç›¤é¢ã®åºƒã•ã¨åˆæœŸå£ãƒã‚¹ã®ç”Ÿæˆå‰²åˆã‹ã‚‰è¨ˆç®—ã•ã‚Œã‚‹ã€è¨­ç½®ã§ãã‚‹è·ç‰©ã®æ•°
 	// mInitialPlayerPos
-	// Œ»İ‚Ì”Õ–Ê‚ÌƒvƒŒƒCƒ„[‚Ì‰ŠúˆÊ’u
+	// ç¾åœ¨ã®ç›¤é¢ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸä½ç½®
 	// mInitialBaggagePos
-	// Œ»İ‚Ì”Õ–Ê‚Ì‰×•¨‚Ì‰ŠúˆÊ’u
+	// ç¾åœ¨ã®ç›¤é¢ã®è·ç‰©ã®åˆæœŸä½ç½®
 	// mStep
-	// Œ»İ‚Ì”Õ–Ê‚Ìè”
+	// ç¾åœ¨ã®ç›¤é¢ã®æ‰‹æ•°
 	// mLogs
-	// Œ»İ‚Ì”Õ–Ê‚Ì“ü—Í‚ÌƒƒO
+	// ç¾åœ¨ã®ç›¤é¢ã®å…¥åŠ›ã®ãƒ­ã‚°
 }
 
 bool Game::Initialize()
 {
-	// ƒEƒBƒ“ƒhƒE‚Ìì¬
-	// ÅŒã2‚Â‚Ìˆø”‚Í‰æ–ÊƒTƒCƒYŒÅ’è‚Ì‚½‚ß‚Ì‚¨‚Ü‚¶‚È‚¢
-	sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(static_cast<unsigned int>(mWindowSize.x), static_cast<unsigned int>(mWindowSize.y)), "SFML Window", sf::Style::Titlebar | sf::Style::Close);
+	// DPIã‚¹ã‚±ãƒ¼ãƒ«ã‚’å–å¾—
+	float dpiScale = GetDPIScaleFactor();
+
+	// ãƒ¢ãƒ‹ã‚¿ãƒ¼ã®è§£åƒåº¦ã‚’å–å¾—
+	sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
+	mWindowSize = sf::Vector2f(
+		desktopMode.width * 0.8f / dpiScale,
+		desktopMode.height * 0.8f / dpiScale
+	);
+
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
+	sf::RenderWindow* window = new sf::RenderWindow(
+		sf::VideoMode(static_cast<unsigned int>(mWindowSize.x), static_cast<unsigned int>(mWindowSize.y)),
+		"PandaeSokonium",
+		sf::Style::Titlebar | sf::Style::Close
+	);
 	mWindow = window;
-	
-	// ƒtƒ@ƒCƒ‹‚Ì“Ç‚İ‚İ
+
+	// ãƒ•ã‚¡ã‚¤ãƒ«ã®èª­ã¿è¾¼ã¿
 	LoadData();
 
+	// ã‚²ãƒ¼ãƒ å†…æ™‚é–“ã®å–å¾—ã€‚ã“ã®æ™‚ç‚¹ã®æ™‚åˆ»ã‚’0ã¨ã™ã‚‹
 	mClock.restart();
-
 	mTicksCount = mClock.getElapsedTime();
-
 	mStart = std::chrono::system_clock::now();
 
 	return true;
@@ -107,11 +120,11 @@ void Game::RunLoop()
 
 void Game::LoadData()
 {
-	// gui‚Ìƒe[ƒ}‚ğƒ[ƒh
+	// guiã®ãƒ†ãƒ¼ãƒã‚’ãƒ­ãƒ¼ãƒ‰
 	mGui = std::make_unique<tgui::Gui>(*mWindow);
 	mTheme = std::make_unique<tgui::Theme>("Assets/themes/Black.txt");
 
-	// ƒtƒHƒ“ƒg‚ğƒ[ƒh‚µA‰Šú‰»
+	// ãƒ•ã‚©ãƒ³ãƒˆã‚’ãƒ­ãƒ¼ãƒ‰ã—ã€åˆæœŸåŒ–
 	if (!mFont.loadFromFile("Assets/fonts/arial.ttf"))
 	{
 		std::cout << "error : failed loading font." << std::endl;
@@ -120,7 +133,7 @@ void Game::LoadData()
 	mInfoTxt.setCharacterSize(mWindow->getSize().y);
 	mInfoTxt.setScale(20.0f / static_cast<float>(mWindow->getSize().y), 20.0f / static_cast<float>(mWindow->getSize().y));
 
-	// ”Õ–Êƒf[ƒ^‚ğ“Ç‚İæ‚é
+	// ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’èª­ã¿å–ã‚‹
 	//*
 	std::string filename = "Assets/Boards/default.txt", name = "default";
 	mCurrentKey = name;
@@ -144,7 +157,7 @@ void Game::LoadData()
 	file.close();
 	//*/
 
-	// ©“®¶¬‚Ìê‡
+	// è‡ªå‹•ç”Ÿæˆã®å ´åˆ
 	// MySolution
 	/*
 	InputBoardData();
@@ -157,14 +170,14 @@ void Game::LoadData()
 	mInitBoardData.emplace(mCurrentKey, lines);
 	//*/
 
-	// ”Õ–Ê‚Ì‰Šúó‘Ô‚ğƒZƒbƒg
+	// ç›¤é¢ã®åˆæœŸçŠ¶æ…‹ã‚’ã‚»ãƒƒãƒˆ
 	std::vector<sf::Vector2i> mBoxesPos;
 	{
 		int i = 0, j = 0;
 		std::string tmpstr = "";
 		for (const auto& line : lines)
 		{
-			
+
 			for (const auto& item : line)
 			{
 				switch (item)
@@ -209,58 +222,58 @@ void Game::LoadData()
 		}
 	}
 
-	// ”wŒi‚Ìì¬
-	// ”wŒi‚Í‰æ–Ê‚Ì’†‰›‚É”z’u
+	// èƒŒæ™¯ã®ä½œæˆ
+	// èƒŒæ™¯ã¯ç”»é¢ã®ä¸­å¤®ã«é…ç½®
 	new BackGround(this);
 
-	// ƒ{[ƒh‚ğì¬
+	// ãƒœãƒ¼ãƒ‰ã‚’ä½œæˆ
 	mGameBoard = new GameBoard(this);
 	mBoardSize = sf::Vector2i{ static_cast<int>(lines.front().size()), static_cast<int>(lines.size()) };
 
-	// ƒvƒŒƒCƒ„[‚Ìì¬
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ä½œæˆ
 	mPlayer = new Player(this);
 
-	// ‰×•¨‚ğì¬
-	// ‰×•¨‚Ì‰ŠúÀ•W‚ğ“¾‚é
+	// è·ç‰©ã‚’ä½œæˆ
+	// è·ç‰©ã®åˆæœŸåº§æ¨™ã‚’å¾—ã‚‹
 	for (const auto& item : mBoxesPos)
 	{
 		mBaggages.emplace_back(new Baggage(this, item));
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
 
-	// HUD•â•‚ÌƒNƒ‰ƒX‚ğéŒ¾
+	// HUDè£œåŠ©ã®ã‚¯ãƒ©ã‚¹ã‚’å®£è¨€
 	mHUDHelper = new HUDHelper(this);
 
-	// TODO UIŠÖ˜A‚ÌƒNƒ‰ƒX‚ÌƒCƒ“ƒXƒ^ƒ“ƒXì¬‚Ìˆ—‚ğ‘‚­
-	// HUD‚ÌƒCƒ“ƒXƒ^ƒ“ƒXì¬
-	// ”Õ–Ê‚Ìî•ñ‚ğ“¾‚Ä‚©‚çì¬‚·‚é
-	// tgui‚ğ—p‚¢‚éê‡‚ÍˆÈ‰º‚É‘‚­
-	// ƒQ[ƒ€ƒ‹[ƒv•”•ª‚Ìˆ—‚Í–¢À‘•
+	// TODO UIé–¢é€£ã®ã‚¯ãƒ©ã‚¹ã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ä½œæˆã®å‡¦ç†ã‚’æ›¸ã
+	// HUDã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ä½œæˆ
+	// ç›¤é¢ã®æƒ…å ±ã‚’å¾—ã¦ã‹ã‚‰ä½œæˆã™ã‚‹
+	// tguiã‚’ç”¨ã„ã‚‹å ´åˆã¯ä»¥ä¸‹ã«æ›¸ã
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—éƒ¨åˆ†ã®å‡¦ç†ã¯æœªå®Ÿè£…
 	new THUD(this, mWindow);
 
-	// ©ì‚ÌHUDƒNƒ‰ƒX‚ğ—p‚¢‚éê‡‚ÍˆÈ‰º‚ÌƒRƒƒ“ƒgƒAƒEƒg‚ğ–ß‚·
+	// è‡ªä½œã®HUDã‚¯ãƒ©ã‚¹ã‚’ç”¨ã„ã‚‹å ´åˆã¯ä»¥ä¸‹ã®ã‚³ãƒ¡ãƒ³ãƒˆã‚¢ã‚¦ãƒˆã‚’æˆ»ã™
 	// new HUD(this);
 }
 
 void Game::UnloadData()
 {
-	// ƒAƒNƒ^[‚ğíœ
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã‚’å‰Šé™¤
 	while (!mActiveActors.empty())
 	{
 		delete mActiveActors.back();
 	}
 
-	// HUDƒwƒ‹ƒp[‚ğíœ
+	// HUDãƒ˜ãƒ«ãƒ‘ãƒ¼ã‚’å‰Šé™¤
 	delete mHUDHelper;
 
-	// UIƒXƒ^ƒbƒN‚ğ‚·‚×‚Äíœ
+	// UIã‚¹ã‚¿ãƒƒã‚¯ã‚’ã™ã¹ã¦å‰Šé™¤
 	while (!mUIStack.empty())
 	{
 		delete mUIStack.back();
 		mUIStack.pop_back();
 	}
 
-	// ƒeƒNƒXƒ`ƒƒ‚ğíœ
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’å‰Šé™¤
 	for (auto& item : mTextures)
 	{
 		delete item.second;
@@ -278,12 +291,18 @@ void Game::ProcessInput()
 		case sf::Event::Closed:
 			mGameState = GameState::EQuit;
 			break;
+		case sf::Event::Resized:
+			// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚ºå¤‰æ›´æ™‚ã®å‡¦ç†
+			mWindow->setView(sf::View(sf::FloatRect(0.0f, 0.0f, static_cast<float>(event.size.width), static_cast<float>(event.size.height))));
+			//RelayoutUI(); // TODO è¿½åŠ : UIå†ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆ
+			break;
 		}
 
-		// ƒQ[ƒ€‘S‘Ì‚ÉŠÖ‚·‚éŠeí“ü—Íˆ—
+
+		// ã‚²ãƒ¼ãƒ å…¨ä½“ã«é–¢ã™ã‚‹å„ç¨®å…¥åŠ›å‡¦ç†
 		if (mInputCooldown <= 0.0f)
 		{
-			// EscƒL[‚Åƒ|[ƒYƒƒjƒ…[‚ğŠJ‚­
+			// Escã‚­ãƒ¼ã§ãƒãƒ¼ã‚ºãƒ¡ãƒ‹ãƒ¥ãƒ¼ã‚’é–‹ã
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && mGameState == GameState::EGamePlay)
 			{
 				mInputCooldown = 0.13f;
@@ -291,54 +310,54 @@ void Game::ProcessInput()
 				mGameState = GameState::EPaused;
 			}
 
-			// z ‚Åundoˆ—
+			// z ã§undoå‡¦ç†
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
 			{
 				mInputCooldown = 0.13f;
 				CallUndo();
 			}
 
-			// y ‚Åredoˆ—
+			// y ã§redoå‡¦ç†
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
 			{
 				mInputCooldown = 0.13f;
 				CallRedo();
 			}
 
-			// PGUP‚ÅÅV‚Ìó‘Ô‚É‚·‚é
+			// PGUPã§æœ€æ–°ã®çŠ¶æ…‹ã«ã™ã‚‹
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
 			{
 				CallRedoAll();
 			}
 
-			// PGDN‚Å‰Šúó‘Ô‚É‚·‚é
+			// PGDNã§åˆæœŸçŠ¶æ…‹ã«ã™ã‚‹
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
 			{
 				CallReset();
 			}
 
-			// Ctrl + r‚Å‘S‚ÄƒŠƒZƒbƒg
+			// Ctrl + rã§å…¨ã¦ãƒªã‚»ãƒƒãƒˆ
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::R))
 			{
 				mInputCooldown = 0.13f;
 				CallRestart();
 			}
 
-			// Ctrl + s ‚ÅŒ»İ‚Ì”Õ–Ê‚ğƒZ[ƒu
+			// Ctrl + s ã§ç¾åœ¨ã®ç›¤é¢ã‚’ã‚»ãƒ¼ãƒ–
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::S))
 			{
 				mInputCooldown = 0.13f;
 				CallSave();
 			}
 
-			// H ‚Åƒwƒ‹ƒv‰æ–Ê‚Ì•\¦
+			// H ã§ãƒ˜ãƒ«ãƒ—ç”»é¢ã®è¡¨ç¤º
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::H))
 			{
 				mInputCooldown = 0.13f;
 				DisplayHelpWindow();
 			}
 
-			// F5 ‚Å”Õ–Ê‚ÌƒŠƒ[ƒhi©“®¶¬‚Ì”Õ–Ê‚È‚çV‚½‚È”Õ–Ê‚Ì¶¬j
+			// F5 ã§ç›¤é¢ã®ãƒªãƒ­ãƒ¼ãƒ‰ï¼ˆè‡ªå‹•ç”Ÿæˆã®ç›¤é¢ãªã‚‰æ–°ãŸãªç›¤é¢ã®ç”Ÿæˆï¼‰
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::F5))
 			{
 				mInputCooldown = 0.13f;
@@ -346,10 +365,10 @@ void Game::ProcessInput()
 			}
 		}
 
-		// ƒQ[ƒ€ƒvƒŒƒCó‘Ô‚È‚çƒAƒNƒ^[‚Ì“ü—Íˆ—‚ğs‚¤
+		// ã‚²ãƒ¼ãƒ ãƒ—ãƒ¬ã‚¤çŠ¶æ…‹ãªã‚‰ã‚¢ã‚¯ã‚¿ãƒ¼ã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
 		if (mGameState == GameState::EGamePlay)
 		{
-			// ‘S‚Ä‚ÌActor‚Ì“ü—Íˆ—‚ğs‚¤
+			// å…¨ã¦ã®Actorã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
 			mUpdatingActors = true;
 
 			for (auto& actor : mActiveActors)
@@ -358,14 +377,14 @@ void Game::ProcessInput()
 			}
 
 			mUpdatingActors = false;
-			// ƒAƒNƒ^[‚Ì“ü—Íˆ—‚Í‚±‚±‚Ü‚Å
+			// ã‚¢ã‚¯ã‚¿ãƒ¼ã®å…¥åŠ›å‡¦ç†ã¯ã“ã“ã¾ã§
 		}
 
-		// ‚»‚Ì‘¼‚Ìó‘Ô‚Å‚ÍUI‚Ì“ü—Íˆ—‚ğs‚¤
-		// ƒQ[ƒ€ƒvƒŒƒC’†‚Ég‚¦‚éUI‚Í–¢À‘•
+		// ãã®ä»–ã®çŠ¶æ…‹ã§ã¯UIã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
+		// ã‚²ãƒ¼ãƒ ãƒ—ãƒ¬ã‚¤ä¸­ã«ä½¿ãˆã‚‹UIã¯æœªå®Ÿè£…
 		if (!mUIStack.empty())
 		{
-			// ˆê”Ôè‘O‚ÌƒŒƒCƒ„‚ÌUI‚Ì“ü—Íˆ—‚Ì‚İs‚¤
+			// ä¸€ç•ªæ‰‹å‰ã®ãƒ¬ã‚¤ãƒ¤ã®UIã®å…¥åŠ›å‡¦ç†ã®ã¿è¡Œã†
 			mUIStack.back()->ProcessInput(&event, sf::Mouse::getPosition(*mWindow));
 		}
 	}
@@ -373,8 +392,8 @@ void Game::ProcessInput()
 
 void Game::UpdateGame()
 {
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€‚ğŒvZ‚·‚é
-	// ÅŠú‚ÌƒtƒŒ[ƒ€‚©‚ç16ms‚¾‚¯‘Ò‚Â
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ ã‚’è¨ˆç®—ã™ã‚‹
+	// æœ€æœŸã®ãƒ•ãƒ¬ãƒ¼ãƒ ã‹ã‚‰16msã ã‘å¾…ã¤
 	while (mClock.getElapsedTime().asMilliseconds() - mTicksCount.asMilliseconds() < 16);
 
 	float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - mTicksCount.asMilliseconds()) / 1000.0f;
@@ -385,7 +404,7 @@ void Game::UpdateGame()
 	mTicksCount = mClock.getElapsedTime();
 	mInputCooldown -= deltaTime;
 
-	// ‘S‚Ä‚ÌƒAƒNƒ^[‚ğXV
+	// å…¨ã¦ã®ã‚¢ã‚¯ã‚¿ãƒ¼ã‚’æ›´æ–°
 	mUpdatingActors = true;
 
 	for (auto& actor : mActiveActors)
@@ -398,13 +417,13 @@ void Game::UpdateGame()
 		item->Update(deltaTime);
 	}
 
-	// ”Õ–Ê‚ÌXV‚ğs‚Á‚½‚Ì‚ÅAHUDHelper‚Ì“à—e‚àXV
+	// ç›¤é¢ã®æ›´æ–°ã‚’è¡Œã£ãŸã®ã§ã€HUDHelperã®å†…å®¹ã‚‚æ›´æ–°
 	mHUDHelper->Update();
 
 	mUpdatingActors = false;
-	// ƒAƒNƒ^[‚ÌXV‚Í‚±‚±‚Ü‚Å
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã®æ›´æ–°ã¯ã“ã“ã¾ã§
 
-	// ƒXƒ^ƒbƒN‚ÌUI‰æ–Ê‚ğXV‚·‚é
+	// ã‚¹ã‚¿ãƒƒã‚¯ã®UIç”»é¢ã‚’æ›´æ–°ã™ã‚‹
 	for (auto& ui : mUIStack)
 	{
 		if (ui->GetState() == IUIScreen::EActive)
@@ -413,8 +432,8 @@ void Game::UpdateGame()
 		}
 	}
 
-	// ƒNƒ[ƒWƒ“ƒOó‘Ô‚ÌUI‰æ–Ê‚ğ‚·‚×‚Ä”jŠü‚·‚é
-	// ƒXƒ^ƒbƒN‚Æ“¯“™‚Ìˆ—‚ğ‚·‚é‚½‚ßAƒŠƒXƒg‚Ì––”ö‚©‚çíœ‚ğ‚µ‚Ä‚¢‚­
+	// ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ³ã‚°çŠ¶æ…‹ã®UIç”»é¢ã‚’ã™ã¹ã¦ç ´æ£„ã™ã‚‹
+	// ã‚¹ã‚¿ãƒƒã‚¯ã¨åŒç­‰ã®å‡¦ç†ã‚’ã™ã‚‹ãŸã‚ã€ãƒªã‚¹ãƒˆã®æœ«å°¾ã‹ã‚‰å‰Šé™¤ã‚’ã—ã¦ã„ã
 	for (int i = static_cast<int>(mUIStack.size()) - 1; i >= 0; --i)
 	{
 		if (mUIStack[i]->GetState() == IUIScreen::EClosing)
@@ -424,13 +443,13 @@ void Game::UpdateGame()
 		}
 	}
 
-	// ‘Ò‹@’†‚ÌƒAƒNƒ^[‚ğÀs‰Â”\ó‘Ô‚É‚·‚é
+	// å¾…æ©Ÿä¸­ã®ã‚¢ã‚¯ã‚¿ãƒ¼ã‚’å®Ÿè¡Œå¯èƒ½çŠ¶æ…‹ã«ã™ã‚‹
 	for (auto& pendingActor : mPendingActors)
 	{
 		mActiveActors.emplace_back(pendingActor);
 	}
 
-	// €‚ñ‚¾ƒAƒNƒ^[‚ğíœ‚·‚é
+	// æ­»ã‚“ã ã‚¢ã‚¯ã‚¿ãƒ¼ã‚’å‰Šé™¤ã™ã‚‹
 	std::vector<IActor*> deadActors;
 	for (auto actor : mActiveActors)
 	{
@@ -445,24 +464,24 @@ void Game::UpdateGame()
 		delete actor;
 	}
 
-	// ƒQ[ƒ€‚ÌƒNƒŠƒA”»’è‚ğŒÄ‚Ño‚·
+	// ã‚²ãƒ¼ãƒ ã®ã‚¯ãƒªã‚¢åˆ¤å®šã‚’å‘¼ã³å‡ºã™
 	HasComplete();
 }
 
 void Game::GenerateOutput()
 {
-	// ‘S‚Ä‚ÌƒXƒvƒ‰ƒCƒg‚ğ‚ÂƒRƒ“ƒ|[ƒlƒ“ƒg‚ğ•`‰æ
+	// å…¨ã¦ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’æŒã¤ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æç”»
 	mWindow->clear();
 
-	// ”w–Ê‚©‚ç•`‰æ
+	// èƒŒé¢ã‹ã‚‰æç”»
 	DrawSprites();
 
-	// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+	// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 	DrawUI();
-	
+
 	mWindow->display();
 
-	// ƒQ[ƒ€ƒNƒŠƒAó‘Ô‚È‚çƒŠƒUƒ‹ƒg‰æ–Ê‚ğo—Í
+	// ã‚²ãƒ¼ãƒ ã‚¯ãƒªã‚¢çŠ¶æ…‹ãªã‚‰ãƒªã‚¶ãƒ«ãƒˆç”»é¢ã‚’å‡ºåŠ›
 	if (mIsComplete)
 	{
 		DisplayResult();
@@ -472,7 +491,7 @@ void Game::GenerateOutput()
 sf::Texture* Game::LoadTexture(const std::string& fileName)
 {
 	sf::Texture* tex = new sf::Texture();
-	// “¯‚¶–¼‘O‚ÌƒeƒNƒXƒ`ƒƒ‚ªŠù‚Éì¬‚³‚ê‚Ä‚¢‚é‚©’²‚×‚é
+	// åŒã˜åå‰ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ãŒæ—¢ã«ä½œæˆã•ã‚Œã¦ã„ã‚‹ã‹èª¿ã¹ã‚‹
 	auto iter = mTextures.find(fileName);
 	if (iter != mTextures.end())
 	{
@@ -480,7 +499,7 @@ sf::Texture* Game::LoadTexture(const std::string& fileName)
 	}
 	else
 	{
-		// ƒtƒ@ƒCƒ‹‚ğƒ[ƒh
+		// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ãƒ­ãƒ¼ãƒ‰
 		sf::Image* img = new sf::Image();
 
 		if (!img->loadFromFile(fileName.c_str()))
@@ -489,7 +508,7 @@ sf::Texture* Game::LoadTexture(const std::string& fileName)
 			return nullptr;
 		}
 
-		// ‰æ‘œƒf[ƒ^‚©‚çƒeƒNƒXƒ`ƒƒ‚ğì¬
+		// ç”»åƒãƒ‡ãƒ¼ã‚¿ã‹ã‚‰ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆ
 		if (!tex->loadFromImage(*img))
 		{
 			std::cout << "Failed to convert surface to texture for " << fileName.c_str() << std::endl;
@@ -510,10 +529,10 @@ void Game::Shutdown()
 	delete mWindow;
 }
 
-// ƒAƒNƒ^[‚Ì’Ç‰Á‚Æíœ
+// ã‚¢ã‚¯ã‚¿ãƒ¼ã®è¿½åŠ ã¨å‰Šé™¤
 void Game::AddActor(IActor* actor)
 {
-	// XV’†‚ÌƒAƒNƒ^[‚ª‚ ‚ê‚ÎA‘Ò‹@’†‚É’Ç‰Á‚·‚é
+	// æ›´æ–°ä¸­ã®ã‚¢ã‚¯ã‚¿ãƒ¼ãŒã‚ã‚Œã°ã€å¾…æ©Ÿä¸­ã«è¿½åŠ ã™ã‚‹
 	if (mUpdatingActors)
 	{
 		mPendingActors.emplace_back(actor);
@@ -526,8 +545,8 @@ void Game::AddActor(IActor* actor)
 
 void Game::RemoveActor(IActor* actor)
 {
-	// ˆø”‚ÌƒAƒNƒ^[‚ª‘¶İ‚µ‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
-	// ‘Ò‹@’†‚©H
+	// å¼•æ•°ã®ã‚¢ã‚¯ã‚¿ãƒ¼ãŒå­˜åœ¨ã—ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
+	// å¾…æ©Ÿä¸­ã‹ï¼Ÿ
 	auto iter = std::find(mPendingActors.begin(), mPendingActors.end(), actor);
 	if (iter != mPendingActors.end())
 	{
@@ -535,7 +554,7 @@ void Game::RemoveActor(IActor* actor)
 		mPendingActors.pop_back();
 	}
 
-	// ƒAƒNƒ^[‚É‚ ‚é‚©H
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã«ã‚ã‚‹ã‹ï¼Ÿ
 	iter = std::find(mActiveActors.begin(), mActiveActors.end(), actor);
 	if (iter != mActiveActors.end())
 	{
@@ -544,7 +563,7 @@ void Game::RemoveActor(IActor* actor)
 	}
 }
 
-// ƒXƒvƒ‰ƒCƒg‚Ì’Ç‰Á‚Æíœ
+// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®è¿½åŠ ã¨å‰Šé™¤
 void Game::AddSprite(SpriteComponent* sprite)
 {
 	int myDrawOrder = sprite->GetDrawOrder();
@@ -571,7 +590,7 @@ void Game::RemoveSprite(SpriteComponent* sprite)
 	}
 }
 
-// ƒXƒvƒ‰ƒCƒg‚Ì•`‰æ
+// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®æç”»
 void Game::DrawSprites()
 {
 	for (auto& sprite : mSprites)
@@ -580,7 +599,7 @@ void Game::DrawSprites()
 	}
 }
 
-// UI‚Ì•`‰æ
+// UIã®æç”»
 void Game::DrawUI()
 {
 	for (const auto& ui : mUIStack)
@@ -589,7 +608,7 @@ void Game::DrawUI()
 	}
 }
 
-// ”Õ–ÊƒŠƒXƒg‚ÉV‚µ‚¢”Õ–Ê‚ğ’Ç‰Á
+// ç›¤é¢ãƒªã‚¹ãƒˆã«æ–°ã—ã„ç›¤é¢ã‚’è¿½åŠ 
 void Game::AddBoard(const std::string& key, const std::vector<std::string>& lines)
 {
 	if (!mInitBoardData.count(key))
@@ -602,13 +621,13 @@ void Game::AddBoard(const std::string& key, const std::vector<std::string>& line
 
 void Game::CallUndo()
 {
-	// ˆÚ“®‚ÌƒƒO‚ª‚ ‚èAƒXƒeƒbƒv”‚Í1ˆÈã‚©
+	// ç§»å‹•ã®ãƒ­ã‚°ãŒã‚ã‚Šã€ã‚¹ãƒ†ãƒƒãƒ—æ•°ã¯1ä»¥ä¸Šã‹
 	if (mLogs.size() > 0 && mStep > 0)
 	{
-		// ‰×•¨‚ªˆÚ“®‚µ‚Ä‚¢‚½‚©
+		// è·ç‰©ãŒç§»å‹•ã—ã¦ã„ãŸã‹
 		if (!mLogs[mStep - 1].isBMoved)
 		{
-			// ƒvƒŒƒCƒ„[‚ÌˆÊ’u‚ğ–ß‚·
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ä½ç½®ã‚’æˆ»ã™
 			if (mStep == 1)
 			{
 				mPlayer->SetBoardCoordinate(mInitialPlayerPos);
@@ -622,7 +641,7 @@ void Game::CallUndo()
 		}
 		else if (mLogs[mStep - 1].isBMoved)
 		{
-			// ÅŒã‚ÌƒXƒeƒbƒv‚ÉŠY“–‚·‚é‰×•¨‚ğ’T‚·
+			// æœ€å¾Œã®ã‚¹ãƒ†ãƒƒãƒ—ã«è©²å½“ã™ã‚‹è·ç‰©ã‚’æ¢ã™
 			Baggage* ptrBaggage = nullptr;
 			for (const auto& item : mBaggages)
 			{
@@ -633,7 +652,7 @@ void Game::CallUndo()
 				}
 			}
 
-			// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚ğ–ß‚·
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã‚’æˆ»ã™
 			if (mStep == 1)
 			{
 				mPlayer->SetBoardCoordinate(mInitialPlayerPos);
@@ -648,25 +667,25 @@ void Game::CallUndo()
 			}
 		}
 		mStep--;
-		
+
 	}
 }
 
 void Game::CallRedo()
 {
-	// ƒƒO‚ÌƒTƒCƒY‚ÍŒ»İ‚ÌƒXƒeƒbƒv”‚æ‚è‘å‚«‚¢‚©
+	// ãƒ­ã‚°ã®ã‚µã‚¤ã‚ºã¯ç¾åœ¨ã®ã‚¹ãƒ†ãƒƒãƒ—æ•°ã‚ˆã‚Šå¤§ãã„ã‹
 	if (mLogs.size() > mStep)
 	{
-		// ‰×•¨‚ªˆÚ“®‚µ‚Ä‚¢‚½‚©
+		// è·ç‰©ãŒç§»å‹•ã—ã¦ã„ãŸã‹
 		if (!mLogs[mStep].isBMoved)
 		{
-			// ƒvƒŒƒCƒ„[‚ÌˆÊ’u‚ği‚ß‚é
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ä½ç½®ã‚’é€²ã‚ã‚‹
 			mPlayer->SetBoardCoordinate(mLogs[mStep].pCoordinate.second);
 			mPlayer->SetDirection(mLogs[mStep].direction2);
 		}
 		else if (mLogs[mStep].isBMoved)
 		{
-			// ŸƒXƒeƒbƒv‚ÉŠY“–‚·‚é‰×•¨‚ğ’T‚·
+			// æ¬¡ã‚¹ãƒ†ãƒƒãƒ—ã«è©²å½“ã™ã‚‹è·ç‰©ã‚’æ¢ã™
 			Baggage* ptrBaggage = nullptr;
 			for (const auto& item : mBaggages)
 			{
@@ -677,7 +696,7 @@ void Game::CallRedo()
 				}
 			}
 
-			// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚ği‚ß‚é
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã‚’é€²ã‚ã‚‹
 			mPlayer->SetBoardCoordinate(mLogs[mStep].pCoordinate.second);
 			mPlayer->SetDirection(mLogs[mStep].direction2);
 			ptrBaggage->SetBoardCoordinate(mLogs[mStep].bCoordinate.second);
@@ -707,7 +726,7 @@ void Game::CallSave()
 	auto now = std::chrono::system_clock::now();
 	std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
 
-	// •¶š—ñ‚É•ÏŠ·
+	// æ–‡å­—åˆ—ã«å¤‰æ›
 	std::tm localTime;
 	localtime_s(&localTime, &currentTime);
 	char buffer[80];
@@ -734,27 +753,27 @@ void Game::CallSave()
 
 void Game::CallReload()
 {
-	// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚Æ”Õ–Ê‚ğXV
-	// ƒpƒ‰ƒ[ƒ^İ’èÛ‚ÉAclose‚ª‰Ÿ‚³‚ê‚È‚¯‚ê‚ÎA‘±‚«‚ÌXVˆ—‚ğs‚¤
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã¨ç›¤é¢ã‚’æ›´æ–°
+	// ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿è¨­å®šéš›ã«ã€closeãŒæŠ¼ã•ã‚Œãªã‘ã‚Œã°ã€ç¶šãã®æ›´æ–°å‡¦ç†ã‚’è¡Œã†
 	if (InputBoardData())
 	{
-		// ƒƒO‚ğƒtƒ@ƒCƒ‹o—Í‚µ‚Ä‚©‚ç‘S‚ÄÁ‚·
+		// ãƒ­ã‚°ã‚’ãƒ•ã‚¡ã‚¤ãƒ«å‡ºåŠ›ã—ã¦ã‹ã‚‰å…¨ã¦æ¶ˆã™
 		OutputLogs();
 		ResetParameters();
 
-		// XV‚³‚ê‚½GameƒNƒ‰ƒX‚Ìƒƒ“ƒo•Ï”‚ğQÆ‚µ‚Ä”Õ–Ê‚ğ¶¬
+		// æ›´æ–°ã•ã‚ŒãŸGameã‚¯ãƒ©ã‚¹ã®ãƒ¡ãƒ³ãƒå¤‰æ•°ã‚’å‚ç…§ã—ã¦ç›¤é¢ã‚’ç”Ÿæˆ
 		MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
 		std::vector<std::string> lines = gen->GetBoard();
 		delete(gen);
 
-		// ¶¬‚³‚ê‚½”Õ–Ê‚ÌƒL[‚Í‚ğ•¶š—ñ‚É•ÏŠ·‚µ‚½‚à‚Ì‚É‚·‚é
+		// ç”Ÿæˆã•ã‚ŒãŸç›¤é¢ã®ã‚­ãƒ¼ã¯æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«å¤‰æ›ã—ãŸã‚‚ã®ã«ã™ã‚‹
 		mCurrentKey = GetDateTime();
 		mFilenames.emplace_back(mCurrentKey);
 		mBoardData.emplace(mCurrentKey, lines);
 		mInitBoardData.emplace(mCurrentKey, lines);
 		mBaggageLimit = GetBaggageNumLimit(mBoardSize, mRepetition03);
 
-		// ”Õ–Ê‚Ì‰Šúó‘Ô‚ğƒZƒbƒg
+		// ç›¤é¢ã®åˆæœŸçŠ¶æ…‹ã‚’ã‚»ãƒƒãƒˆ
 		std::vector<sf::Vector2i> mBoxesPos;
 		{
 			int i = 0, j = 0;
@@ -806,13 +825,13 @@ void Game::CallReload()
 			}
 		}
 
-		// ƒ{[ƒh‚ğÄ\’z
+		// ãƒœãƒ¼ãƒ‰ã‚’å†æ§‹ç¯‰
 		mGameBoard->Reload();
 
-		// ƒvƒŒƒCƒ„[‚ğÄ\’z
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’å†æ§‹ç¯‰
 		mPlayer->Reload();
 
-		// ‰×•¨‚ğÄ\’z
+		// è·ç‰©ã‚’å†æ§‹ç¯‰
 		while (!mBaggages.empty())
 		{
 			delete mBaggages.back();
@@ -825,7 +844,7 @@ void Game::CallReload()
 			mInitialBaggagePos.emplace(mBaggages.back(), item);
 		}
 
-		// HUDHelper‚ğÄ\’z
+		// HUDHelperã‚’å†æ§‹ç¯‰
 		mHUDHelper = new HUDHelper(this);
 
 		mStart = std::chrono::system_clock::now();
@@ -834,19 +853,19 @@ void Game::CallReload()
 
 void Game::CallRestart()
 {
-	// ƒƒO‚ğƒtƒ@ƒCƒ‹o—Í‚µ‚Ä‚©‚ç‘S‚ÄÁ‚·
+	// ãƒ­ã‚°ã‚’ãƒ•ã‚¡ã‚¤ãƒ«å‡ºåŠ›ã—ã¦ã‹ã‚‰å…¨ã¦æ¶ˆã™
 	OutputLogs();
 	ResetParameters();
 
 	mBoardData[mCurrentKey] = mInitBoardData[mCurrentKey];
 
-	// ƒ{[ƒh‚ğÄ\’z
+	// ãƒœãƒ¼ãƒ‰ã‚’å†æ§‹ç¯‰
 	mGameBoard->Reload();
 
-	// ƒvƒŒƒCƒ„[‚ğÄ\’z
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’å†æ§‹ç¯‰
 	mPlayer->Reload();
 
-	// ‰×•¨‚ğÄ\’z
+	// è·ç‰©ã‚’å†æ§‹ç¯‰
 	for (const auto& baggage : mInitialBaggagePos)
 	{
 		baggage.first->SetBoardCoordinate(baggage.second);
@@ -857,7 +876,7 @@ void Game::CallRestart()
 
 void Game::RemoveRedo()
 {
-	// Œ»İ‚ÌƒXƒeƒbƒv”‚æ‚è‘å‚«‚¢ƒXƒeƒbƒv‚ÌƒƒO‚ğ‚·‚×‚Äíœ
+	// ç¾åœ¨ã®ã‚¹ãƒ†ãƒƒãƒ—æ•°ã‚ˆã‚Šå¤§ãã„ã‚¹ãƒ†ãƒƒãƒ—ã®ãƒ­ã‚°ã‚’ã™ã¹ã¦å‰Šé™¤
 	std::vector<Log> subLogs(mLogs.begin() + mStep, mLogs.end());
 	auto it = mLogs.begin();
 	while (it != mLogs.end()) {
@@ -865,13 +884,13 @@ void Game::RemoveRedo()
 		{
 			it = mLogs.erase(it);
 		}
-		else 
+		else
 		{
 			++it;
 		}
 	}
 
-	// è‚ğ‚â‚è’¼‚·ê‡A‚±‚ê‚Ü‚Å‚ÌŒo˜H‚ğ³‰ğ‚ÌŒo˜H‚©‚ç”h¶‚µ‚½–Ø\‘¢‚É‚·‚é
+	// æ‰‹ã‚’ã‚„ã‚Šç›´ã™å ´åˆã€ã“ã‚Œã¾ã§ã®çµŒè·¯ã‚’æ­£è§£ã®çµŒè·¯ã‹ã‚‰æ´¾ç”Ÿã—ãŸæœ¨æ§‹é€ ã«ã™ã‚‹
 	if (!subLogs.empty())
 	{
 		if (mLogs.empty())
@@ -887,23 +906,23 @@ void Game::RemoveRedo()
 
 void Game::AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2, const Player::Direction& direction1, const Player::Direction& direction2)
 {
-	// Œ»İ‚Ì“ú•t‚Æ‚ğæ“¾
+	// ç¾åœ¨ã®æ—¥ä»˜ã¨æ™‚åˆ»ã‚’å–å¾—
 	auto now = std::chrono::system_clock::now();
 	auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
-	auto ms = now_ms.time_since_epoch().count() % 1000;  // ƒ~ƒŠ•b•”•ª‚ğæ“¾
+	auto ms = now_ms.time_since_epoch().count() % 1000;  // ãƒŸãƒªç§’éƒ¨åˆ†ã‚’å–å¾—
 
-	// ”NŒ“ú‚Æ‚ğ•¶š—ñ‚ÉƒtƒH[ƒ}ƒbƒg
+	// å¹´æœˆæ—¥ã¨æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆ
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
 	std::tm timeinfo;
 	localtime_s(&timeinfo, &now_time);
 	char buffer[24];
 	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeinfo);
 
-	// ƒ~ƒŠ•b‚ğ3Œ…•\¦‚·‚é‚½‚ß‚ÉƒpƒfƒBƒ“ƒO‚ğ’Ç‰Á
+	// ãƒŸãƒªç§’ã‚’3æ¡è¡¨ç¤ºã™ã‚‹ãŸã‚ã«ãƒ‘ãƒ‡ã‚£ãƒ³ã‚°ã‚’è¿½åŠ 
 	std::string ms_str = std::to_string(ms);
 	ms_str = std::string(3 - ms_str.length(), '0') + ms_str;
 
-	// ƒ~ƒŠ•b‚ğ’Ç‰Á‚µ‚Ä•¶š—ñ‚ğ•\¦
+	// ãƒŸãƒªç§’ã‚’è¿½åŠ ã—ã¦æ–‡å­—åˆ—ã‚’è¡¨ç¤º
 	std::string datetime_str(buffer);
 	datetime_str += "." + ms_str;
 
@@ -913,23 +932,23 @@ void Game::AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2
 
 void Game::AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2, const sf::Vector2i& baggagePos1, const sf::Vector2i& baggagePos2, const Player::Direction& direction1, const Player::Direction& direction2)
 {
-	// Œ»İ‚Ì“ú•t‚Æ‚ğæ“¾
+	// ç¾åœ¨ã®æ—¥ä»˜ã¨æ™‚åˆ»ã‚’å–å¾—
 	auto now = std::chrono::system_clock::now();
 	auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
-	auto ms = now_ms.time_since_epoch().count() % 1000;  // ƒ~ƒŠ•b•”•ª‚ğæ“¾
+	auto ms = now_ms.time_since_epoch().count() % 1000;  // ãƒŸãƒªç§’éƒ¨åˆ†ã‚’å–å¾—
 
-	// ”NŒ“ú‚Æ‚ğ•¶š—ñ‚ÉƒtƒH[ƒ}ƒbƒg
+	// å¹´æœˆæ—¥ã¨æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆ
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
 	std::tm timeinfo;
 	localtime_s(&timeinfo, &now_time);
 	char buffer[24];
 	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeinfo);
 
-	// ƒ~ƒŠ•b‚ğ3Œ…•\¦‚·‚é‚½‚ß‚ÉƒpƒfƒBƒ“ƒO‚ğ’Ç‰Á
+	// ãƒŸãƒªç§’ã‚’3æ¡è¡¨ç¤ºã™ã‚‹ãŸã‚ã«ãƒ‘ãƒ‡ã‚£ãƒ³ã‚°ã‚’è¿½åŠ 
 	std::string ms_str = std::to_string(ms);
 	ms_str = std::string(3 - ms_str.length(), '0') + ms_str;
 
-	// ƒ~ƒŠ•b‚ğ’Ç‰Á‚µ‚Ä•¶š—ñ‚ğ•\¦
+	// ãƒŸãƒªç§’ã‚’è¿½åŠ ã—ã¦æ–‡å­—åˆ—ã‚’è¡¨ç¤º
 	std::string datetime_str(buffer);
 	datetime_str += "." + ms_str;
 
@@ -941,7 +960,7 @@ void Game::OutputLogs()
 {
 	std::string datetime_str = GetDateTime(), filename = "Assets/Logs/" + datetime_str + ".txt";
 
-	// ƒƒO‚ğo—Í
+	// ãƒ­ã‚°ã‚’å‡ºåŠ›
 	std::ofstream outFile(filename);
 
 	if (outFile.is_open())
@@ -957,12 +976,12 @@ void Game::OutputLogs()
 
 std::string Game::GetDateTime()
 {
-	// “ú•t‚Æ‚ğæ“¾
-	// Œ»İ‚Ì“ú•t‚Æ‚ğæ“¾
+	// æ—¥ä»˜ã¨æ™‚åˆ»ã‚’å–å¾—
+	// ç¾åœ¨ã®æ—¥ä»˜ã¨æ™‚åˆ»ã‚’å–å¾—
 	auto now = std::chrono::system_clock::now();
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
 
-	// ”NŒ“ú‚Æ‚ğ•¶š—ñ‚ÉƒtƒH[ƒ}ƒbƒg
+	// å¹´æœˆæ—¥ã¨æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆ
 	std::tm timeinfo;
 	localtime_s(&timeinfo, &now_time);
 	char buffer[20];
@@ -974,7 +993,7 @@ std::string Game::GetDateTime()
 
 std::string Game::ConvertLogToStr(const std::vector<Log>& logs, const unsigned long long& current)
 {
-	// current‚ÍŒ»İ‚ÌƒXƒeƒbƒv”
+	// currentã¯ç¾åœ¨ã®ã‚¹ãƒ†ãƒƒãƒ—æ•°
 	std::string result = "";
 
 	result += "( ";
@@ -988,7 +1007,7 @@ std::string Game::ConvertLogToStr(const std::vector<Log>& logs, const unsigned l
 			result += "[" + std::to_string(logs[i].bCoordinate.second.x) + ", " + std::to_string(logs[i].bCoordinate.second.y) + "] ";
 		}
 
-		// •ªŠò‚µ‚½•”•ª‚ÍA•ªŠò’n“_‚ÅƒJƒbƒg‚µA‘S‚Ä‚Ì•ªŠò‚ğŠÛŠ‡ŒÊ‚ÅˆÍ‚Á‚ÄƒJƒ“ƒ}‹æØ‚è‚Å•À‚×‚é
+		// åˆ†å²ã—ãŸéƒ¨åˆ†ã¯ã€åˆ†å²åœ°ç‚¹ã§ã‚«ãƒƒãƒˆã—ã€å…¨ã¦ã®åˆ†å²ã‚’ä¸¸æ‹¬å¼§ã§å›²ã£ã¦ã‚«ãƒ³ãƒåŒºåˆ‡ã‚Šã§ä¸¦ã¹ã‚‹
 		if (!logs[i].thread.empty())
 		{
 			for (const auto& log : logs[i].thread)
@@ -1004,8 +1023,8 @@ std::string Game::ConvertLogToStr(const std::vector<Log>& logs, const unsigned l
 
 void Game::HasComplete()
 {
-	// ‘S‚Ä‚Ì‰×•¨‚ªƒS[ƒ‹ã‚É‚ ‚é‚©’²‚×‚é
-	// 1‚Â‚Å‚àƒS[ƒ‹ã‚É‚È‚¢‚à‚Ì‚ª‚ ‚ê‚ÎAƒQ[ƒ€‚ğŒp‘±‚·‚é
+	// å…¨ã¦ã®è·ç‰©ãŒã‚´ãƒ¼ãƒ«ä¸Šã«ã‚ã‚‹ã‹èª¿ã¹ã‚‹
+	// 1ã¤ã§ã‚‚ã‚´ãƒ¼ãƒ«ä¸Šã«ãªã„ã‚‚ã®ãŒã‚ã‚Œã°ã€ã‚²ãƒ¼ãƒ ã‚’ç¶™ç¶šã™ã‚‹
 	mIsComplete = true;
 	for (const auto& item : mBaggages)
 	{
@@ -1023,24 +1042,29 @@ void Game::DisplayResult()
 {
 	bool isChildWindowOpened = true;
 	bool isPlayLog = false;
-	// •\¦—p‚ÌƒEƒBƒ“ƒhƒE‚ğì¬
+
+	// å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã¨ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®DPIã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã‚’ã™ã‚‹
+	float dpiScale = GetDPIScaleFactor();
+	sf::Vector2u windowSize = mWindow->getSize();
+
+	// å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚µã‚¤ã‚ºã¨ä½ç½®ã‚’ç›¸å¯¾çš„ã«è¨­å®š
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
-	child->setClientSize({ 960, 540 });
-	child->setPosition(420, 80);
+	child->setClientSize({ windowSize.x * 0.6f / dpiScale, windowSize.y * 0.6f / dpiScale });
+	child->setPosition(windowSize.x * 0.2f / dpiScale, windowSize.y * 0.2f / dpiScale);
 	child->setTitle("Notice");
 	child->onClose([&isChildWindowOpened]() {
 		isChildWindowOpened = false;
 		});
 	mGui->add(child);
 
-	// ListBox‚ÅƒeƒLƒXƒg‚ğ•\¦
+	// ListBoxã§ãƒ†ã‚­ã‚¹ãƒˆã‚’è¡¨ç¤º
 	auto listBox = tgui::ListBox::create();
 	listBox->setRenderer(mTheme->getRenderer("ListBox"));
-	listBox->setSize(960, 500);
-	listBox->setItemHeight(32);
+	listBox->setSize(child->getSize().x, child->getSize().y * 0.9);
+	listBox->setItemHeight(static_cast<unsigned int>(listBox->getSize().y / 16.0f));
 	listBox->setPosition(0, 0);
-	listBox->setTextSize(20);
+	listBox->setTextSize(listBox->getItemHeight() * 5 / 8);
 	listBox->addItem("Result");
 	listBox->addItem("Steps : " + std::to_string(mStep));
 	long time = static_cast<long>(GetSecTime());
@@ -1052,22 +1076,22 @@ void Game::DisplayResult()
 	listBox->addItem("");
 	child->add(listBox);
 
-	// “ü—ÍI—¹—pƒ{ƒ^ƒ“
+	// å…¥åŠ›çµ‚äº†ç”¨ãƒœã‚¿ãƒ³
 	auto exitButton = tgui::Button::create("Close");
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
-	exitButton->setSize(120, 30);
-	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - 10, static_cast<int>(listBox->getSize().y) + 5);
+	exitButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 3 / 5);
+	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y - exitButton->getSize().y) / 2);
 	exitButton->onPress([&]() {
 		std::cout << "Exit child window action triggered!" << std::endl;
 		isChildWindowOpened = false;
 		});
 	child->add(exitButton);
 
-	// ƒvƒŒƒC—š—ğ‚ğÄ¶‚·‚éƒ‚[ƒh‚ÉˆÚ‚éƒ{ƒ^ƒ“
+	// ãƒ—ãƒ¬ã‚¤å±¥æ­´ã‚’å†ç”Ÿã™ã‚‹ãƒ¢ãƒ¼ãƒ‰ã«ç§»ã‚‹ãƒœã‚¿ãƒ³
 	auto playLogButton = tgui::Button::create("Play Log");
 	playLogButton->setRenderer(mTheme->getRenderer("Button"));
-	playLogButton->setSize(120, 30);
-	playLogButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 2.0f) - 30, static_cast<int>(listBox->getSize().y) + 5);
+	playLogButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 3 / 5);
+	playLogButton->setPosition(exitButton->getPosition().x - playLogButton->getSize().x - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y - playLogButton->getSize().y) / 2);
 	playLogButton->onPress([&]() {
 		std::cout << "Play Log action triggered!" << std::endl;
 		isChildWindowOpened = false;
@@ -1075,17 +1099,17 @@ void Game::DisplayResult()
 		});
 	child->add(playLogButton);
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğ’â~
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’åœæ­¢
 	mWindow->setActive(false);
 
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€ŠÖ˜A
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ é–¢é€£
 	sf::Time ticksCount = mClock.getElapsedTime();
 
-	// “ü—Í‚ÆXV‚ÆƒEƒBƒ“ƒhƒE‚ÌI—¹ˆ—
-	// ƒEƒBƒ“ƒhƒE‚ª•Â‚¶‚é‚Ü‚Åƒ‹[ƒv
+	// å…¥åŠ›ã¨æ›´æ–°ã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®çµ‚äº†å‡¦ç†
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‰ã˜ã‚‹ã¾ã§ãƒ«ãƒ¼ãƒ—
 	while (isChildWindowOpened)
 	{
-		// 60FPS‚É‡‚í‚¹‚Ä’x‰„‚ğ‚©‚¯‚é
+		// 60FPSã«åˆã‚ã›ã¦é…å»¶ã‚’ã‹ã‘ã‚‹
 		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
 
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
@@ -1095,7 +1119,7 @@ void Game::DisplayResult()
 		}
 		ticksCount = mClock.getElapsedTime();
 
-		// ƒCƒxƒ“ƒgƒLƒ…[‚ª‘¶İ‚·‚éê‡A‚»‚ê‚É‰‚¶‚½ˆ—‚ğ‘S‚Äs‚¤
+		// ã‚¤ãƒ™ãƒ³ãƒˆã‚­ãƒ¥ãƒ¼ãŒå­˜åœ¨ã™ã‚‹å ´åˆã€ãã‚Œã«å¿œã˜ãŸå‡¦ç†ã‚’å…¨ã¦è¡Œã†
 		sf::Event event;
 		while (mWindow->pollEvent(event))
 		{
@@ -1111,19 +1135,19 @@ void Game::DisplayResult()
 
 		mWindow->clear();
 
-		// ”w–Ê‚©‚ç•`‰æ
+		// èƒŒé¢ã‹ã‚‰æç”»
 		for (auto& sprite : mSprites)
 		{
 			sprite->Draw(mWindow);
 		}
 
-		// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+		// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 		for (const auto& ui : mUIStack)
 		{
 			ui->Draw(mWindow);
 		}
 
-		mGui->draw(); // TGUI‚Ì•`‰æ
+		mGui->draw(); // TGUIã®æç”»
 		mWindow->display();
 	}
 
@@ -1134,10 +1158,10 @@ void Game::DisplayResult()
 		DisplayPlayLogs(mCurrentKey);
 	}
 
-	// 1è–ß‚·
+	// 1æ‰‹æˆ»ã™
 	CallUndo();
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğÄŠJ
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’å†é–‹
 	mWindow->setActive(true);
 }
 
@@ -1145,40 +1169,46 @@ bool Game::InputBoardData()
 {
 	bool result = true;
 	bool isChildWindowOpened = true;
-	// “ü—Í—p‚ÌƒEƒBƒ“ƒhƒE‚ğì¬
+	// å…¥åŠ›ç”¨ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
 	auto child = tgui::ChildWindow::create();
-	child->setRenderer(mTheme->getRenderer("ChildWindow"));	
+	child->setRenderer(mTheme->getRenderer("ChildWindow"));
 	child->setClientSize({ 960, 540 });
 	child->setPosition(420, 80);
 	child->setTitle("Input Prompt");
-	child->onClose([&isChildWindowOpened]() {
+	child->onClose([&]() {
+		std::cout << "Close child window action triggered!" << std::endl;
 		isChildWindowOpened = false;
+		result = false;
 		});
 	mGui->add(child);
 
-	// ƒeƒLƒXƒg
+	// ãƒ†ã‚­ã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã¨ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã§èª¿æ•´ã§ãã‚‹ã‚ˆã†ã«ã™ã‚‹ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’è¡¨ã™æ§‹é€ ä½“
 	struct BoardInfo
 	{
-		std::string mName;
-		double mMin;
-		double mMax;
-		double mInitialValue;
-		sf::Vector2i mPos;
-		bool mIsInteger;
+		std::string mName;		// ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿å
+		double mMin;			// å€¤ã®æœ€å°å€¤
+		double mMax;			// å€¤ã®æœ€å¤§å€¤
+		double mInitialValue;	// åˆæœŸå€¤
+		sf::Vector2i mPos;		// ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®ä½ç½®
+		bool mIsInteger;		// æ•´æ•°å€¤ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‹
 	};
+
+	// UAMæ³•ã®å…¥åŠ›ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®åˆæœŸè¨­å®š
 	std::vector<BoardInfo> textInfoes(8, BoardInfo{ "", 0.0, 0.0, 0.0, sf::Vector2i{ 0, 0 } });
 	textInfoes[0] = BoardInfo{ "width : ", static_cast<double>(mSizeMin.x), static_cast<double>(mSizeMax.x), static_cast<double>(mBoardSize.x), sf::Vector2i{ 500, 12 }, true };
 	textInfoes[1] = BoardInfo{ "height : ", static_cast<double>(mSizeMin.y), static_cast<double>(mSizeMax.y), static_cast<double>(mBoardSize.y), sf::Vector2i{ 500, 48 }, true };
-	textInfoes[2] = BoardInfo{ "baggage : ", 1.0, static_cast<double>(GetBaggageNumLimit(mBoardSize)), static_cast<double>(mBaggageNum), sf::Vector2i{500, 84}, true};
+	textInfoes[2] = BoardInfo{ "baggage : ", 1.0, static_cast<double>(GetBaggageNumLimit(mBoardSize)), static_cast<double>(mBaggageNum), sf::Vector2i{500, 84}, true };
 	textInfoes[3] = BoardInfo{ "number of times reset : ", 0.0, 32.0, static_cast<double>(mRepetition01), sf::Vector2i{ 500, 120 }, true };
 	textInfoes[4] = BoardInfo{ "number of times transportation : ", 1.0, 256.0, static_cast<double>(mRepetition02), sf::Vector2i{ 500, 156 }, true };
 	textInfoes[5] = BoardInfo{ "wall tile rate : ", 0.0, mWallRateLimit, mRepetition03, sf::Vector2i{ 500, 192 }, false };
 	textInfoes[6] = BoardInfo{ "visited tile rate : ", 0.0, mVisitedRateLimit, mRepetition04, sf::Vector2i{ 500, 228 }, false };
 	textInfoes[7] = BoardInfo{ "evaluation function : ", static_cast<double>(mEvaluateFancIndexRange.first), static_cast<double>(mEvaluateFancIndexRange.second), static_cast<double>(mRepetition05), sf::Vector2i{ 500, 264 }, true };
+	// å…¥åŠ›ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®åå‰ã‚’è¡¨ç¤ºã™ã‚‹ãƒªã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹
 	auto listBox = tgui::ListBox::create();
 	listBox->setRenderer(mTheme->getRenderer("ListBox"));
-	listBox->setSize(960, 500);
-	listBox->setItemHeight(36);
+	listBox->setSize(child->getSize().x, child->getSize().y * 0.9);
+	listBox->setItemHeight(static_cast<unsigned int>(child->getSize().y * 5.0f / 80.0f));
+	listBox->setTextSize(static_cast<unsigned int>(static_cast<float>(listBox->getItemHeight()) * 0.7f));
 	listBox->setPosition(0, 0);
 	for (int i = 0, size = static_cast<int>(textInfoes.size()); i < size; ++i)
 	{
@@ -1186,20 +1216,20 @@ bool Game::InputBoardData()
 	}
 	child->add(listBox);
 
-	// “ü—Í—p‚ÌƒXƒ‰ƒCƒ_[‚ÆƒeƒLƒXƒgƒ{ƒbƒNƒX‚Ì’Ç‰Á
+	// å…¥åŠ›ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ç”¨ã®ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã¨ãƒ†ã‚­ã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã®è¿½åŠ 
 	std::map<int, std::pair<tgui::Slider::Ptr, tgui::EditBox::Ptr>> inputers{};
 	int index = 0;
 	for (const auto& textInfo : textInfoes)
 	{
-		// ƒXƒ‰ƒCƒ_[‚Ì’Ç‰Á
+		// ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã®è¿½åŠ 
 		auto slider = tgui::Slider::create();
 		slider->setRenderer(mTheme->getRenderer("Slider"));
-		slider->setPosition(textInfo.mPos.x, textInfo.mPos.y);
-		slider->setSize(400, 18);
+		slider->setSize(listBox->getSize().x * 2 / 5, listBox->getSize().y / 20);
+		slider->setPosition(child->getSize().x * 0.975 - slider->getSize().x, textInfo.mPos.y);
 		slider->setValue(static_cast<float>(textInfo.mInitialValue));
 		slider->setMinimum(static_cast<float>(textInfo.mMin));
 		slider->setMaximum(static_cast<float>(textInfo.mMax));
-		// “ü—Í‚ğ®”‚ÆÀ”‚Å•ª‚¯‚é
+		// å…¥åŠ›ã‚’æ•´æ•°ã¨å®Ÿæ•°ã§åˆ†ã‘ã‚‹
 		if (textInfo.mIsInteger)
 		{
 			slider->setStep(1.0f);
@@ -1210,12 +1240,12 @@ bool Game::InputBoardData()
 		}
 		child->add(slider);
 
-		// ƒeƒLƒXƒgƒ{ƒbƒNƒX‚Ì’Ç‰Á
+		// ãƒ†ã‚­ã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã®è¿½åŠ 
 		auto editBox = tgui::EditBox::create();
 		editBox->setRenderer(mTheme->getRenderer("EditBox"));
-		editBox->setSize(80, 25);
-		editBox->setTextSize(18);
-		editBox->setPosition(textInfo.mPos.x - 100, textInfo.mPos.y);
+		editBox->setSize(listBox->getSize().x * 3 / 25, listBox->getSize().y / 20);
+		editBox->setTextSize(static_cast<unsigned int>(editBox->getSize().y * 3.0f / 4.0f));
+		editBox->setPosition(child->getSize().x * 0.975 - slider->getSize().x * 1.05 - editBox->getSize().x, textInfo.mPos.y);
 		child->add(editBox);
 		if (textInfo.mIsInteger)
 		{
@@ -1227,29 +1257,29 @@ bool Game::InputBoardData()
 			editBox->setText(std::to_string(std::floor(textInfo.mInitialValue * 1000.0) / 1000.0));
 		}
 
-		// ƒXƒ‰ƒCƒ_[‚ÆƒeƒLƒXƒgƒ{ƒbƒNƒX‚ğ“¯Šú
+		// ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã¨ãƒ†ã‚­ã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã‚’åŒæœŸ
 		inputers.emplace(index, std::pair<tgui::Slider::Ptr, tgui::EditBox::Ptr>{ slider, editBox });
 		SyncSliderWithEditBox(inputers[index].first, inputers[index].second, textInfo.mIsInteger);
 
 		++index;
 	}
 
-	// “ü—ÍI—¹—pƒ{ƒ^ƒ“
+	// å…¥åŠ›çµ‚äº†ç”¨ãƒœã‚¿ãƒ³
 	auto exitButton = tgui::Button::create("Enter");
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
-	exitButton->setSize(120, 30);
-	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - 10, static_cast<int>(listBox->getSize().y) + 5);
+	exitButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 3 / 5);
+	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y - exitButton->getSize().y) / 2);
 	exitButton->onPress([&]() {
 		std::cout << "Exit child window action triggered!" << std::endl;
 		isChildWindowOpened = false;
 		});
 	child->add(exitButton);
 
-	// “ü—ÍƒLƒƒƒ“ƒZƒ‹—pƒ{ƒ^ƒ“
+	// å…¥åŠ›ã‚­ãƒ£ãƒ³ã‚»ãƒ«ç”¨ãƒœã‚¿ãƒ³
 	auto canselButton = tgui::Button::create("Cansel");
 	canselButton->setRenderer(mTheme->getRenderer("Button"));
-	canselButton->setSize(120, 30);
-	canselButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 2.0) - 15, static_cast<int>(listBox->getSize().y) + 5);
+	canselButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 3 / 5);
+	canselButton->setPosition(exitButton->getPosition().x - canselButton->getSize().x - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y - canselButton->getSize().y) / 2);
 	canselButton->onPress([&]() {
 		std::cout << "Cansel input action triggered!" << std::endl;
 		isChildWindowOpened = false;
@@ -1257,14 +1287,14 @@ bool Game::InputBoardData()
 		});
 	child->add(canselButton);
 
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€ŠÖ˜A
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ é–¢é€£
 	sf::Time ticksCount = mClock.getElapsedTime();
 
-	// “ü—Í‚ÆXV‚ÆƒEƒBƒ“ƒhƒE‚ÌI—¹ˆ—
-	// ƒEƒBƒ“ƒhƒE‚ª•Â‚¶‚é‚Ü‚Åƒ‹[ƒv
+	// å…¥åŠ›ã¨æ›´æ–°ã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®çµ‚äº†å‡¦ç†
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‰ã˜ã‚‹ã¾ã§ãƒ«ãƒ¼ãƒ—
 	while (isChildWindowOpened)
 	{
-		// 60FPS‚É‡‚í‚¹‚Ä’x‰„‚ğ‚©‚¯‚é
+		// 60FPSã«åˆã‚ã›ã¦é…å»¶ã‚’ã‹ã‘ã‚‹
 		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
 
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
@@ -1274,7 +1304,7 @@ bool Game::InputBoardData()
 		}
 		ticksCount = mClock.getElapsedTime();
 
-		// ‰×•¨‚Ì”‚Í”Õ–ÊƒTƒCƒY‚Æwall rate‚É‚æ‚Á‚ÄãŒÀ‚ª•Ï‚í‚é‚Ì‚ÅAXV‚·‚é
+		// è·ç‰©ã®æ•°ã¯ç›¤é¢ã‚µã‚¤ã‚ºã¨wall rateã«ã‚ˆã£ã¦ä¸Šé™ãŒå¤‰ã‚ã‚‹ã®ã§ã€æ›´æ–°ã™ã‚‹
 		int tmpBaggageLimit = GetBaggageNumLimit(sf::Vector2i{ static_cast<int>(inputers[0].first->getValue()), static_cast<int>(inputers[1].first->getValue()) }, inputers[5].first->getValue());
 		if (static_cast<int>(inputers[2].first->getValue()) > tmpBaggageLimit)
 		{
@@ -1283,7 +1313,7 @@ bool Game::InputBoardData()
 		textInfoes[2].mMax = static_cast<double>(tmpBaggageLimit);
 		inputers[2].first->setMaximum(static_cast<float>(tmpBaggageLimit));
 
-		// ListBox‚Ì“à—e‚ğXV
+		// ListBoxã®å†…å®¹ã‚’æ›´æ–°
 		textInfoes[0].mName = "width : " + std::to_string(static_cast<int>(inputers[0].first->getValue()));
 		textInfoes[1].mName = "height : " + std::to_string(static_cast<int>(inputers[1].first->getValue()));
 		textInfoes[2].mName = "baggage : " + std::to_string(static_cast<int>(inputers[2].first->getValue()));
@@ -1293,7 +1323,7 @@ bool Game::InputBoardData()
 		textInfoes[6].mName = "visited tile rate : " + std::to_string(inputers[6].first->getValue());
 		textInfoes[7].mName = "evaluation function : " + std::to_string(static_cast<int>(inputers[7].first->getValue()));
 
-		// ƒCƒxƒ“ƒgƒLƒ…[‚ª‘¶İ‚·‚éê‡A‚»‚ê‚É‰‚¶‚½ˆ—‚ğ‘S‚Äs‚¤
+		// ã‚¤ãƒ™ãƒ³ãƒˆã‚­ãƒ¥ãƒ¼ãŒå­˜åœ¨ã™ã‚‹å ´åˆã€ãã‚Œã«å¿œã˜ãŸå‡¦ç†ã‚’å…¨ã¦è¡Œã†
 		sf::Event event;
 		while (mWindow->pollEvent(event))
 		{
@@ -1307,23 +1337,23 @@ bool Game::InputBoardData()
 
 		mWindow->clear();
 
-		// ”w–Ê‚©‚ç•`‰æ
+		// èƒŒé¢ã‹ã‚‰æç”»
 		for (auto& sprite : mSprites)
 		{
 			sprite->Draw(mWindow);
 		}
 
-		// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+		// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 		for (const auto& ui : mUIStack)
 		{
 			ui->Draw(mWindow);
 		}
 
-		mGui->draw(); // TGUI‚Ì•`‰æ
+		mGui->draw(); // TGUIã®æç”»
 		mWindow->display();
 	}
 
-	// “ü—Í‚ğƒLƒƒƒ“ƒZƒ‹‚µ‚È‚¢‚Ì‚Å‚ ‚ê‚ÎA”’l‚ğXV
+	// å…¥åŠ›ã‚’ã‚­ãƒ£ãƒ³ã‚»ãƒ«ã—ãªã„ã®ã§ã‚ã‚Œã°ã€æ•°å€¤ã‚’æ›´æ–°
 	if (result)
 	{
 		mBoardSize = sf::Vector2i{ static_cast<int>(inputers[0].first->getValue()), static_cast<int>(inputers[1].first->getValue()) };
@@ -1337,7 +1367,7 @@ bool Game::InputBoardData()
 
 	child->close();
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğÄŠJ
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’å†é–‹
 	mWindow->setActive(true);
 
 	return result;
@@ -1356,20 +1386,20 @@ void Game::SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr ed
 			{
 				try
 				{
-					int value = std::stoi(editBox->getText().toStdString()); // ƒeƒLƒXƒg‚ğ®”‚É•ÏŠ·
+					int value = std::stoi(editBox->getText().toStdString()); // ãƒ†ã‚­ã‚¹ãƒˆã‚’æ•´æ•°ã«å¤‰æ›
 					if (value >= static_cast<int>(slider->getMinimum()) && value <= static_cast<int>(slider->getMaximum()))
 					{
-						slider->setValue(static_cast<float>(value)); // ’l‚ğSlider‚É”½‰f
+						slider->setValue(static_cast<float>(value)); // å€¤ã‚’Sliderã«åæ˜ 
 					}
 					else
 					{
-						// ”ÍˆÍŠO‚Ìê‡AŒ³‚ÌSlider‚Ì’l‚ğ•\¦
+						// ç¯„å›²å¤–ã®å ´åˆã€å…ƒã®Sliderã®å€¤ã‚’è¡¨ç¤º
 						editBox->setText(std::to_string(static_cast<int>(slider->getValue())));
 					}
 				}
 				catch (const std::exception&)
 				{
-					// ”’lˆÈŠO‚Ì“ü—Í‚ª‚ ‚Á‚½ê‡AŒ³‚ÌSlider‚Ì’l‚ğ•\¦
+					// æ•°å€¤ä»¥å¤–ã®å…¥åŠ›ãŒã‚ã£ãŸå ´åˆã€å…ƒã®Sliderã®å€¤ã‚’è¡¨ç¤º
 					editBox->setText(std::to_string(static_cast<int>(slider->getValue())));
 				}
 			});
@@ -1385,29 +1415,49 @@ void Game::SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr ed
 			{
 				try
 				{
-					float value = std::stof(editBox->getText().toStdString()); // ƒeƒLƒXƒg‚ğ®”‚É•ÏŠ·
+					float value = std::stof(editBox->getText().toStdString()); // ãƒ†ã‚­ã‚¹ãƒˆã‚’æ•´æ•°ã«å¤‰æ›
 					if (value >= slider->getMinimum() && value <= slider->getMaximum())
 					{
-						slider->setValue(value); // ’l‚ğSlider‚É”½‰f
+						slider->setValue(value); // å€¤ã‚’Sliderã«åæ˜ 
 					}
-					else 
+					else
 					{
-						// ”ÍˆÍŠO‚Ìê‡AŒ³‚ÌSlider‚Ì’l‚ğ•\¦
+						// ç¯„å›²å¤–ã®å ´åˆã€å…ƒã®Sliderã®å€¤ã‚’è¡¨ç¤º
 						editBox->setText(std::to_string(slider->getValue()));
 					}
 				}
 				catch (const std::exception&)
 				{
-					// ”’lˆÈŠO‚Ì“ü—Í‚ª‚ ‚Á‚½ê‡AŒ³‚ÌSlider‚Ì’l‚ğ•\¦
+					// æ•°å€¤ä»¥å¤–ã®å…¥åŠ›ãŒã‚ã£ãŸå ´åˆã€å…ƒã®Sliderã®å€¤ã‚’è¡¨ç¤º
 					editBox->setText(std::to_string(slider->getValue()));
 				}
 			});
 	}
 }
 
+float Game::GetDPIScaleFactor() const
+{
+	// Windowsç’°å¢ƒã§DPIã‚¹ã‚±ãƒ¼ãƒ«ã‚’å–å¾—ã™ã‚‹ä¾‹
+	float dpiScale = 1.0f;
+	HWND hwnd = GetActiveWindow();
+	if (hwnd)
+	{
+		HDC hdc = GetDC(hwnd);
+		int dpi = GetDeviceCaps(hdc, LOGPIXELSX); // æ°´å¹³æ–¹å‘ã®DPIã‚’å–å¾—
+		dpiScale = dpi / 96.0f; // æ¨™æº–DPI(96)ã«åŸºã¥ã„ã¦ã‚¹ã‚±ãƒ¼ãƒ«ã‚’è¨ˆç®—
+		ReleaseDC(hwnd, hdc);
+	}
+	return dpiScale;
+}
+
+void Game::RayoutUI()
+{
+
+}
+
 void Game::DisplayHelpWindow()
 {
-	// ƒeƒLƒXƒgƒf[ƒ^‚Ì“Ç‚İ‚İ
+	// ãƒ†ã‚­ã‚¹ãƒˆãƒ‡ãƒ¼ã‚¿ã®èª­ã¿è¾¼ã¿
 	std::string filename = "Assets/help.txt";
 	std::ifstream file(filename);
 	if (!file.is_open())
@@ -1421,11 +1471,11 @@ void Game::DisplayHelpWindow()
 	{
 		helpTexts.emplace_back(line);
 	}
-	
+
 	file.close();
 
 	bool isChildWindowOpened = true;
-	// •\¦—p‚ÌƒEƒBƒ“ƒhƒE‚ğì¬
+	// è¡¨ç¤ºç”¨ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
 	child->setClientSize({ 960, 540 });
@@ -1436,7 +1486,7 @@ void Game::DisplayHelpWindow()
 		});
 	mGui->add(child);
 
-	// ListBox‚ÅƒeƒLƒXƒg‚ğ•\¦
+	// ListBoxã§ãƒ†ã‚­ã‚¹ãƒˆã‚’è¡¨ç¤º
 	auto listBox = tgui::ListBox::create();
 	listBox->setRenderer(mTheme->getRenderer("ListBox"));
 	listBox->setSize(960, 500);
@@ -1449,7 +1499,7 @@ void Game::DisplayHelpWindow()
 	}
 	child->add(listBox);
 
-	// “ü—ÍI—¹—pƒ{ƒ^ƒ“
+	// å…¥åŠ›çµ‚äº†ç”¨ãƒœã‚¿ãƒ³
 	auto exitButton = tgui::Button::create("Close");
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
 	exitButton->setSize(120, 30);
@@ -1460,17 +1510,17 @@ void Game::DisplayHelpWindow()
 		});
 	child->add(exitButton);
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğ’â~
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’åœæ­¢
 	mWindow->setActive(false);
 
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€ŠÖ˜A
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ é–¢é€£
 	sf::Time ticksCount = mClock.getElapsedTime();
 
-	// “ü—Í‚ÆXV‚ÆƒEƒBƒ“ƒhƒE‚ÌI—¹ˆ—
-	// ƒEƒBƒ“ƒhƒE‚ª•Â‚¶‚é‚Ü‚Åƒ‹[ƒv
+	// å…¥åŠ›ã¨æ›´æ–°ã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®çµ‚äº†å‡¦ç†
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‰ã˜ã‚‹ã¾ã§ãƒ«ãƒ¼ãƒ—
 	while (isChildWindowOpened)
 	{
-		// 60FPS‚É‡‚í‚¹‚Ä’x‰„‚ğ‚©‚¯‚é
+		// 60FPSã«åˆã‚ã›ã¦é…å»¶ã‚’ã‹ã‘ã‚‹
 		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
 
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
@@ -1480,7 +1530,7 @@ void Game::DisplayHelpWindow()
 		}
 		ticksCount = mClock.getElapsedTime();
 
-		// ƒCƒxƒ“ƒgƒLƒ…[‚ª‘¶İ‚·‚éê‡A‚»‚ê‚É‰‚¶‚½ˆ—‚ğ‘S‚Äs‚¤
+		// ã‚¤ãƒ™ãƒ³ãƒˆã‚­ãƒ¥ãƒ¼ãŒå­˜åœ¨ã™ã‚‹å ´åˆã€ãã‚Œã«å¿œã˜ãŸå‡¦ç†ã‚’å…¨ã¦è¡Œã†
 		sf::Event event;
 		while (mWindow->pollEvent(event))
 		{
@@ -1496,31 +1546,31 @@ void Game::DisplayHelpWindow()
 
 		mWindow->clear();
 
-		// ”w–Ê‚©‚ç•`‰æ
+		// èƒŒé¢ã‹ã‚‰æç”»
 		for (auto& sprite : mSprites)
 		{
 			sprite->Draw(mWindow);
 		}
 
-		// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+		// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 		for (const auto& ui : mUIStack)
 		{
 			ui->Draw(mWindow);
 		}
 
-		mGui->draw(); // TGUI‚Ì•`‰æ
+		mGui->draw(); // TGUIã®æç”»
 		mWindow->display();
 	}
 
 	child->close();
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğÄŠJ
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’å†é–‹
 	mWindow->setActive(true);
 }
 
 void Game::SelectBoards()
 {
-	// ”Õ–ÊƒŠƒXƒg‚Ì“Ç‚İ‚İ‚ğs‚¤
+	// ç›¤é¢ãƒªã‚¹ãƒˆã®èª­ã¿è¾¼ã¿ã‚’è¡Œã†
 	struct Contents
 	{
 		std::vector<std::string> mBoard;
@@ -1528,17 +1578,17 @@ void Game::SelectBoards()
 	};
 	std::map<std::string, Contents> fileContents{};
 
-	// QÆ‚·‚é”Õ–ÊƒŠƒXƒg‚ÌƒfƒBƒŒƒNƒgƒŠ‚ğw’è
+	// å‚ç…§ã™ã‚‹ç›¤é¢ãƒªã‚¹ãƒˆã®ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’æŒ‡å®š
 	std::filesystem::directory_iterator iter("Assets/Boards"), end;
 	sf::Vector2i tileSize{ mTextures["Assets/Floor.png"]->getSize() };
 	std::error_code err;
 
 	try
 	{
-		// ƒfƒBƒŒƒNƒgƒŠ“à‚Ì‚·‚×‚Ä‚ÌƒGƒ“ƒgƒŠ‚ğƒ`ƒFƒbƒN
+		// ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªå†…ã®ã™ã¹ã¦ã®ã‚¨ãƒ³ãƒˆãƒªã‚’ãƒã‚§ãƒƒã‚¯
 		for (; iter != end && !err; iter.increment(err))
 		{
-			// ƒGƒ“ƒgƒŠ‚ªƒtƒ@ƒCƒ‹‚Å‚ ‚èAŠg’£q‚ª.txt‚Ìê‡
+			// ã‚¨ãƒ³ãƒˆãƒªãŒãƒ•ã‚¡ã‚¤ãƒ«ã§ã‚ã‚Šã€æ‹¡å¼µå­ãŒ.txtã®å ´åˆ
 			const std::filesystem::directory_entry entry = *iter;
 			if (entry.is_regular_file() && entry.path().extension() == ".txt")
 			{
@@ -1549,7 +1599,7 @@ void Game::SelectBoards()
 					std::string line;
 					sf::Vector2u totalSize{ 0, 0 };
 
-					// ƒtƒ@ƒCƒ‹‚ğ1s‚¸‚Â“Ç‚İ‚Ş
+					// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’1è¡Œãšã¤èª­ã¿è¾¼ã‚€
 					while (std::getline(file, line))
 					{
 						lines.push_back(line);
@@ -1560,18 +1610,18 @@ void Game::SelectBoards()
 					}
 					totalSize.y = static_cast<unsigned int>(lines.size());
 
-					// “Ç‚İ‚±‚ñ‚¾“à—e‚©‚çA”Õ–Ê‚ÌƒeƒNƒXƒ`ƒƒ‚ğì¬
+					// èª­ã¿ã“ã‚“ã å†…å®¹ã‹ã‚‰ã€ç›¤é¢ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆ
 					sf::Texture tmpBoardTex{};
 
-					// RenderTexture‚ğì¬
+					// RenderTextureã‚’ä½œæˆ
 					sf::RenderTexture renderTexture{};
 					if (!renderTexture.create(totalSize.x * tileSize.x, totalSize.y * tileSize.y))
 					{
 						std::cerr << "Failed to create render texture: " << entry.path() << "\n";
 					}
-					renderTexture.clear(sf::Color::Transparent); // ”wŒi‚ğ“§–¾‚É
+					renderTexture.clear(sf::Color::Transparent); // èƒŒæ™¯ã‚’é€æ˜ã«
 
-					// ƒXƒvƒ‰ƒCƒg‚ğrender texture‚É“\‚è•t‚¯‚Ä‚¢‚«Aƒ^ƒCƒ‹‰æ‘œ‚ğ”z’u
+					// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’render textureã«è²¼ã‚Šä»˜ã‘ã¦ã„ãã€ã‚¿ã‚¤ãƒ«ç”»åƒã‚’é…ç½®
 					for (int y = 0; y < static_cast<int>(totalSize.y); ++y)
 					{
 						for (int x = 0; x < line.length(); ++x)
@@ -1616,16 +1666,16 @@ void Game::SelectBoards()
 							}
 						}
 					}
-					// “\‚è•t‚¯‚½ƒXƒvƒ‰ƒCƒg‚ğrender texture‚É“K—p
+					// è²¼ã‚Šä»˜ã‘ãŸã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’render textureã«é©ç”¨
 					renderTexture.display();
 
-					// Š®¬‚µ‚½ƒeƒNƒXƒ`ƒƒ‚ğæ“¾
+					// å®Œæˆã—ãŸãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’å–å¾—
 					const sf::Texture& combinedTexture = renderTexture.getTexture();
 
-					// ƒtƒ@ƒCƒ‹–¼iŠg’£q‚È‚µj‚ğƒL[‚Æ‚µ‚ÄŠi”[
+					// ãƒ•ã‚¡ã‚¤ãƒ«åï¼ˆæ‹¡å¼µå­ãªã—ï¼‰ã‚’ã‚­ãƒ¼ã¨ã—ã¦æ ¼ç´
 					fileContents[entry.path().stem().string()] = Contents{ lines, combinedTexture };
 
-					// ‚à‚µƒQ[ƒ€ƒNƒ‰ƒX‚É‘¶İ‚µ‚È‚¢”Õ–Ê‚Ìê‡A’Ç‰Áˆ—‚ğs‚¤
+					// ã‚‚ã—ã‚²ãƒ¼ãƒ ã‚¯ãƒ©ã‚¹ã«å­˜åœ¨ã—ãªã„ç›¤é¢ã®å ´åˆã€è¿½åŠ å‡¦ç†ã‚’è¡Œã†
 					if (!mInitBoardData.count(entry.path().stem().string()))
 					{
 						mInitBoardData.emplace(entry.path().stem().string(), lines);
@@ -1633,21 +1683,21 @@ void Game::SelectBoards()
 						mFilenames.emplace_back(entry.path().stem().string());
 					}
 				}
-				else 
+				else
 				{
 					std::cerr << "Failed to open file: " << entry.path() << "\n";
 				}
 			}
 		}
 	}
-	catch (const std::exception& e) 
+	catch (const std::exception& e)
 	{
 		std::cerr << "Error while accessing directory: " << e.what() << "\n";
 	}
 
 	std::string selectedBoardName{};
 	bool isChildWindowOpened = true;
-	// •\¦—p‚ÌƒEƒBƒ“ƒhƒE‚ğì¬
+	// è¡¨ç¤ºç”¨ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
 	child->setClientSize({ 960, 540 });
@@ -1658,7 +1708,7 @@ void Game::SelectBoards()
 		});
 	mGui->add(child);
 
-	// ListBox‚ÅƒeƒLƒXƒg‚ğ•\¦
+	// ListBoxã§ãƒ†ã‚­ã‚¹ãƒˆã‚’è¡¨ç¤º
 	auto listBox = tgui::ListBox::create();
 	listBox->setRenderer(mTheme->getRenderer("ListBox"));
 	listBox->setSize(240, 500);
@@ -1672,37 +1722,37 @@ void Game::SelectBoards()
 	}
 	child->add(listBox);
 
-	// PictureƒEƒBƒWƒFƒbƒg‚ğì¬‚µ‚Ä‰æ‘œ•\¦—p‚É’Ç‰Á
+	// Pictureã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’ä½œæˆã—ã¦ç”»åƒè¡¨ç¤ºç”¨ã«è¿½åŠ 
 	BoundingBox childPictureBB{ sf::Vector2i{ static_cast<int>(listBox->getPosition().x + listBox->getSize().x), static_cast<int>(listBox->getPosition().y) },
-		sf::Vector2i{ static_cast<int>(child->getSize().x), static_cast<int>(listBox->getPosition().y + listBox->getSize().y)}};
+		sf::Vector2i{ static_cast<int>(child->getSize().x), static_cast<int>(listBox->getPosition().y + listBox->getSize().y)} };
 	auto picture = tgui::Picture::create();
 	picture->setSize(childPictureBB.second.x - childPictureBB.first.x, childPictureBB.second.y - childPictureBB.first.y);
 	picture->setPosition(childPictureBB.first.x, childPictureBB.first.y);
 	child->add(picture);
 
-	// ListBox‚Ì—v‘f‚ª‘I‘ğ‚³‚ê‚½‚çA‘Î‰‚·‚é”Õ–Ê‚ğƒEƒBƒ“ƒhƒE‰E‘¤‚É•\¦
+	// ListBoxã®è¦ç´ ãŒé¸æŠã•ã‚ŒãŸã‚‰ã€å¯¾å¿œã™ã‚‹ç›¤é¢ã‚’ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å³å´ã«è¡¨ç¤º
 	listBox->onItemSelect([&](const tgui::String& selectedItem) {
 		std::cout << "Select board on listbox action triggered!" << std::endl;
 		selectedBoardName = "";
 		if (fileContents.count(selectedItem.toStdString()))
 		{
 			selectedBoardName = selectedItem.toStdString();
-			// picture‚ÌƒTƒCƒY‚ÆˆÊ’u‚ğƒŠƒZƒbƒg
+			// pictureã®ã‚µã‚¤ã‚ºã¨ä½ç½®ã‚’ãƒªã‚»ãƒƒãƒˆ
 			picture->setSize(childPictureBB.second.x - childPictureBB.first.x, childPictureBB.second.y - childPictureBB.first.y);
 			picture->setPosition(childPictureBB.first.x, childPictureBB.first.y);
-			// sf::Texture‚©‚çtgui::texture‚Ö‚Ì•ÏŠ·
+			// sf::Textureã‹ã‚‰tgui::textureã¸ã®å¤‰æ›
 			sf::Image tmpImage = fileContents[selectedItem.toStdString()].mTexture.copyToImage();
 			tgui::Texture tmpTGuiTex{};
 			tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 			picture->getRenderer()->setTexture(tmpTGuiTex);
-			// ‰æ‘œ‚ÌƒXƒP[ƒŠƒ“ƒO‚ÆƒIƒtƒZƒbƒg‚Ìİ’è
+			// ç”»åƒã®ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ã‚ªãƒ•ã‚»ãƒƒãƒˆã®è¨­å®š
 			float scaleFactor = std::min(picture->getSize().x / static_cast<float>(tmpImage.getSize().x), picture->getSize().y / static_cast<float>(tmpImage.getSize().y));
 			picture->setSize(tgui::Layout2d{ static_cast<float>(tmpImage.getSize().x) * scaleFactor, static_cast<float>(tmpImage.getSize().y) * scaleFactor });
 			picture->setPosition({ childPictureBB.first.x + (child->getSize().x - childPictureBB.first.x - static_cast<float>(tmpImage.getSize().x) * scaleFactor) / 2.0f, childPictureBB.first.y + (childPictureBB.second.y - childPictureBB.first.y - static_cast<float>(tmpImage.getSize().y) * scaleFactor) / 2.0f });
 		}
 		});
 
-	// “ü—ÍI—¹—pƒ{ƒ^ƒ“
+	// å…¥åŠ›çµ‚äº†ç”¨ãƒœã‚¿ãƒ³
 	auto applyButton = tgui::Button::create("Apply");
 	applyButton->setRenderer(mTheme->getRenderer("Button"));
 	applyButton->setSize(120, 30);
@@ -1728,17 +1778,17 @@ void Game::SelectBoards()
 		});
 	child->add(exitButton);
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğ’â~
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’åœæ­¢
 	mWindow->setActive(false);
 
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€ŠÖ˜A
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ é–¢é€£
 	sf::Time ticksCount = mClock.getElapsedTime();
 
-	// “ü—Í‚ÆXV‚ÆƒEƒBƒ“ƒhƒE‚ÌI—¹ˆ—
-	// ƒEƒBƒ“ƒhƒE‚ª•Â‚¶‚é‚Ü‚Åƒ‹[ƒv
+	// å…¥åŠ›ã¨æ›´æ–°ã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®çµ‚äº†å‡¦ç†
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‰ã˜ã‚‹ã¾ã§ãƒ«ãƒ¼ãƒ—
 	while (isChildWindowOpened)
 	{
-		// 60FPS‚É‡‚í‚¹‚Ä’x‰„‚ğ‚©‚¯‚é
+		// 60FPSã«åˆã‚ã›ã¦é…å»¶ã‚’ã‹ã‘ã‚‹
 		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
 
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
@@ -1748,7 +1798,7 @@ void Game::SelectBoards()
 		}
 		ticksCount = mClock.getElapsedTime();
 
-		// ƒCƒxƒ“ƒgƒLƒ…[‚ª‘¶İ‚·‚éê‡A‚»‚ê‚É‰‚¶‚½ˆ—‚ğ‘S‚Äs‚¤
+		// ã‚¤ãƒ™ãƒ³ãƒˆã‚­ãƒ¥ãƒ¼ãŒå­˜åœ¨ã™ã‚‹å ´åˆã€ãã‚Œã«å¿œã˜ãŸå‡¦ç†ã‚’å…¨ã¦è¡Œã†
 		sf::Event event;
 		while (mWindow->pollEvent(event))
 		{
@@ -1764,37 +1814,37 @@ void Game::SelectBoards()
 
 		mWindow->clear();
 
-		// ”w–Ê‚©‚ç•`‰æ
+		// èƒŒé¢ã‹ã‚‰æç”»
 		for (auto& sprite : mSprites)
 		{
 			sprite->Draw(mWindow);
 		}
 
-		// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+		// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 		for (const auto& ui : mUIStack)
 		{
 			ui->Draw(mWindow);
 		}
 
-		mGui->draw(); // TGUI‚Ì•`‰æ
+		mGui->draw(); // TGUIã®æç”»
 		mWindow->display();
 	}
 
-	// ƒEƒBƒ“ƒhƒE‚Ìƒƒ‚ƒŠ‰ğ•ú
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ¡ãƒ¢ãƒªè§£æ”¾
 	child->close();
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğÄŠJ
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’å†é–‹
 	mWindow->setActive(true);
 }
 
 void Game::ChangeBoard()
 {
-	// ƒƒO‚ğƒtƒ@ƒCƒ‹o—Í‚µ‚Ä‚©‚ç‘S‚ÄÁ‚·
-	// TODO ”Õ–Ê‚ª•Ï‚í‚Á‚½Œã‚Ì‚à‚Ì‚É‚È‚Á‚Ä‚µ‚Ü‚Á‚Ä‚¢‚é
+	// ãƒ­ã‚°ã‚’ãƒ•ã‚¡ã‚¤ãƒ«å‡ºåŠ›ã—ã¦ã‹ã‚‰å…¨ã¦æ¶ˆã™
+	// TODO ç›¤é¢ãŒå¤‰ã‚ã£ãŸå¾Œã®ã‚‚ã®ã«ãªã£ã¦ã—ã¾ã£ã¦ã„ã‚‹
 	OutputLogs();
 	mLogs.clear();
 
-	// XV‚³‚ê‚½GameƒNƒ‰ƒX‚Ìƒƒ“ƒo•Ï”‚ğQÆ‚µ‚Ä”Õ–Ê‚ğ¶¬
+	// æ›´æ–°ã•ã‚ŒãŸGameã‚¯ãƒ©ã‚¹ã®ãƒ¡ãƒ³ãƒå¤‰æ•°ã‚’å‚ç…§ã—ã¦ç›¤é¢ã‚’ç”Ÿæˆ
 	std::vector<std::string> lines{ mInitBoardData[mCurrentKey] };
 
 	mBoardSize = sf::Vector2i{ 0, 0 };
@@ -1806,11 +1856,11 @@ void Game::ChangeBoard()
 	mStep = 0;
 	delete  mHUDHelper;
 
-	// ¶¬‚³‚ê‚½”Õ–Ê‚ÌƒL[‚Í‚ğ•¶š—ñ‚É•ÏŠ·‚µ‚½‚à‚Ì‚É‚·‚é
+	// ç”Ÿæˆã•ã‚ŒãŸç›¤é¢ã®ã‚­ãƒ¼ã¯æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«å¤‰æ›ã—ãŸã‚‚ã®ã«ã™ã‚‹
 	mBoardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
 	mBaggageLimit = GetBaggageNumLimit(mBoardSize);
 
-	// ”Õ–Ê‚Ì‰Šúó‘Ô‚ğƒZƒbƒg
+	// ç›¤é¢ã®åˆæœŸçŠ¶æ…‹ã‚’ã‚»ãƒƒãƒˆ
 	std::vector<sf::Vector2i> mBoxesPos;
 	{
 		int i = 0, j = 0;
@@ -1864,13 +1914,13 @@ void Game::ChangeBoard()
 		}
 	}
 
-	// ƒ{[ƒh‚ğÄ\’z
+	// ãƒœãƒ¼ãƒ‰ã‚’å†æ§‹ç¯‰
 	mGameBoard->Reload();
 
-	// ƒvƒŒƒCƒ„[‚ğÄ\’z
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’å†æ§‹ç¯‰
 	mPlayer->Reload();
 
-	// ‰×•¨‚ğÄ\’z
+	// è·ç‰©ã‚’å†æ§‹ç¯‰
 	while (!mBaggages.empty())
 	{
 		delete mBaggages.back();
@@ -1884,7 +1934,7 @@ void Game::ChangeBoard()
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
 
-	// HUDHelper‚ğÄ\’z
+	// HUDHelperã‚’å†æ§‹ç¯‰
 	mHUDHelper = new HUDHelper(this);
 
 	mStart = std::chrono::system_clock::now();
@@ -1892,8 +1942,8 @@ void Game::ChangeBoard()
 
 void Game::DisplayPlayLogs(const std::string& boardKey)
 {
-	// —š—ğƒf[ƒ^‚ğ“Ç‚İ‚±‚Ş
-	// ‹ó‚Å‚È‚¯‚ê‚ÎƒƒOƒf[ƒ^‚ğ‚»‚Ì‚Ü‚Ü‚Á‚Ä‚­‚é
+	// å±¥æ­´ãƒ‡ãƒ¼ã‚¿ã‚’èª­ã¿ã“ã‚€
+	// ç©ºã§ãªã‘ã‚Œã°ãƒ­ã‚°ãƒ‡ãƒ¼ã‚¿ã‚’ãã®ã¾ã¾æŒã£ã¦ãã‚‹
 	std::map<std::string, std::pair<Board, std::vector<Log>>> loadedPlayLogs{};
 	if (!boardKey.empty())
 	{
@@ -1901,12 +1951,12 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 	}
 	else
 	{
-		// TODO ƒtƒHƒ‹ƒ_‚©‚ç“Ç‚İ‚±‚Ş
+		// TODO ãƒ•ã‚©ãƒ«ãƒ€ã‹ã‚‰èª­ã¿ã“ã‚€
 	}
 
 	if (!loadedPlayLogs.empty())
 	{
-		// •\¦—p‚ÌƒEƒBƒ“ƒhƒE‚ğì¬
+		// è¡¨ç¤ºç”¨ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
 		bool isChildWindowOpened = true;
 		auto child = tgui::ChildWindow::create();
 		child->setRenderer(mTheme->getRenderer("ChildWindow"));
@@ -1918,7 +1968,7 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 			});
 		mGui->add(child);
 
-		// ListBox‚ÅƒƒO‚ÌƒŠƒXƒg‚ğ•\¦
+		// ListBoxã§ãƒ­ã‚°ã®ãƒªã‚¹ãƒˆã‚’è¡¨ç¤º
 		auto logListBox = tgui::ListBox::create();
 		logListBox->setRenderer(mTheme->getRenderer("ListBox"));
 		logListBox->setSize(240, 260);
@@ -1932,7 +1982,7 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 		}
 		child->add(logListBox);
 
-		// ListBox‚ÅÄ¶’†‚ÌƒƒO‚Ìî•ñ‚ğ•\¦
+		// ListBoxã§å†ç”Ÿä¸­ã®ãƒ­ã‚°ã®æƒ…å ±ã‚’è¡¨ç¤º
 		auto infoListBox = tgui::ListBox::create();
 		infoListBox->setRenderer(mTheme->getRenderer("ListBox"));
 		infoListBox->setSize(240, 240);
@@ -1942,7 +1992,7 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 		infoListBox->setAutoScroll(false);
 		child->add(infoListBox);
 
-		// ƒvƒŒƒCƒ„[I—¹—pƒ{ƒ^ƒ“
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼çµ‚äº†ç”¨ãƒœã‚¿ãƒ³
 		auto exitButton = tgui::Button::create("exit");
 		exitButton->setRenderer(mTheme->getRenderer("Button"));
 		exitButton->setSize(120, 30);
@@ -1953,19 +2003,19 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 			});
 		child->add(exitButton);
 
-		// TODO ‚»‚Ì‘¼‚Ì
+		// TODO ãã®ä»–ã®
 
-		// ƒQ[ƒ€ƒ‹[ƒv‚ğ’â~
+		// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’åœæ­¢
 		mWindow->setActive(false);
 
-		// ƒfƒ‹ƒ^ƒ^ƒCƒ€ŠÖ˜A
+		// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ é–¢é€£
 		sf::Time ticksCount = mClock.getElapsedTime();
 
-		// “ü—Í‚ÆXV‚ÆƒEƒBƒ“ƒhƒE‚ÌI—¹ˆ—
-		// ƒEƒBƒ“ƒhƒE‚ª•Â‚¶‚é‚Ü‚Åƒ‹[ƒv
+		// å…¥åŠ›ã¨æ›´æ–°ã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®çµ‚äº†å‡¦ç†
+		// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‰ã˜ã‚‹ã¾ã§ãƒ«ãƒ¼ãƒ—
 		while (isChildWindowOpened)
 		{
-			// 60FPS‚É‡‚í‚¹‚Ä’x‰„‚ğ‚©‚¯‚é
+			// 60FPSã«åˆã‚ã›ã¦é…å»¶ã‚’ã‹ã‘ã‚‹
 			while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
 
 			float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
@@ -1975,7 +2025,7 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 			}
 			ticksCount = mClock.getElapsedTime();
 
-			// ƒCƒxƒ“ƒgƒLƒ…[‚ª‘¶İ‚·‚éê‡A‚»‚ê‚É‰‚¶‚½ˆ—‚ğ‘S‚Äs‚¤
+			// ã‚¤ãƒ™ãƒ³ãƒˆã‚­ãƒ¥ãƒ¼ãŒå­˜åœ¨ã™ã‚‹å ´åˆã€ãã‚Œã«å¿œã˜ãŸå‡¦ç†ã‚’å…¨ã¦è¡Œã†
 			sf::Event event;
 			while (mWindow->pollEvent(event))
 			{
@@ -1991,26 +2041,26 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 
 			mWindow->clear();
 
-			// ”w–Ê‚©‚ç•`‰æ
+			// èƒŒé¢ã‹ã‚‰æç”»
 			for (auto& sprite : mSprites)
 			{
 				sprite->Draw(mWindow);
 			}
 
-			// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+			// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 			for (const auto& ui : mUIStack)
 			{
 				ui->Draw(mWindow);
 			}
 
-			mGui->draw(); // TGUI‚Ì•`‰æ
+			mGui->draw(); // TGUIã®æç”»
 			mWindow->display();
 		}
 
-		// ƒEƒBƒ“ƒhƒE‚Ìƒƒ‚ƒŠ‰ğ•ú
+		// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ¡ãƒ¢ãƒªè§£æ”¾
 		child->close();
 
-		// ƒQ[ƒ€ƒ‹[ƒv‚ğÄŠJ
+		// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’å†é–‹
 		mWindow->setActive(true);
 	}
 }
@@ -2038,10 +2088,10 @@ int Game::GetBaggageNumLimit(const sf::Vector2i& size, const double& wallRate) c
 
 void Game::ResetParameters()
 {
-	// ƒƒO‚ğƒNƒŠƒA
+	// ãƒ­ã‚°ã‚’ã‚¯ãƒªã‚¢
 	mLogs.clear();
 
-	// ‰Šú‰»ˆ—
+	// åˆæœŸåŒ–å‡¦ç†
 	mInitialPlayerPos = sf::Vector2i{ -1, -1 };
 	mInitialBaggagePos.clear();
 	mGoalPos.clear();
@@ -2049,7 +2099,7 @@ void Game::ResetParameters()
 	mCurrentKey.clear();
 	mStep = 0;
 
-	// HUDHelper‚ğíœ
+	// HUDHelperã‚’å‰Šé™¤
 	delete mHUDHelper;
 	mHUDHelper = nullptr;
 }

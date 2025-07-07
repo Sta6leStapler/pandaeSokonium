@@ -70,7 +70,7 @@ public:
 	// ゲーム特有のメンバ関数があれば追加
 	// 盤面リストに新しい盤面を追加
 	void AddBoard(const std::string& boardName, const std::vector<std::string>& boardData);
-	
+
 	// ステップを加算
 	void AddStep() { mStep++; }
 
@@ -166,6 +166,8 @@ private:
 
 	// ヘルパー関数は以下に定義
 	void SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr editBox, const bool& isInteger);
+	float GetDPIScaleFactor() const;
+	void RayoutUI();
 
 	// ロードされたテクスチャのマップ
 	std::unordered_map<std::string, sf::Texture*> mTextures;
@@ -178,7 +180,7 @@ private:
 	class Player* mPlayer;
 	class GameBoard* mGameBoard;
 	std::vector<class Baggage*> mBaggages;
-	
+
 	// 描画を行うコンポーネント
 	std::vector<class SpriteComponent*> mSprites;
 

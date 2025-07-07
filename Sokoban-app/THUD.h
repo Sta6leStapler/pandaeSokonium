@@ -12,6 +12,7 @@ public:
 	THUD(class Game* game, sf::RenderWindow* window);
 	~THUD();
 
+	// テキストウィンドウに表示する内容のタグ情報
 	enum TextIndex
 	{
 		EMoveCount,
@@ -19,8 +20,22 @@ public:
 		EBoardState,
 		EMovableBaggages,
 		EGoaledBaggages,
-		EDeadlockedBaggages
+		EDeadlockedBaggages,
+		ESystemAction
 	};
+
+	// ボタンやテキストウィンドウのサイズや位置を指定する定数
+	const sf::Vector2u Small_Button_Size{ 150, 40 };
+	const sf::Vector2u Medium_Button_Size{ 200, 50 };
+	const sf::Vector2u Large_Button_Size{ 300, 70 };
+
+	const sf::Vector2u Button_Initial_Pos_Left_Top{ 20, 20 };
+
+	const sf::Vector2u Button_Mergin{ 20, 20 };
+
+	const int ListBox_Item_Height = 32;
+
+	const float Icon_Image_Scale = 0.7f;
 
 	// インターフェースからオーバーライドした関数
 	void Update(float deltaTime) override;
@@ -29,6 +44,9 @@ public:
 
 	// 状態をクロージングにする
 	void Close() { mState = UIState::EClosing; }
+
+	// DPIスケールの変更があった場合にボタンサイズを調整する
+	void SetDPIScale(const float dpi_scale);
 
 	// 状態を取得
 	UIState GetState() override { return mState; }

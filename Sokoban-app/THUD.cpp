@@ -9,11 +9,11 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	: mGame(game)
 	, mGui(std::make_unique<tgui::Gui>(*window))
 	, mTheme(std::make_unique<tgui::Theme>("Assets/themes/Black.txt"))
-	, mButtonSize(sf::Vector2i{ 150 , 40 })
-	, mButtonInitialPos(sf::Vector2i{ 20, 30 })
-	, mButtonMergin(sf::Vector2i{ 20, 20 })
-	, mListBoxItemHeight(32)
-	, mIconImageScale(0.7f)
+	, mButtonSize(Small_Button_Size)
+	, mButtonInitialPos(Button_Initial_Pos_Left_Top)
+	, mButtonMergin(Button_Mergin)
+	, mListBoxItemHeight(ListBox_Item_Height)
+	, mIconImageScale(Icon_Image_Scale)
 	, mState(IUIScreen::UIState::EActive)
 {
 	mGame->PushUI(this);
@@ -130,7 +130,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 		mGame->SelectBoards();
 		});
 	mGui->add(loadBoardButton);
-	
+
 	// Generate Boardボタン
 	auto genBoardButton = tgui::Button::create("Generate Board");
 	genBoardButton->setPosition(mButtonInitialPos.x + (mButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y + mButtonSize.y + mButtonMergin.y); // ボタンの位置
@@ -241,4 +241,9 @@ void THUD::Draw(sf::RenderWindow* mWindow)
 {
 	// GUIの描画
 	mGui->draw();
+}
+
+void THUD::SetDPIScale(const float dpi_sccale)
+{
+
 }
