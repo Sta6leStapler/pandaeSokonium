@@ -1071,7 +1071,7 @@ void Game::DisplayResult()
 	// ListBoxでテキストを表示
 	auto listBox = tgui::ListBox::create();
 	listBox->setRenderer(mTheme->getRenderer("ListBox"));
-	listBox->setSize(child->getSize().x, child->getSize().y * 0.9);
+	listBox->setSize(child->getSize().x, child->getSize().y * 0.875);
 	listBox->setItemHeight(static_cast<unsigned int>(listBox->getSize().y / 16.0f));
 	listBox->setPosition(0, 0);
 	listBox->setTextSize(listBox->getItemHeight() * 5 / 8);
@@ -1089,8 +1089,8 @@ void Game::DisplayResult()
 	// 入力終了用ボタン
 	auto exitButton = tgui::Button::create("Close");
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
-	exitButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 3 / 5);
-	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y - exitButton->getSize().y) / 2);
+	exitButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 2 / 5);
+	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y) / 2 - exitButton->getSize().y);
 	exitButton->onPress([&]() {
 		std::cout << "Exit child window action triggered!" << std::endl;
 		isChildWindowOpened = false;
@@ -1100,8 +1100,8 @@ void Game::DisplayResult()
 	// プレイ履歴を再生するモードに移るボタン
 	auto playLogButton = tgui::Button::create("Play Log");
 	playLogButton->setRenderer(mTheme->getRenderer("Button"));
-	playLogButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 3 / 5);
-	playLogButton->setPosition(exitButton->getPosition().x - playLogButton->getSize().x - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y - playLogButton->getSize().y) / 2);
+	playLogButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 2 / 5);
+	playLogButton->setPosition(exitButton->getPosition().x - playLogButton->getSize().x - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y) / 2 - playLogButton->getSize().y);
 	playLogButton->onPress([&]() {
 		std::cout << "Play Log action triggered!" << std::endl;
 		isChildWindowOpened = false;
