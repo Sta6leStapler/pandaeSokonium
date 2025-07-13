@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "SFML/Graphics.hpp"
 #include <unordered_map>
@@ -13,18 +13,18 @@
 
 class Player;
 
-// ˆê“®ì‚ÌƒƒO
+// ä¸€å‹•ä½œã®ãƒ­ã‚°
 struct Log
 {
-	// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÚ“®‘OŒã‚ÌÀ•W
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ç§»å‹•å‰å¾Œã®åº§æ¨™
 	std::pair<sf::Vector2i, sf::Vector2i> pCoordinate, bCoordinate;
-	// ‰×•¨‚ªˆÚ“®‚µ‚½‚©‚Ç‚¤‚©
+	// è·ç‰©ãŒç§»å‹•ã—ãŸã‹ã©ã†ã‹
 	bool isBMoved;
-	// ƒvƒŒƒCƒ„[‚ÌˆÚ“®‘OŒã‚ÌŒü‚«
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•å‰å¾Œã®å‘ã
 	Player::Direction direction1, direction2;
-	// “ü—Í‚Ì‚Ì•¶š—ñ
+	// å…¥åŠ›æ™‚ã®æ™‚åˆ»ã®æ–‡å­—åˆ—
 	std::string time;
-	// Œ»İ‚Ìó‘Ô‚©‚ç”h¶‚µ‚½AŸó‘Ô‚ÌƒŠƒXƒg
+	// ç¾åœ¨ã®çŠ¶æ…‹ã‹ã‚‰æ´¾ç”Ÿã—ãŸã€æ¬¡çŠ¶æ…‹ã®ãƒªã‚¹ãƒˆ
 	std::vector<std::vector<Log>> thread;
 };
 
@@ -38,7 +38,7 @@ public:
 	void RunLoop();
 	void Shutdown();
 
-	// ƒQ[ƒ€‚Ìó‘Ô
+	// ã‚²ãƒ¼ãƒ ã®çŠ¶æ…‹
 	enum GameState
 	{
 		EGamePlay,
@@ -46,89 +46,89 @@ public:
 		EQuit
 	};
 
-	// ƒeƒNƒXƒ`ƒƒ‚Ìƒ[ƒh
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£ã®ãƒ­ãƒ¼ãƒ‰
 	sf::Texture* LoadTexture(const std::string& fileName);
 
-	// ƒAƒNƒ^[‚Ì’Ç‰Á‚Æíœ
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã®è¿½åŠ ã¨å‰Šé™¤
 	void AddActor(class IActor* actor);
 	void RemoveActor(class IActor* actor);
 
-	// ƒXƒvƒ‰ƒCƒg‚Ì’Ç‰Á‚Æíœ
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®è¿½åŠ ã¨å‰Šé™¤
 	void AddSprite(class SpriteComponent* sprite);
 	void RemoveSprite(class SpriteComponent* sprite);
 
-	// ƒXƒvƒ‰ƒCƒg‚ÆUI‚Ì•`‰æ
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã¨UIã®æç”»
 	void DrawSprites();
 	void DrawUI();
 
-	// UI‰æ–Ê‚ÌƒXƒ^ƒbƒN‚ÉŠÖ‚·‚éˆ—
-	// ƒXƒ^ƒbƒN‘S‘Ì‚ğQÆ‚Å•Ô‚·
+	// UIç”»é¢ã®ã‚¹ã‚¿ãƒƒã‚¯ã«é–¢ã™ã‚‹å‡¦ç†
+	// ã‚¹ã‚¿ãƒƒã‚¯å…¨ä½“ã‚’å‚ç…§ã§è¿”ã™
 	const std::vector<class IUIScreen*>& GetUIStack() { return mUIStack; }
-	// w’è‚ÌUIScreen‚ğƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…‚·‚é
+	// æŒ‡å®šã®UIScreenã‚’ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥ã™ã‚‹
 	void PushUI(class IUIScreen* screen) { mUIStack.emplace_back(screen); }
 
-	// ƒQ[ƒ€“Á—L‚Ìƒƒ“ƒoŠÖ”‚ª‚ ‚ê‚Î’Ç‰Á
-	// ”Õ–ÊƒŠƒXƒg‚ÉV‚µ‚¢”Õ–Ê‚ğ’Ç‰Á
+	// ã‚²ãƒ¼ãƒ ç‰¹æœ‰ã®ãƒ¡ãƒ³ãƒé–¢æ•°ãŒã‚ã‚Œã°è¿½åŠ 
+	// ç›¤é¢ãƒªã‚¹ãƒˆã«æ–°ã—ã„ç›¤é¢ã‚’è¿½åŠ 
 	void AddBoard(const std::string& boardName, const std::vector<std::string>& boardData);
 
-	// ƒXƒeƒbƒv‚ğ‰ÁZ
+	// ã‚¹ãƒ†ãƒƒãƒ—ã‚’åŠ ç®—
 	void AddStep() { mStep++; }
 
-	// undo/redoˆ—
+	// undo/redoå‡¦ç†
 	void CallUndo();
 	void CallRedo();
 	void CallReset();
 	void CallRedoAll();
 
-	// ”Õ–Ê‚ğƒZ[ƒu
+	// ç›¤é¢ã‚’ã‚»ãƒ¼ãƒ–
 	void CallSave();
 
-	// ”Õ–Ê‚ÌƒŠƒ[ƒh
+	// ç›¤é¢ã®ãƒªãƒ­ãƒ¼ãƒ‰
 	void CallReload();
 
-	// ‘S‚Ä‚ÌƒŠƒZƒbƒg
+	// å…¨ã¦ã®ãƒªã‚»ãƒƒãƒˆ
 	void CallRestart();
 
-	// æ‚ÌƒƒO‚ğíœ (ƒvƒŒƒCƒ„[‚ÌˆÚ“®ˆ—‚ÉŒÄ‚Ño‚·)
+	// å…ˆã®ãƒ­ã‚°ã‚’å‰Šé™¤ (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•å‡¦ç†æ™‚ã«å‘¼ã³å‡ºã™)
 	void RemoveRedo();
 
-	// ƒƒO‚ğ’Ç‰Á
+	// ãƒ­ã‚°ã‚’è¿½åŠ 
 	void AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2, const Player::Direction& direction1, const Player::Direction& direction2);
 	void AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2, const sf::Vector2i& baggagePos1, const sf::Vector2i& baggagePos2, const Player::Direction& direction1, const Player::Direction& direction2);
 
-	// ƒƒO‚ğƒeƒLƒXƒg‚É•ÏŠ·
+	// ãƒ­ã‚°ã‚’ãƒ†ã‚­ã‚¹ãƒˆã«å¤‰æ›
 	std::string ConvertLogToStr(const std::vector<Log>& logs, const unsigned long long& current = 0);
 
-	// ƒƒO‚Ìo—Í
+	// ãƒ­ã‚°ã®å‡ºåŠ›
 	void OutputLogs();
 
-	// Œ»İ“ú‚ğ•¶š—ñ‚Åo—Í
+	// ç¾åœ¨æ—¥æ™‚ã‚’æ–‡å­—åˆ—ã§å‡ºåŠ›
 	std::string GetDateTime();
 
-	// I—¹”»’è‚ğs‚¢AƒEƒBƒ“ƒhƒE‚Å’Ê’m
+	// çµ‚äº†åˆ¤å®šã‚’è¡Œã„ã€ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã§é€šçŸ¥
 	void HasComplete();
 	void DisplayResult();
 
-	// ”Õ–Ê‚Ì‹K–Í‚Ì“ü—Í
+	// ç›¤é¢ã®è¦æ¨¡ã®å…¥åŠ›
 	bool InputBoardData();
 
-	// ƒwƒ‹ƒvƒEƒBƒ“ƒhƒE‚Ì•\¦
+	// ãƒ˜ãƒ«ãƒ—ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®è¡¨ç¤º
 	void DisplayHelpWindow();
 
-	// ”Õ–ÊƒŠƒXƒg‚ğ•\¦‚µA‘I‘ğ‚µ‚½”Õ–Ê‚É•ÏX‚·‚é
+	// ç›¤é¢ãƒªã‚¹ãƒˆã‚’è¡¨ç¤ºã—ã€é¸æŠã—ãŸç›¤é¢ã«å¤‰æ›´ã™ã‚‹
 	void SelectBoards();
 	void ChangeBoard();
 
-	// ƒvƒŒƒC—š—ğ‚ÌÄ¶
-	// ƒŠƒUƒ‹ƒg‰æ–Ê‚©‚çŒÄ‚Ño‚·‚Æ‚«‚Íˆø”‚É”Õ–Ê‚ÌƒL[‚ğ“ü‚êA
-	// ‚»‚¤‚Å‚È‚¢‚Æ‚«‚Íˆø”–³‚µ‚ÅŒÄ‚Ño‚·
+	// ãƒ—ãƒ¬ã‚¤å±¥æ­´ã®å†ç”Ÿ
+	// ãƒªã‚¶ãƒ«ãƒˆç”»é¢ã‹ã‚‰å‘¼ã³å‡ºã™ã¨ãã¯å¼•æ•°ã«ç›¤é¢ã®ã‚­ãƒ¼ã‚’å…¥ã‚Œã€
+	// ãã†ã§ãªã„ã¨ãã¯å¼•æ•°ç„¡ã—ã§å‘¼ã³å‡ºã™
 	void DisplayPlayLogs(const std::string& boardKey = "");
 
-	// ƒpƒ‰ƒ[ƒ^‚ÌƒŠƒZƒbƒg‚ğs‚¤ˆ—
+	// ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®ãƒªã‚»ãƒƒãƒˆã‚’è¡Œã†å‡¦ç†
 	void ResetParameters();
 
-	// ƒQƒbƒ^[‚ÆƒZƒbƒ^[
-	// ƒQ[ƒ€§ŒäŠÖ˜A
+	// ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
+	// ã‚²ãƒ¼ãƒ åˆ¶å¾¡é–¢é€£
 	void SetState(const GameState& gameState) { mGameState = gameState; }
 	sf::Vector2f GetWindowSize() const { return mWindowSize; }
 	std::vector<std::string> GetFilenames() const { return mFilenames; }
@@ -141,11 +141,12 @@ public:
 	double GetSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - mStart).count()); };
 	double GetMSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - mStart).count()); };
 
-	// ƒeƒNƒXƒ`ƒƒŠÖ˜A
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£é–¢é€£
 	sf::Texture* GetTexture(const std::string& fileName) const { return mTextures.at(fileName); }
 	std::unordered_map<std::string, sf::Texture*> GetTextures() const { return mTextures; }
 
-	// ”Õ–ÊŠÖ˜A
+	// ç›¤é¢é–¢é€£
+	void AddBaggage(class Baggage* bagggage);
 	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
 	std::vector<sf::Vector2i> GetBaggagesPos() const;
 	class Player* GetPlayer() const { return mPlayer; }
@@ -164,24 +165,24 @@ private:
 	void LoadData();
 	void UnloadData();
 
-	// ƒwƒ‹ƒp[ŠÖ”‚ÍˆÈ‰º‚É’è‹`
+	// ãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°ã¯ä»¥ä¸‹ã«å®šç¾©
 	void SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr editBox, const bool& isInteger);
 	float GetDPIScaleFactor() const;
 	void RayoutUI();
 
-	// ƒ[ƒh‚³‚ê‚½ƒeƒNƒXƒ`ƒƒ‚Ìƒ}ƒbƒv
+	// ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸãƒ†ã‚¯ã‚¹ãƒãƒ£ã®ãƒãƒƒãƒ—
 	std::unordered_map<std::string, sf::Texture*> mTextures;
 
-	// ƒAƒNƒeƒBƒu‚ÈƒAƒNƒ^[‚Æ‘Ò‹@’†‚ÌƒAƒNƒ^[
+	// ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ãªã‚¢ã‚¯ã‚¿ãƒ¼ã¨å¾…æ©Ÿä¸­ã®ã‚¢ã‚¯ã‚¿ãƒ¼
 	std::vector<IActor*> mActiveActors;
 	std::vector<IActor*> mPendingActors;
-	// ƒQ[ƒ€ƒNƒ‰ƒX‚©‚çƒAƒNƒZƒX‰Â”\‚ÈƒAƒNƒ^[
-	// (“ü—Í‚âXV‚Ìˆ—‚Å‚±‚ê‚ç‚ğ—p‚¢‚é‚±‚Æ‚Í‚È‚¢)
+	// ã‚²ãƒ¼ãƒ ã‚¯ãƒ©ã‚¹ã‹ã‚‰ã‚¢ã‚¯ã‚»ã‚¹å¯èƒ½ãªã‚¢ã‚¯ã‚¿ãƒ¼
+	// (å…¥åŠ›ã‚„æ›´æ–°ã®å‡¦ç†ã§ã“ã‚Œã‚‰ã‚’ç”¨ã„ã‚‹ã“ã¨ã¯ãªã„)
 	class Player* mPlayer;
 	class GameBoard* mGameBoard;
 	std::vector<class Baggage*> mBaggages;
 
-	// •`‰æ‚ğs‚¤ƒRƒ“ƒ|[ƒlƒ“ƒg
+	// æç”»ã‚’è¡Œã†ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆ
 	std::vector<class SpriteComponent*> mSprites;
 
 	sf::RenderWindow* mWindow;
@@ -190,39 +191,39 @@ private:
 	sf::Font mFont;
 	sf::Text mInfoTxt;
 
-	// ƒQ[ƒ€ó‘Ô‚ğŠi”[‚·‚é•Ï”
+	// ã‚²ãƒ¼ãƒ çŠ¶æ…‹ã‚’æ ¼ç´ã™ã‚‹å¤‰æ•°
 	GameState mGameState;
 	bool mIsComplete;
 
-	// ƒAƒNƒ^[‚ªXV’†‚©‚Ç‚¤‚©‚Ì’ÇÕ (true : ‚ ‚è / false : ‚È‚µ)
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæ›´æ–°ä¸­ã‹ã©ã†ã‹ã®è¿½è·¡ (true : ã‚ã‚Š / false : ãªã—)
 	bool mUpdatingActors;
 
-	// UI‚ÌƒXƒvƒ‰ƒCƒgˆ—‚ğs‚¤‚½‚ß‚ÌƒXƒ^ƒbƒN
+	// UIã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆå‡¦ç†ã‚’è¡Œã†ãŸã‚ã®ã‚¹ã‚¿ãƒƒã‚¯
 	std::vector<class IUIScreen*> mUIStack;
 
-	// HUD‚Ì•â•‚ğs‚¤HUDHelperƒNƒ‰ƒX
+	// HUDã®è£œåŠ©ã‚’è¡Œã†HUDHelperã‚¯ãƒ©ã‚¹
 	HUDHelper* mHUDHelper;
 
-	// ƒx[ƒX‚Æ‚È‚égui
+	// ãƒ™ãƒ¼ã‚¹ã¨ãªã‚‹gui
 	std::unique_ptr<tgui::Gui> mGui;
 	std::unique_ptr<tgui::Theme> mTheme;
 
-	// ”Õ–Ê‚ÌŠî‘b“Iî•ñ
+	// ç›¤é¢ã®åŸºç¤çš„æƒ…å ±
 	sf::Vector2i mBoardSize;
 	int mBaggageNum;
-	int mRepetition01;			// ‰×•¨‚ÆƒvƒŒƒCƒ„[‚Ì”z’u‚ÌƒŠƒZƒbƒg‰ñ”
-	int mRepetition02;			// ‰×•¨‚Ì‰^”À‰ñ”
-	double mRepetition03;		// ‚ ‚ç‚©‚¶‚ßİ’u‚µ‚Ä‚¨‚­•Çƒ}ƒX‚ÌŠ„‡
-	double mRepetition04;		// –K–âÏ‚İ‚É‚ ‚ç‚©‚¶‚ßŠ„‚èU‚éŠ„‡
-	int mRepetition05;			// •]‰¿ŠÖ”‚ÌƒCƒ“ƒfƒbƒNƒX
+	int mRepetition01;			// è·ç‰©ã¨ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®é…ç½®ã®ãƒªã‚»ãƒƒãƒˆå›æ•°
+	int mRepetition02;			// è·ç‰©ã®é‹æ¬å›æ•°
+	double mRepetition03;		// ã‚ã‚‰ã‹ã˜ã‚è¨­ç½®ã—ã¦ãŠãå£ãƒã‚¹ã®å‰²åˆ
+	double mRepetition04;		// è¨ªå•æ¸ˆã¿ã«ã‚ã‚‰ã‹ã˜ã‚å‰²ã‚ŠæŒ¯ã‚‹å‰²åˆ
+	int mRepetition05;			// è©•ä¾¡é–¢æ•°ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
 
-	// ƒQ[ƒ€“Á—L‚Ìƒƒ“ƒo•Ï”‚ª‚ ‚ê‚Î’Ç‰Á
+	// ã‚²ãƒ¼ãƒ ç‰¹æœ‰ã®ãƒ¡ãƒ³ãƒå¤‰æ•°ãŒã‚ã‚Œã°è¿½åŠ 
 	sf::Vector2f mWindowSize;
 	std::string mCurrentKey;
 	std::vector<std::string> mFilenames;
-	std::unordered_map<std::string, std::vector<std::string>> mBoardData;		// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğŠÜ‚ß‚½”Õ–Êî•ñ
-	std::unordered_map<std::string, std::vector<std::string>> mInitBoardData;	// ‰Šú”Õ–Ê
-	std::vector<std::string> mBoardState;	// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğœ‚¢‚½”Õ–Êî•ñ
+	std::unordered_map<std::string, std::vector<std::string>> mBoardData;		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’å«ã‚ãŸç›¤é¢æƒ…å ±
+	std::unordered_map<std::string, std::vector<std::string>> mInitBoardData;	// åˆæœŸç›¤é¢
+	std::vector<std::string> mBoardState;	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’é™¤ã„ãŸç›¤é¢æƒ…å ±
 	std::vector<sf::Vector2i> mGoalPos;
 	const sf::Vector2i mSizeMax{ 48, 48 };
 	const sf::Vector2i mSizeMin{ 5, 5 };
@@ -232,22 +233,22 @@ private:
 	const std::pair<int, int> mEvaluateFancIndexRange = std::pair<int, int>{ 0, 6 };
 	std::chrono::system_clock::time_point mStart;
 
-	// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚Ì‰ŠúˆÊ’u
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®åˆæœŸä½ç½®
 	sf::Vector2i mInitialPlayerPos;
 	std::unordered_map<Baggage*, sf::Vector2i> mInitialBaggagePos;
 
-	// ”Õ–Ê‚Ì•`‰æ”ÍˆÍ
+	// ç›¤é¢ã®æç”»ç¯„å›²
 	BoundingBox mBoardViewArea;
 
-	// “ü—Í‚ÌƒN[ƒ‹ƒ_ƒEƒ“
+	// å…¥åŠ›ã®ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³
 	float mInputCooldown;
 
-	// Œ»İ‚Ìƒ^[ƒ“”
+	// ç¾åœ¨ã®ã‚¿ãƒ¼ãƒ³æ•°
 	unsigned int mStep;
 
-	// ƒƒO‚ğÀ•W‚ÌƒŠƒXƒg‚Å•\‚·
-	// (ƒvƒŒƒCƒ„[‚Ì‰ŠúÀ•W‚©‚ç1ƒ}ƒX“®‚­‚±‚Æ‚ÅAƒƒO‚ª‰‚ß‚Ä’Ç‰Á‚³‚ê‚é)
-	// (‰Šúó‘Ô‚©‚ç‘JˆÚ‚Å‚«‚éó‘Ô‚ÍŠî–{“I‚É•¡”‚ ‚é‚Ì‚ÅAƒŠƒXƒgŒ`®)
-	// (‚Â‚Ü‚èA‚±‚ÌƒŠƒXƒg‚ÉŠi”[‚³‚ê‚éƒƒO‚ÍAƒvƒŒƒCƒ„[‚ÌˆÚ“®‘O‚ÌÀ•W‚ª•K‚¸‰ŠúÀ•W‚É‚È‚é)
+	// ãƒ­ã‚°ã‚’åº§æ¨™ã®ãƒªã‚¹ãƒˆã§è¡¨ã™
+	// (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸåº§æ¨™ã‹ã‚‰1ãƒã‚¹å‹•ãã“ã¨ã§ã€ãƒ­ã‚°ãŒåˆã‚ã¦è¿½åŠ ã•ã‚Œã‚‹)
+	// (åˆæœŸçŠ¶æ…‹ã‹ã‚‰é·ç§»ã§ãã‚‹çŠ¶æ…‹ã¯åŸºæœ¬çš„ã«è¤‡æ•°ã‚ã‚‹ã®ã§ã€ãƒªã‚¹ãƒˆå½¢å¼)
+	// (ã¤ã¾ã‚Šã€ã“ã®ãƒªã‚¹ãƒˆã«æ ¼ç´ã•ã‚Œã‚‹ãƒ­ã‚°ã¯ã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•å‰ã®åº§æ¨™ãŒå¿…ãšåˆæœŸåº§æ¨™ã«ãªã‚‹)
 	std::vector<Log> mLogs;
 };

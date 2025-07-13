@@ -1,4 +1,4 @@
-#include "Baggage.h"
+ï»¿#include "Baggage.h"
 
 #include "Game.h"
 #include "SpriteComponent.h"
@@ -21,10 +21,10 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 {
 	mGame->AddActor(this);
 
-	// ”Õ–Êƒf[ƒ^‚ğGameƒNƒ‰ƒX‚©‚çæ“¾‚·‚é
+	// ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å–å¾—ã™ã‚‹
 	std::vector<std::string> lines = game->GetBoardData()[mBoardName];
 
-	// ”Õ–Ê‚Ì‰¡•‚ğ“¾‚é
+	// ç›¤é¢ã®æ¨ªå¹…ã‚’å¾—ã‚‹
 	int maxX = 0;
 	for (const auto& item : lines)
 	{
@@ -34,21 +34,21 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 		}
 	}
 
-	// ƒEƒBƒ“ƒhƒEƒTƒCƒY
-	// 2024_09_05 •`‰æ”ÍˆÍ‚ÉC³
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚º
+	// 2024_09_05 æç”»ç¯„å›²ã«ä¿®æ­£
 	BoundingBox viewArea = mGame->GetBoardViewArea();
 
-	// ƒvƒŒƒCƒ„[‚Ìƒ^ƒCƒ‹‚ğ—pˆÓ
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğì¬
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¿ã‚¤ãƒ«ã‚’ç”¨æ„
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’ä½œæˆ
 	mSpriteComponent = new SpriteComponent(this, 100, 100);
-	// ‰ŠúˆÊ’u‚ªƒS[ƒ‹ã‚É‚ ‚é‚©‚Ç‚¤‚©
+	// åˆæœŸä½ç½®ãŒã‚´ãƒ¼ãƒ«ä¸Šã«ã‚ã‚‹ã‹ã©ã†ã‹
 	bState = BState::OnFloor;
 	if (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x] == '.')
 	{
 		bState = BState::OnGoal;
 	}
 
-	// ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚Ş
+	// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚€
 	std::string filename = "Assets/Box.png";
 	sf::Image image;
 	image.loadFromFile(filename);
@@ -60,30 +60,32 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	image.loadFromFile(filename);
 	mTextures.emplace(BState::Deadlock, game->LoadTexture(filename));
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ÉƒeƒNƒXƒ`ƒƒ‚ğƒZƒbƒg
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚»ãƒƒãƒˆ
 	mSpriteComponent->SetTexture(mTextures[bState]);
 
-	// ƒXƒP[ƒŠƒ“ƒO‚ÆˆÊ’u‚Ì‰Šú‰»‚ğs‚¤
-	// •\¦ƒGƒŠƒA‚ÌƒTƒCƒY@/ ”Õ–Ê‚ÌƒTƒCƒY ‚ğ‹‚ß‚é
-	// •\¦ƒGƒŠƒA‚Ì•û‚ª¬‚³‚¯‚ê‚Îƒ^ƒCƒ‹‚Ík¬‚·‚×‚«‚ÅA‹t‚È‚çŠg‘å‚·‚é‚×‚«
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ä½ç½®ã®åˆæœŸåŒ–ã‚’è¡Œã†
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®ã‚µã‚¤ã‚ºã€€/ ç›¤é¢ã®ã‚µã‚¤ã‚º ã‚’æ±‚ã‚ã‚‹
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®æ–¹ãŒå°ã•ã‘ã‚Œã°ã‚¿ã‚¤ãƒ«ã¯ç¸®å°ã™ã¹ãã§ã€é€†ãªã‚‰æ‹¡å¤§ã™ã‚‹ã¹ã
 	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[bState]->getSize().x * mGame->GetBoardSize().x),
 		(viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[bState]->getSize().y * mGame->GetBoardSize().y));
 
 	mScale = sf::Vector2f(minScale, minScale);
 
-	// —]”’‚Ì•ª’†‰›‘µ‚¦‚·‚é
-	// *ƒƒ‚ UI“™‚Å‚¸‚ê‚éê‡‚ÍƒIƒtƒZƒbƒg‚ğ‰Á‚¦‚Ä‚¨‚­
+	// ä½™ç™½ã®åˆ†ä¸­å¤®æƒãˆã™ã‚‹
+	// *ãƒ¡ãƒ¢ UIç­‰ã§ãšã‚Œã‚‹å ´åˆã¯ã‚ªãƒ•ã‚»ãƒƒãƒˆã‚’åŠ ãˆã¦ãŠã
 	mPosition = sf::Vector2f
 	{
 		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(mTextures[bState]->getSize().x * mGame->GetBoardSize().x) * mScale.x) / 2.0f + static_cast<float>(mTextures[bState]->getSize().x * mBoardCoordinate.x) * mScale.x,
 		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(mTextures[bState]->getSize().x * mGame->GetBoardSize().y) * mScale.y) / 2.0f + static_cast<float>(mTextures[bState]->getSize().y * mBoardCoordinate.y) * mScale.y
 	};
+
+	mGame->AddBaggage(this);
 }
 
 Baggage::~Baggage()
 {
 	mGame->RemoveActor(this);
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğíœ‚·‚é
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’å‰Šé™¤ã™ã‚‹
 	while (!mComponents.empty())
 	{
 		delete mComponents.back();
@@ -96,8 +98,8 @@ void Baggage::Update(float deltaTime)
 	{
 		UpdateComponents(deltaTime);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌXVˆ—‚ª‚ ‚ê‚Î‘‚­
-		// ‚±‚ÌƒAƒNƒ^[‚ÌˆÊ’u‚É‰‚¶‚ÄƒeƒNƒXƒ`ƒƒ‚ğ•Ï‚¦‚é
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æ›´æ–°å‡¦ç†ãŒã‚ã‚Œã°æ›¸ã
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ã®ä½ç½®ã«å¿œã˜ã¦ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’å¤‰ãˆã‚‹
 		if (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x] == '.')
 		{
 			mSpriteComponent->SetTexture(mTextures[BState::OnGoal]);
@@ -125,11 +127,11 @@ void Baggage::ProcessInput(const sf::Event* event)
 {
 	if (mState == IActor::ActorState::EActive)
 	{
-		// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌComponent‚Ì“ü—Íˆ—‚ğs‚¤
-		// ‚Ç‚ÌComponent‚à“Á‚É“Æ©‚Ìˆ—‚ğÀ‘•‚µ‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+		// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®Componentã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
+		// ã©ã®Componentã‚‚ç‰¹ã«ç‹¬è‡ªã®å‡¦ç†ã‚’å®Ÿè£…ã—ã¦ã„ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 		ProcessInputComponents(event);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌU‚é•‘‚¢‚ª‚ ‚ê‚Î‘‚­
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æŒ¯ã‚‹èˆã„ãŒã‚ã‚Œã°æ›¸ã
 
 	}
 

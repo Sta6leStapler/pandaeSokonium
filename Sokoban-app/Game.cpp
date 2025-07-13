@@ -88,6 +88,7 @@ bool Game::Initialize()
 		desktopMode.width * 0.8f / dpiScale,
 		desktopMode.height * 0.8f / dpiScale
 	);
+	mBoardViewArea = BoundingBox{ sf::Vector2f{ mWindowSize.x - mWindowSize.y, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y } };
 
 	// ウィンドウを作成
 	sf::RenderWindow* window = new sf::RenderWindow(
@@ -237,8 +238,7 @@ void Game::LoadData()
 	// 荷物の初期座標を得る
 	for (const auto& item : mBoxesPos)
 	{
-		mBaggages.emplace_back(new Baggage(this, item));
-		mInitialBaggagePos.emplace(mBaggages.back(), item);
+		new Baggage(this, item);
 	}
 
 	// HUD補助のクラスを宣言
@@ -766,12 +766,22 @@ void Game::CallReload()
 		std::vector<std::string> lines = gen->GetBoard();
 		delete(gen);
 
+		mBoardSize = sf::Vector2i{ 0, 0 };
+		mBaggageNum = 0;
+		mInitialPlayerPos = sf::Vector2i{ -1, -1 };
+		mInitialBaggagePos.clear();
+		mGoalPos.clear();
+		mBoardState.clear();
+		mStep = 0;
+		delete  mHUDHelper;
+
 		// 生成された盤面のキーは時刻を文字列に変換したものにする
 		mCurrentKey = GetDateTime();
 		mFilenames.emplace_back(mCurrentKey);
 		mBoardData.emplace(mCurrentKey, lines);
 		mInitBoardData.emplace(mCurrentKey, lines);
 		mBaggageLimit = GetBaggageNumLimit(mBoardSize, mRepetition03);
+		mBoardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
 
 		// 盤面の初期状態をセット
 		std::vector<sf::Vector2i> mBoxesPos;
@@ -835,13 +845,13 @@ void Game::CallReload()
 		while (!mBaggages.empty())
 		{
 			delete mBaggages.back();
+			mBaggages.pop_back();
 		}
 		mBaggages.clear();
 
 		for (const auto& item : mBoxesPos)
 		{
 			new Baggage(this, item);
-			mInitialBaggagePos.emplace(mBaggages.back(), item);
 		}
 
 		// HUDHelperを再構築
@@ -1050,7 +1060,7 @@ void Game::DisplayResult()
 	// 子ウィンドウのサイズと位置を相対的に設定
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
-	child->setClientSize({ windowSize.x * 0.6f / dpiScale, windowSize.y * 0.6f / dpiScale });
+	child->setSize({ windowSize.x * 0.6f / dpiScale, windowSize.y * 0.6f / dpiScale });
 	child->setPosition(windowSize.x * 0.2f / dpiScale, windowSize.y * 0.2f / dpiScale);
 	child->setTitle("Notice");
 	child->onClose([&isChildWindowOpened]() {
@@ -1167,7 +1177,7 @@ void Game::DisplayResult()
 
 bool Game::InputBoardData()
 {
-	bool result = true;
+	bool result = false;
 	bool isChildWindowOpened = true;
 	// 入力用のウィンドウを作成
 	auto child = tgui::ChildWindow::create();
@@ -1178,7 +1188,6 @@ bool Game::InputBoardData()
 	child->onClose([&]() {
 		std::cout << "Close child window action triggered!" << std::endl;
 		isChildWindowOpened = false;
-		result = false;
 		});
 	mGui->add(child);
 
@@ -1206,7 +1215,7 @@ bool Game::InputBoardData()
 	// 入力パラメータの名前を表示するリストボックス
 	auto listBox = tgui::ListBox::create();
 	listBox->setRenderer(mTheme->getRenderer("ListBox"));
-	listBox->setSize(child->getSize().x, child->getSize().y * 0.9);
+	listBox->setSize(child->getSize().x, child->getSize().y * 0.875);
 	listBox->setItemHeight(static_cast<unsigned int>(child->getSize().y * 5.0f / 80.0f));
 	listBox->setTextSize(static_cast<unsigned int>(static_cast<float>(listBox->getItemHeight()) * 0.7f));
 	listBox->setPosition(0, 0);
@@ -1224,7 +1233,7 @@ bool Game::InputBoardData()
 		// スライダーの追加
 		auto slider = tgui::Slider::create();
 		slider->setRenderer(mTheme->getRenderer("Slider"));
-		slider->setSize(listBox->getSize().x * 2 / 5, listBox->getSize().y / 20);
+		slider->setSize(listBox->getSize().x / 3, listBox->getSize().y / 24);
 		slider->setPosition(child->getSize().x * 0.975 - slider->getSize().x, textInfo.mPos.y);
 		slider->setValue(static_cast<float>(textInfo.mInitialValue));
 		slider->setMinimum(static_cast<float>(textInfo.mMin));
@@ -1245,7 +1254,7 @@ bool Game::InputBoardData()
 		editBox->setRenderer(mTheme->getRenderer("EditBox"));
 		editBox->setSize(listBox->getSize().x * 3 / 25, listBox->getSize().y / 20);
 		editBox->setTextSize(static_cast<unsigned int>(editBox->getSize().y * 3.0f / 4.0f));
-		editBox->setPosition(child->getSize().x * 0.975 - slider->getSize().x * 1.05 - editBox->getSize().x, textInfo.mPos.y);
+		editBox->setPosition(child->getSize().x * 0.975 - slider->getSize().x * 1.1 - editBox->getSize().x, textInfo.mPos.y);
 		child->add(editBox);
 		if (textInfo.mIsInteger)
 		{
@@ -1267,19 +1276,20 @@ bool Game::InputBoardData()
 	// 入力終了用ボタン
 	auto exitButton = tgui::Button::create("Enter");
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
-	exitButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 3 / 5);
-	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y - exitButton->getSize().y) / 2);
+	exitButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 2 / 5);
+	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y) / 2 - exitButton->getSize().y);
 	exitButton->onPress([&]() {
 		std::cout << "Exit child window action triggered!" << std::endl;
 		isChildWindowOpened = false;
+		result = true;
 		});
 	child->add(exitButton);
 
 	// 入力キャンセル用ボタン
 	auto canselButton = tgui::Button::create("Cansel");
 	canselButton->setRenderer(mTheme->getRenderer("Button"));
-	canselButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 3 / 5);
-	canselButton->setPosition(exitButton->getPosition().x - canselButton->getSize().x - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y - canselButton->getSize().y) / 2);
+	canselButton->setSize(child->getSize().x / 8, (child->getSize().y - listBox->getSize().y) * 2 / 5);
+	canselButton->setPosition(exitButton->getPosition().x - canselButton->getSize().x - (child->getSize().x / 96), listBox->getSize().y + (child->getSize().y - listBox->getSize().y) / 2 - canselButton->getSize().y);
 	canselButton->onPress([&]() {
 		std::cout << "Cansel input action triggered!" << std::endl;
 		isChildWindowOpened = false;
@@ -1930,8 +1940,7 @@ void Game::ChangeBoard()
 
 	for (const auto& item : mBoxesPos)
 	{
-		mBaggages.emplace_back(new Baggage(this, item));
-		mInitialBaggagePos.emplace(mBaggages.back(), item);
+		new Baggage(this, item);
 	}
 
 	// HUDHelperを再構築
@@ -2063,6 +2072,12 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 		// ゲームループを再開
 		mWindow->setActive(true);
 	}
+}
+
+void Game::AddBaggage(Baggage* baggage)
+{
+	mBaggages.emplace_back(baggage);
+	mInitialBaggagePos.emplace(baggage, baggage->GetBoardCoordinate());
 }
 
 std::vector<sf::Vector2i> Game::GetBaggagesPos() const
