@@ -46,7 +46,7 @@
 
 ---
 
-## ビルド手順（Windows）
+## ビルド手順（Visual Studio）
 
 1. SFML / TGUI を導入し、適切にリンク (公式のページを参照してください)
 2. `Sokoban-app.sln` を Visual Studio で開く
