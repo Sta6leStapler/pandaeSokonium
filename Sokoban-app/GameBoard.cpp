@@ -195,7 +195,7 @@ void GameBoard::RemoveComponent(IComponent* component)
 void GameBoard::Reload()
 {
 	mBoardName = mGame->GetCurrentKey();
-	std::vector<std::string> lines = mGame->GetBoardData()[mBoardName];
+	std::vector<std::string> lines = mGame->GetInitBoardData(mBoardName);
 
 	// ”Õ–Ê‚Ì‰¡•‚ğ‘µ‚¦‚é
 	size_t maxX = 0;

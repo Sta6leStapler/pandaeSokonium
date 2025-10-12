@@ -125,7 +125,11 @@ public:
 	void DisplayPlayLogs(const std::string& boardKey = "");
 
 	// パラメータのリセットを行う処理
+	// Resetは同じ盤面でパラメータをリセットする場合
+	// Clearは別の盤面でパラメータをリセットする場合
+	// ClearParametersの後にパラメータを設定せず盤面読み込みに入らないこと
 	void ResetParameters();
+	void ClearParameters();
 
 	// ゲッターとセッター
 	// ゲーム制御関連
@@ -219,7 +223,7 @@ private:
 
 	// ゲーム特有のメンバ変数があれば追加
 	sf::Vector2f mWindowSize;
-	std::string mCurrentKey;
+	std::string mCurrentKey;	// 現在の盤面のインデックスを表す文字列
 	std::vector<std::string> mFilenames;
 	std::unordered_map<std::string, std::vector<std::string>> mBoardData;		// プレイヤーと荷物を含めた盤面情報
 	std::unordered_map<std::string, std::vector<std::string>> mInitBoardData;	// 初期盤面

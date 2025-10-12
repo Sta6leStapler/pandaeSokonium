@@ -428,7 +428,7 @@ void Player::Reload()
 {
 	// 盤面データをGameクラスから取得する
 	mBoardName = mGame->GetCurrentKey();
-	std::vector<std::string> lines = mGame->GetBoardData()[mBoardName];
+	std::vector<std::string> lines = mGame->GetInitBoardData(mBoardName);
 
 	// 盤面の横幅を得る
 	int maxX = 0;

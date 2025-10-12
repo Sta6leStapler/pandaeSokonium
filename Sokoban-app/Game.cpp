@@ -137,7 +137,7 @@ void Game::LoadData()
 	std::string line;
 	while (std::getline(file, line))
 	{
-		lines.push_back(line);
+		lines.emplace_back(line);
 	}
 
 	mBoardData.emplace(name, lines);
@@ -153,7 +153,7 @@ void Game::LoadData()
 	std::vector<std::string> lines = gen->GetBoard();
 	delete(gen);
 	mCurrentKey = GetDateTime();
-	mFilenames.push_back(mCurrentKey);
+	mFilenames.emplace_back(mCurrentKey);
 	mBoardData.emplace(mCurrentKey, lines);
 	mInitBoardData.emplace(mCurrentKey, lines);
 	//*/
@@ -797,7 +797,7 @@ void Game::CallReload()
 	{
 		// ログをファイル出力してから全て消す
 		OutputLogs();
-		ResetParameters();
+		ClearParameters();
 
 		// 更新されたGameクラスのメンバ変数を参照して盤面を生成
 		MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
@@ -873,12 +873,12 @@ void Game::CallReload()
 		while (!mBaggages.empty())
 		{
 			delete mBaggages.back();
+			mBaggages.pop_back();
 		}
-		mBaggages.clear();
 
 		for (const auto& item : mBoxesPos)
 		{
-			new Baggage(this, item);
+			mBaggages.emplace_back(new Baggage(this, item));
 			mInitialBaggagePos.emplace(mBaggages.back(), item);
 		}
 
@@ -891,7 +891,7 @@ void Game::CallReload()
 
 void Game::CallRestart()
 {
-	// ログをファイル出力してから全て消す
+	// ログをファイル出力してからパラメータをリセット
 	OutputLogs();
 	ResetParameters();
 
@@ -908,6 +908,9 @@ void Game::CallRestart()
 	{
 		baggage.first->SetBoardCoordinate(baggage.second);
 	}
+
+	// HUDHelperを再構築
+	mHUDHelper = new HUDHelper(this);
 
 	mStart = std::chrono::system_clock::now();
 }
@@ -1933,7 +1936,6 @@ void Game::ChangeBoard()
 		delete mBaggages.back();
 		mBaggages.pop_back();
 	}
-	mBaggages.clear();
 
 	for (const auto& item : mBoxesPos)
 	{
@@ -2094,6 +2096,19 @@ int Game::GetBaggageNumLimit(const sf::Vector2i& size, const double& wallRate) c
 }
 
 void Game::ResetParameters()
+{
+	// ログをクリア
+	mLogs.clear();
+
+	// 初期化処理
+	mStep = 0;
+
+	// HUDHelperを削除
+	delete mHUDHelper;
+	mHUDHelper = nullptr;
+}
+
+void Game::ClearParameters()
 {
 	// ログをクリア
 	mLogs.clear();
