@@ -117,8 +117,6 @@ Player::~Player()
 
 void Player::Update(float deltaTime)
 {
-	// TODO 更新後も判定が更新前の盤面になっている
-
 	mMoveCooldown -= deltaTime;
 
 	if (mState == IActor::ActorState::EActive)
@@ -137,6 +135,7 @@ void Player::Update(float deltaTime)
 			// 移動先の座標
 			sf::Vector2i destination = sf::Vector2i(mBoardCoordinate.x + static_cast<int>(std::cos(mRotation)), mBoardCoordinate.y + static_cast<int>(std::sin(mRotation)));
 
+			// 移動するかどうかのチェックは終わったため、falseに戻しておく
 			mDetection = false;
 
 			// まず移動先が壁でないか確認する
@@ -237,18 +236,104 @@ void Player::UpdateComponents(float deltaTime)
 	}
 }
 
-void Player::ProcessInput(const sf::Event* event)
+void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer)
 {
 	if (mState == IActor::ActorState::EActive)
 	{
 		// アクターが持つ全てのComponentの入力処理を行う
 		// どのComponentも特に独自の処理を実装していなければ何もしない
-		ProcessInputComponents(event);
+		ProcessInputComponents(event, key_held_duration, auto_repeat_timer);
 
+		// 短押しの処理
+		if (event && event->type == sf::Event::KeyPressed)
+		{
+			// このキーが押されてから経過した時間を確認
+			float duration = key_held_duration.count(event->key.code) ? key_held_duration.at(event->key.code) : 0.0f;
+
+			// 押された最初のフレーム（押下時間が非常に短い）かを判定
+			// deltaTime以下、などでも良い
+			if (duration < mGame->GetTapThresHold())
+			{
+				if (event->key.code == sf::Keyboard::Key::Right)
+				{
+					mDirection = Direction::EEast;
+					mRotation = 0.0f;
+					mDetection = true;
+				}
+				else if (event->key.code == sf::Keyboard::Key::Up)
+				{
+					mDirection = Direction::ENorth;
+					mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
+					mDetection = true;
+				}
+				else if (event->key.code == sf::Keyboard::Key::Left)
+				{
+					mDirection = Direction::EWest;
+					mRotation = static_cast<float>(std::acos(-1));
+					mDetection = true;
+				}
+				else if (event->key.code == sf::Keyboard::Key::Down)
+				{
+					mDirection = Direction::ESouth;
+					mRotation = static_cast<float>(std::acos(-1) / 2.0);
+					mDetection = true;
+				}
+			}
+		}
+
+
+		// 長押しの処理
+		// イベントとは関係なく、現在のキー押下状態とタイマーから判断
+		switch (event->key.code)
+		{
+		case sf::Keyboard::Right:
+			// 長押し状態にあり、かつリピートタイマーが0以下か？
+			if (key_held_duration.at(sf::Keyboard::Right) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Right) <= 0.0f)
+			{
+				mDirection = Direction::EEast;
+				mRotation = 0.0f;
+				mDetection = true;
+			}
+			break;
+		case sf::Keyboard::Up:
+			// 長押し状態にあり、かつリピートタイマーが0以下か？
+			if (key_held_duration.at(sf::Keyboard::Up) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Up) <= 0.0f)
+			{
+				mDirection = Direction::ENorth;
+				mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
+				mDetection = true;
+			}
+			break;
+		case sf::Keyboard::Left:
+			// 長押し状態にあり、かつリピートタイマーが0以下か？
+			if (key_held_duration.at(sf::Keyboard::Left) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Left) <= 0.0f)
+			{
+				mDirection = Direction::EWest;
+				mRotation = static_cast<float>(std::acos(-1));
+				mDetection = true;
+			}
+			break;
+		case sf::Keyboard::Down:
+			// 長押し状態にあり、かつリピートタイマーが0以下か？
+			if (key_held_duration.at(sf::Keyboard::Down) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Down) <= 0.0f)
+			{
+				mDirection = Direction::ESouth;
+				mRotation = static_cast<float>(std::acos(-1) / 2.0);
+				mDetection = true;
+			}
+			break;
+		default:
+			break;
+		}
+
+		// 以下は旧入力処理、あまり操作性はよくないが一応残しておく
 		// このアクター特有の振る舞いがあれば書く
 		// 移動入力のクールダウンが0以下なら入力を受け付ける
+		// ここではプレイヤーの移動や向きの切り替えの描画は行わないが、内部状態を更新する
+		/*
 		if (mMoveCooldown <= 0.0f)
 		{
+			// mDetectionは移動を更新処理部分でするかどうかを表す変数
 			mMoveCooldown = 0.13f;
 			mDetection = true;
 			switch (event->key.code)
@@ -258,6 +343,7 @@ void Player::ProcessInput(const sf::Event* event)
 				{
 					mDirection = Direction::EEast;
 					mRotation = 0.0f;
+					std::cout << "Player::Input -> Move Right!" << std::endl;
 				}
 				break;
 			case sf::Keyboard::Up:
@@ -265,6 +351,7 @@ void Player::ProcessInput(const sf::Event* event)
 				{
 					mDirection = Direction::ENorth;
 					mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
+					std::cout << "Player::Input -> Move North!" << std::endl;
 				}
 				break;
 			case sf::Keyboard::Left:
@@ -272,6 +359,7 @@ void Player::ProcessInput(const sf::Event* event)
 				{
 					mDirection = Direction::EWest;
 					mRotation = static_cast<float>(std::acos(-1));
+					std::cout << "Player::Input -> Move Left!" << std::endl;
 				}
 				break;
 			case sf::Keyboard::Down:
@@ -279,6 +367,7 @@ void Player::ProcessInput(const sf::Event* event)
 				{
 					mDirection = Direction::ESouth;
 					mRotation = static_cast<float>(std::acos(-1) / 2.0);
+					std::cout << "Player::Input -> Move South!" << std::endl;
 				}
 				break;
 			default:
@@ -287,16 +376,17 @@ void Player::ProcessInput(const sf::Event* event)
 				break;
 			}
 		}
+		*/
 	}
 
 	prevKeys = event->key;
 }
 
-void Player::ProcessInputComponents(const sf::Event* event)
+void Player::ProcessInputComponents(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer)
 {
 	for (auto& component : mComponents)
 	{
-		component->ProcessInput(event);
+		component->ProcessInput(event, key_held_duration, auto_repeat_timer);
 	}
 }
 

@@ -53,13 +53,13 @@ void BackGround::UpdateComponents(float deltaTime)
 	}
 }
 
-void BackGround::ProcessInput(const sf::Event* event)
+void BackGround::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer)
 {
 	if (mState == IActor::ActorState::EActive)
 	{
 		// アクターが持つ全てのComponentの入力処理を行う
 		// どのComponentも特に独自の処理を実装していなければ何もしない
-		ProcessInputComponents(event);
+		ProcessInputComponents(event, key_held_duration, auto_repeat_timer);
 
 		// このアクター特有の振る舞いがあれば書く
 
@@ -67,11 +67,11 @@ void BackGround::ProcessInput(const sf::Event* event)
 
 }
 
-void BackGround::ProcessInputComponents(const sf::Event* event)
+void BackGround::ProcessInputComponents(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer)
 {
 	for (auto& component : mComponents)
 	{
-		component->ProcessInput(event);
+		component->ProcessInput(event, key_held_duration, auto_repeat_timer);
 	}
 }
 

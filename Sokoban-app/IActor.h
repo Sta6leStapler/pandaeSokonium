@@ -14,10 +14,10 @@ public:
 	virtual void UpdateComponents(float deltaTime) = 0;
 
 	// Gameクラスから入力処理を呼び出す
-	virtual void ProcessInput(const sf::Event* event) = 0;
+	virtual void ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) = 0;
 
 	// アクターが持つ全てのコンポーネントの入力処理を行う
-	virtual void ProcessInputComponents(const sf::Event* event) = 0;
+	virtual void ProcessInputComponents(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) = 0;
 
 	// コンポーネントの追加と削除
 	virtual void AddComponent(class IComponent* component) = 0;

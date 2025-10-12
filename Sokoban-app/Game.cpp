@@ -30,7 +30,8 @@ Game::Game()
 	, mIsComplete(false)
 	, mWindowSize(1600.0, 900.0)
 	, mBoardViewArea(BoundingBox{ sf::Vector2f{ mWindowSize.x - mWindowSize.y, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y } })
-	, mInputCooldown(0.0f)
+	, mKeyHeldDuration(std::map<sf::Keyboard::Key, float>{})
+	, mAutoRepeatTimer(std::map<sf::Keyboard::Key, float>{})
 	, mBoardSize(sf::Vector2i{ 0, 0 })
 	, mBaggageNum(5)
 	, mBaggageLimit(1)
@@ -273,6 +274,7 @@ void Game::ProcessInput()
 	sf::Event event;
 	while (mWindow->pollEvent(event))
 	{
+		// ウィンドウを終了するイベントを検知したら、ゲーム状態を終了にしてイベント処理を即座に離脱
 		switch (event.type)
 		{
 		case sf::Event::Closed:
@@ -281,69 +283,94 @@ void Game::ProcessInput()
 		}
 
 		// ゲーム全体に関する各種入力処理
-		if (mInputCooldown <= 0.0f)
+		// 単押し処理
+		if (event.type == sf::Event::KeyPressed)
 		{
-			// Escキーでポーズメニューを開く
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) && mGameState == GameState::EGamePlay)
-			{
-				mInputCooldown = 0.13f;
-				new PauseMenu(this);
-				mGameState = GameState::EPaused;
-			}
+			// このキーが押されてから経過した時間を確認
+			float duration = mKeyHeldDuration.count(event.key.code) ? mKeyHeldDuration.at(event.key.code) : 0.0f;
 
-			// z でundo処理
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
+			// 押された最初のフレーム（押下時間が非常に短い）かを判定
+			if (duration < GetTapThresHold())
 			{
-				mInputCooldown = 0.13f;
+				// Escキーでポーズメニューを開く
+				if (event.key.code == sf::Keyboard::Escape && mGameState == GameState::EGamePlay)
+				{
+					new PauseMenu(this);
+					mGameState = GameState::EPaused;
+				}
+
+				// z でundo処理
+				if (event.key.code == sf::Keyboard::Z)
+				{
+					CallUndo();
+				}
+
+				// y でredo処理
+				if (event.key.code == sf::Keyboard::Y)
+				{
+					CallRedo();
+				}
+
+				// PGUPで最新の状態にする
+				if (event.key.code == sf::Keyboard::PageUp)
+				{
+					CallRedoAll();
+				}
+
+				// PGDNで初期状態にする
+				if (event.key.code == sf::Keyboard::PageDown)
+				{
+					CallReset();
+				}
+
+				// Ctrl + rで全てリセット
+				if (event.key.control && event.key.code == sf::Keyboard::R)
+				{
+					CallRestart();
+				}
+
+				// Ctrl + s で現在の盤面をセーブ
+				if (event.key.control && event.key.code == sf::Keyboard::S)
+				{
+					CallSave();
+				}
+
+				// H でヘルプ画面の表示
+				if (event.key.code == sf::Keyboard::H)
+				{
+					DisplayHelpWindow();
+				}
+
+				// F5 で盤面のリロード（自動生成の盤面なら新たな盤面の生成）
+				if (event.key.code == sf::Keyboard::F5)
+				{
+					CallReload();
+				}
+			}
+		}
+
+		// 長押しの処理
+		// イベントとは関係なく、現在のキー押下状態とタイマーから判断
+		switch (event.key.code)
+		{
+		case sf::Keyboard::Z:
+			// Undo処理
+			// 長押し状態にあり、かつリピートタイマーが0以下か？
+			if (mKeyHeldDuration.at(sf::Keyboard::Z) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Z) <= 0.0f)
+			{
 				CallUndo();
 			}
-
-			// y でredo処理
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
+			break;
+		case sf::Keyboard::Y:
+			// Redo処理
+			// 長押し状態にあり、かつリピートタイマーが0以下か？
+			if (mKeyHeldDuration.at(sf::Keyboard::Y) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Y) <= 0.0f)
 			{
-				mInputCooldown = 0.13f;
 				CallRedo();
 			}
-
-			// PGUPで最新の状態にする
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageUp))
-			{
-				CallRedoAll();
-			}
-
-			// PGDNで初期状態にする
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::PageDown))
-			{
-				CallReset();
-			}
-
-			// Ctrl + rで全てリセット
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::R))
-			{
-				mInputCooldown = 0.13f;
-				CallRestart();
-			}
-
-			// Ctrl + s で現在の盤面をセーブ
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-			{
-				mInputCooldown = 0.13f;
-				CallSave();
-			}
-
-			// H でヘルプ画面の表示
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::H))
-			{
-				mInputCooldown = 0.13f;
-				DisplayHelpWindow();
-			}
-
-			// F5 で盤面のリロード（自動生成の盤面なら新たな盤面の生成）
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::F5))
-			{
-				mInputCooldown = 0.13f;
-				CallReload();
-			}
+			break;
+		default:
+			break;
 		}
 
 		// ゲームプレイ状態ならアクターの入力処理を行う
@@ -354,7 +381,7 @@ void Game::ProcessInput()
 
 			for (auto& actor : mActiveActors)
 			{
-				actor->ProcessInput(&event);
+				actor->ProcessInput(&event, mKeyHeldDuration, mAutoRepeatTimer);
 			}
 
 			mUpdatingActors = false;
@@ -383,7 +410,37 @@ void Game::UpdateGame()
 		deltaTime = 0.05f;
 	}
 	mTicksCount = mClock.getElapsedTime();
-	mInputCooldown -= deltaTime;
+
+	// 全てのキーをスキャンしてタイマーを更新
+	// sf::Keyboard::KeyCount はキーの総数を示す
+	for (int k = 0; k < sf::Keyboard::KeyCount; ++k)
+	{
+		sf::Keyboard::Key currentKey = static_cast<sf::Keyboard::Key>(k);
+
+		if (sf::Keyboard::isKeyPressed(currentKey))
+		{
+			// ---- キーが押されている場合の処理 ----
+			// 押下時間を加算
+			mKeyHeldDuration[currentKey] += deltaTime;
+
+			// 長押し状態か？
+			if (mKeyHeldDuration[currentKey] > HOLD_THRESHOLD)
+			{
+				// リピートタイマーを減算
+				mAutoRepeatTimer[currentKey] -= deltaTime;
+			}
+		}
+		else
+		{
+			// ---- キーが離されている場合の処理 ----
+			if (mKeyHeldDuration[currentKey] > 0.0f)
+			{
+				// 押下時間とタイマーをリセット
+				mKeyHeldDuration[currentKey] = 0.0f;
+				mAutoRepeatTimer[currentKey] = 0.0f;
+			}
+		}
+	}
 
 	// 全てのアクターを更新
 	mUpdatingActors = true;

@@ -17,7 +17,7 @@ public:
 	void Update(float deltaTime) override;
 
 	// このコンポーネント特有の入力処理(SpriteComponentでは何もしない)
-	void ProcessInput(const sf::Event* event) override {}
+	void ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) override {}
 
 	// 描画関数
 	void Draw(sf::RenderWindow* mWindow);

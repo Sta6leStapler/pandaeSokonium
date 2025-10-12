@@ -138,8 +138,11 @@ public:
 	sf::Vector2i GetBoardSize() const { return mBoardSize; }
 	BoundingBox GetBoardViewArea() const { return mBoardViewArea; }
 	unsigned int GetStep() const { return mStep; }
-	double GetSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - mStart).count()); };
-	double GetMSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - mStart).count()); };
+	double GetSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - mStart).count()); }
+	double GetMSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - mStart).count()); }
+	float GetTapThresHold() const { return TAP_THRESHOLD; }
+	float GetHoldThresHold() const { return HOLD_THRESHOLD; }
+	float GetAutoRepeatInterval() const { return AUTO_REPEAT_INTERVAL; }
 
 	// テクスチャ関連
 	sf::Texture* GetTexture(const std::string& fileName) const { return mTextures.at(fileName); }
@@ -237,8 +240,16 @@ private:
 	// 盤面の描画範囲
 	BoundingBox mBoardViewArea;
 
-	// 入力のクールダウン
-	float mInputCooldown;
+	// 各キーの押下時間を記録するマップ
+	// 長押し中の次の入力までの時間を計るタイマー
+	std::map<sf::Keyboard::Key, float> mKeyHeldDuration, mAutoRepeatTimer;
+
+	// 単押しとみなす押下時間
+	static constexpr float TAP_THRESHOLD = 0.05f;
+	// 長押しと判定するまでの時間（秒）
+	static constexpr float HOLD_THRESHOLD = 0.5f;
+	// 長押し中の連続入力の間隔（秒）
+	static constexpr float AUTO_REPEAT_INTERVAL = 0.1f;
 
 	// 現在のターン数
 	unsigned int mStep;

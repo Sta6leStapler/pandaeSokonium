@@ -19,10 +19,10 @@ public:
 	void UpdateComponents(float deltaTime) override;
 
 	// Gameクラスから入力処理を呼び出す
-	void ProcessInput(const sf::Event* event) override;
+	void ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) override;
 
 	// アクターが持つすべてのコンポーネントの入力処理を行う
-	void ProcessInputComponents(const sf::Event* event) override;
+	void ProcessInputComponents(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) override;
 
 	// コンポーネントの追加と削除
 	void AddComponent(class IComponent* component) override;
