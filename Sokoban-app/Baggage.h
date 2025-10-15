@@ -16,6 +16,14 @@ public:
 		Deadlock
 	};
 
+	// プレイヤーの内部状態
+	enum class HighlightState
+	{
+		Idle,          // 通常待機
+		Highlighting,  // 移動可能マスをハイライト中
+		MovingOnPath   // 計算された経路上を移動中
+	};
+
 	Baggage(class Game* game, sf::Vector2i bCoordinate);
 	virtual ~Baggage();
 
@@ -48,8 +56,19 @@ public:
 	sf::Vector2f GetForward() const { return sf::Vector2f(std::cos(mRotation), -std::sin(mRotation)); }
 	sf::Vector2i GetBoardCoordinate() const { return mBoardCoordinate; }
 	void SetBoardCoordinate(const sf::Vector2i boardCoordinate);
+	HighlightState GetCurrentHighlightState() const { return mCurrentHighlightState; }
+
+	// 荷物の内部状態を更新する関数
+	void SetIdleState() { mCurrentHighlightState = HighlightState::Idle; }
+	void SetHighlightingState() { mCurrentHighlightState = HighlightState::Highlighting; }
 
 private:
+	// このアクター専用のヘルパー関数
+	// アイドル状態でプレイヤーがクリックされた場合
+	void HandleInputIdle(const sf::Vector2i& clickedTile);
+	// 移動可能なマスをハイライト中にプレイヤーがクリックされた場合
+	void HandleInputHighlighting(const sf::Vector2i& clickedTile);
+
 	// アクターの状態
 	IActor::ActorState mState;
 
@@ -74,4 +93,10 @@ private:
 
 	// 荷物がゴール上にあるかどうか
 	BState bState;
+
+	// ハイライト状態管理用のメンバ変数を追加
+	HighlightState mCurrentHighlightState;
+
+	// 移動入力の検知
+	bool mDetection;
 };

@@ -18,6 +18,8 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	, mBoardName(game->GetCurrentKey())
 	, mBoardCoordinate(bCoordinate)
 	, bState(BState::OnFloor)
+	, mCurrentHighlightState(HighlightState::Idle)
+	, mDetection(false)
 {
 	mGame->AddActor(this);
 
@@ -130,7 +132,69 @@ void Baggage::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::
 		ProcessInputComponents(event, key_held_duration, auto_repeat_timer);
 
 		// このアクター特有の振る舞いがあれば書く
+		if (mCurrentHighlightState == HighlightState::Idle || mCurrentHighlightState == HighlightState::Highlighting)
+		{
+			if (mDetection)
+			{
+				// もしハイライト表示中なら、移動の前にハイライトを消す
+				if (mCurrentHighlightState == HighlightState::Highlighting)
+				{
+					mGame->ClearMoveHighlights();
+					mCurrentHighlightState = HighlightState::Idle;
+				}
+			}
 
+			// マウスクリックの処理を追加
+			if (event && event->type == sf::Event::MouseButtonPressed)
+			{
+				if (event->mouseButton.button == sf::Mouse::Left)
+				{
+					sf::Vector2f mousePos(static_cast<float>(event->mouseButton.x), static_cast<float>(event->mouseButton.y));
+					sf::Vector2i clickedTile = mGame->ScreenToTileCoords(mousePos);
+
+					if (clickedTile != sf::Vector2i{ -1, -1 })
+					{
+						// 荷物の現在の状態で処理を分岐
+						switch (mCurrentHighlightState)
+						{
+						case HighlightState::Idle:
+							HandleInputIdle(clickedTile);
+							break;
+						case HighlightState::Highlighting:
+							break;
+						case HighlightState::MovingOnPath:
+							// 経路移動中は入力を無視
+							break;
+						default:
+							break;
+						}
+					}
+				}
+				else if (event->mouseButton.button == sf::Mouse::Right)
+				{
+					sf::Vector2f mousePos(static_cast<float>(event->mouseButton.x), static_cast<float>(event->mouseButton.y));
+					sf::Vector2i clickedTile = mGame->ScreenToTileCoords(mousePos);
+
+					if (clickedTile != sf::Vector2i{ -1, -1 })
+					{
+						// 荷物の現在の状態で処理を分岐
+						switch (mCurrentHighlightState)
+						{
+						case HighlightState::Idle:
+							break;
+						case HighlightState::Highlighting:
+							HandleInputHighlighting(clickedTile);
+							break;
+						case HighlightState::MovingOnPath:
+							// 経路移動中は入力を無視
+							break;
+						default:
+							break;
+						}
+					}
+				}
+			}
+		}
 	}
 
 }
@@ -176,4 +240,41 @@ void Baggage::SetBoardCoordinate(const sf::Vector2i boardCoordinate)
 		mPosition.y + static_cast<float>(mTextures[bState]->getSize().y) * mScale.y * static_cast<float>(boardCoordinate.y - mBoardCoordinate.y)
 	);
 	mBoardCoordinate = boardCoordinate;
+}
+
+void Baggage::HandleInputIdle(const sf::Vector2i& clickedTile)
+{
+	if (clickedTile == mBoardCoordinate) // 荷物自身がクリックされた
+	{
+		// 1. 移動可能なマスをすべて計算
+		auto transportable = Pathfinder::FindAllTransportable(mBoardCoordinate, mGame->GetBoardState(), mGame->GetPlayer()->GetBoardCoordinate(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+
+		// 2. Gameクラスにハイライト描画を依頼
+		mGame->SetPushHighlights(transportable, this);
+
+		// 3. 状態を更新
+		mCurrentHighlightState = HighlightState::Highlighting;
+	}
+}
+
+void Baggage::HandleInputHighlighting(const sf::Vector2i& clickedTile)
+{
+	// Gameクラスからハイライト中のマスリストを取得
+	const auto& highlightedTiles = mGame->GetPushHighlightedTiles();
+
+	auto iter = std::find(highlightedTiles.begin(), highlightedTiles.end(), clickedTile);
+	if (clickedTile == mBoardCoordinate) // 荷物が再度クリックされた
+	{
+		mGame->ClearPushHighlights(); // ハイライトを消去依頼
+		mCurrentHighlightState = HighlightState::Idle;
+	}
+	// ハイライトされているマスがクリックされたかチェック
+	else if (iter != highlightedTiles.end())
+	{
+		mGame->ClearPushHighlights();
+
+		// 経路を計算し、移動経路をプレイヤーに送る
+		std::vector<sf::Vector2i> path = Pathfinder::FindTransportPath(mBoardCoordinate, *iter, mGame->GetPlayer()->GetBoardCoordinate(), mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+		mGame->GetPlayer()->InputMovePath(path);
+	}
 }

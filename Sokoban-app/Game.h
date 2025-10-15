@@ -7,11 +7,14 @@
 #include <chrono>
 
 #include "Player.h"
+#include "Baggage.h"
+#include "GameBoard.h"
 
 #include "TGUI/TGUI.hpp"
 #include "TGUI/Backend/SFML-Graphics.hpp"
 
 class Player;
+class GameBoard;
 
 // 一動作のログ
 struct Log
@@ -73,6 +76,11 @@ public:
 	
 	// ステップを加算
 	void AddStep() { mStep++; }
+
+	// スクリーン座標をタイル座標に変換する
+	sf::Vector2i ScreenToTileCoords(const sf::Vector2f& screenPos) const;
+	// タイル座標をスクリーン座標に変換する
+	sf::Vector2f TileToScreenCoords(const sf::Vector2i& tileCorrdsPos) const;
 
 	// undo/redo処理
 	void CallUndo();
@@ -160,6 +168,15 @@ public:
 	void SetCurrentKey(const std::string& key) { mCurrentKey = key; }
 	std::vector<std::string> GetCurrentInitBoardData() const { return mInitBoardData.at(mCurrentKey); }
 	std::vector<std::string> GetInitBoardData(const std::string& boardKey) const { return mInitBoardData.at(boardKey); }
+
+	// アクターからハイライトの更新依頼を受け取り、更新が必要アクターに指示を出す関数
+	void SetMoveHighlights(const std::vector<sf::Vector2i>& tiles);
+	void ClearMoveHighlights();
+	std::vector<sf::Vector2i> GetMoveHighlightedTiles() const { return mGameBoard->GetMoveHighlightedTiles(); }
+	void SetPushHighlights(const std::vector<sf::Vector2i>& tiles, class Baggage* baggage);
+	void ClearPushHighlights();
+	std::vector<sf::Vector2i> GetPushHighlightedTiles() const { return mGameBoard->GetPushHighlightedTiles(); }
+	void SetBaggagesIdleState();
 
 	class HUDHelper* GetHUDHelper() const { return mHUDHelper; }
 	std::vector<std::string> GetBoardState() const { return mBoardState; }

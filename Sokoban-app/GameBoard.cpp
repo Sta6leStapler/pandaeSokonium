@@ -12,23 +12,35 @@ GameBoard::GameBoard(Game* game)
 	, mScale(sf::Vector2f(1.0f, 1.0f))
 	, mRotation(0.0f)
 	, mComponents(std::vector<IComponent*>{})
-	, mSpriteComponent(nullptr)
+	, mBoardSpriteComponent(nullptr)
+	, mHighlightSpriteComponent(nullptr)
 	, mTextures(std::unordered_map<std::string, sf::Texture*>{})
 	, mGame(game)
 	, mBoardName(game->GetCurrentKey())
+	, mMoveHighlightedTiles(std::vector<sf::Vector2i>{})
+	, mPushHighlightedTiles(std::vector<sf::Vector2i>{})
+	, mMoveHighlightTexture(nullptr)
+	, mPushHighlightTexture(nullptr)
+	, mHighlightingBaggage(nullptr)
 {
 	mGame->AddActor(this);
 
 	// SpriteComponentを作成する
 	// 床と壁のタイルを用意
 	// 読み込んだ盤面データに応じたステージのテクスチャを作成する
-	mSpriteComponent = new SpriteComponent(this, 100, 50);
+	mBoardSpriteComponent = new SpriteComponent(this, 100, 50);
 	std::string filename = "Assets/Floor.png";
 	mTextures.emplace(filename, game->LoadTexture(filename));
 	filename = "Assets/Wall.png";
 	mTextures.emplace(filename, game->LoadTexture(filename));
 	filename = "Assets/Goal.png";
 	mTextures.emplace(filename, game->LoadTexture(filename));
+	filename = "Assets/MoveGuideGrid.png";
+	mTextures.emplace(filename, game->LoadTexture(filename));
+	mMoveHighlightTexture = game->LoadTexture(filename);
+	filename = "Assets/PushGuideGrid.png";
+	mTextures.emplace(filename, game->LoadTexture(filename));
+	mPushHighlightTexture = game->LoadTexture(filename);
 	
 	std::vector<std::string> lines = game->GetBoardData()[mBoardName];
 
@@ -97,7 +109,7 @@ GameBoard::GameBoard(Game* game)
 	sf::Texture* tmpTexture = new sf::Texture(boardTexture->getTexture());
 	delete boardTexture;
 
-	mSpriteComponent->SetTexture(tmpTexture);
+	mBoardSpriteComponent->SetTexture(tmpTexture);
 
 	// スケーリングと位置の初期化を行う
 	// 表示エリアのサイズ　/ 盤面のサイズ を求める
@@ -194,6 +206,9 @@ void GameBoard::RemoveComponent(IComponent* component)
 
 void GameBoard::Reload()
 {
+	// ハイライト中のタイルを消去
+	ClearMoveHighlights();
+
 	mBoardName = mGame->GetCurrentKey();
 	std::vector<std::string> lines = mGame->GetInitBoardData(mBoardName);
 
@@ -209,7 +224,6 @@ void GameBoard::Reload()
 
 	// 盤面のテクスチャを作成
 	sf::RenderTexture* boardTexture = new sf::RenderTexture();
-	sf::Vector2f wSize = mGame->GetWindowSize();
 
 	// 床と壁のスプライトを作成
 	sf::Sprite tmpFloor, tmpWall, tmpGoal;
@@ -261,7 +275,7 @@ void GameBoard::Reload()
 	sf::Texture* tmpTexture = new sf::Texture(boardTexture->getTexture());
 	delete boardTexture;
 
-	mSpriteComponent->SetTexture(tmpTexture);
+	mBoardSpriteComponent->SetTexture(tmpTexture);
 
 	// 2024_09_05 ウィンドウサイズから描画範囲に変更
 	BoundingBox viewArea = mGame->GetBoardViewArea();
@@ -282,4 +296,92 @@ void GameBoard::Reload()
 		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(tmpTexture->getSize().y) * mScale.y) / 2.0f
 	};
 
+}
+
+void GameBoard::SetMoveHighlightedTiles(const std::vector<sf::Vector2i>& tiles)
+{
+	// 荷物の移動可能マスのハイライトを先に消す
+	mGame->ClearPushHighlights();
+
+	// ハイライトされるタイルのリストを読み取る
+	mMoveHighlightedTiles = tiles;
+
+	// ハイライトのテクスチャを作成
+	sf::RenderTexture* highlightTexture = new sf::RenderTexture();
+
+	// 各マスに貼り付けるハイライトのスプライトを作成
+	sf::Sprite tmpHighlight;
+	tmpHighlight.setTexture(*mMoveHighlightTexture);
+
+	// スプライトをテクスチャに貼り付けていく
+	highlightTexture->create(static_cast<int>(tmpHighlight.getGlobalBounds().width * mGame->GetBoardSize().x), static_cast<int>(tmpHighlight.getGlobalBounds().height * mGame->GetBoardSize().y));
+
+	for (const auto& tile : mMoveHighlightedTiles)
+	{
+		tmpHighlight.setPosition(tmpHighlight.getGlobalBounds().width * static_cast<float>(tile.x), tmpHighlight.getGlobalBounds().height * static_cast<float>(tile.y));
+		highlightTexture->draw(tmpHighlight);
+	}
+
+	sf::Texture* tmpTexture = new sf::Texture(highlightTexture->getTexture());
+	delete highlightTexture;
+
+	mHighlightSpriteComponent = new SpriteComponent(this, 100, 150);
+	mHighlightSpriteComponent->SetTexture(tmpTexture);
+}
+
+void GameBoard::ClearMoveHighlights()
+{
+	mMoveHighlightedTiles.clear();
+	
+	if (mHighlightSpriteComponent != nullptr)
+	{
+		delete mHighlightSpriteComponent;
+		mHighlightSpriteComponent = nullptr;
+	}
+}
+
+void GameBoard::SetPushHighlightedTiles(const std::vector<sf::Vector2i>& tiles, Baggage* baggage)
+{
+	// プレイヤーの移動可能マスのハイライトを先に消す
+	mGame->ClearMoveHighlights();
+
+	// 表示対象の荷物のポインタを登録
+	mHighlightingBaggage = baggage;
+
+	// ハイライトされるタイルのリストを読み取る
+	mPushHighlightedTiles = tiles;
+
+	// ハイライトのテクスチャを作成
+	sf::RenderTexture* highlightTexture = new sf::RenderTexture();
+
+	// 各マスに貼り付けるハイライトのスプライトを作成
+	sf::Sprite tmpHighlight;
+	tmpHighlight.setTexture(*mPushHighlightTexture);
+
+	// スプライトをテクスチャに貼り付けていく
+	highlightTexture->create(static_cast<int>(tmpHighlight.getGlobalBounds().width * mGame->GetBoardSize().x), static_cast<int>(tmpHighlight.getGlobalBounds().height * mGame->GetBoardSize().y));
+
+	for (const auto& tile : mPushHighlightedTiles)
+	{
+		tmpHighlight.setPosition(tmpHighlight.getGlobalBounds().width * static_cast<float>(tile.x), tmpHighlight.getGlobalBounds().height * static_cast<float>(tile.y));
+		highlightTexture->draw(tmpHighlight);
+	}
+
+	sf::Texture* tmpTexture = new sf::Texture(highlightTexture->getTexture());
+	delete highlightTexture;
+
+	mHighlightSpriteComponent = new SpriteComponent(this, 100, 150);
+	mHighlightSpriteComponent->SetTexture(tmpTexture);
+}
+
+void GameBoard::ClearPushHighlights()
+{
+	mPushHighlightedTiles.clear();
+	mHighlightingBaggage = nullptr;
+
+	if (mHighlightSpriteComponent != nullptr)
+	{
+		delete mHighlightSpriteComponent;
+		mHighlightSpriteComponent = nullptr;
+	}
 }

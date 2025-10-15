@@ -2,6 +2,7 @@
 
 #include "SFML/Graphics.hpp"
 #include "IActor.h"
+#include "Baggage.h"
 
 #include <unordered_map>
 #include <cmath>
@@ -39,6 +40,17 @@ public:
 	// 以下本アクター特有のメンバ関数
 	// 盤面を更新する
 	void Reload();
+	// ハイライト中のタイルのリストを取得
+	std::vector<sf::Vector2i> GetMoveHighlightedTiles() const { return mMoveHighlightedTiles; }
+	std::vector<sf::Vector2i> GetPushHighlightedTiles() const { return mPushHighlightedTiles; }
+	// Gameクラスから呼ばれ、プレイヤーが移動可能なタイルのハイライトを設定する
+	void SetMoveHighlightedTiles(const std::vector<sf::Vector2i>& tiles);
+	// プレイヤーが移動可能なタイルのハイライトをすべてクリアする
+	void ClearMoveHighlights();
+	// Gameクラスから呼ばれ、荷物を運搬可能なタイルのハイライトを設定する
+	void SetPushHighlightedTiles(const std::vector<sf::Vector2i>& tiles, class Baggage* baggage);
+	// 荷物が運搬可能なタイルのハイライトをすべてクリアする
+	void ClearPushHighlights();
 
 	// ゲッターとセッター
 	std::string GetBoardName() const { return this->mBoardName; }
@@ -54,7 +66,8 @@ private:
 	float mRotation;
 
 	std::vector<class IComponent*> mComponents;
-	class SpriteComponent* mSpriteComponent;
+	class SpriteComponent* mBoardSpriteComponent;
+	class SpriteComponent* mHighlightSpriteComponent;
 
 	std::string mBoardName;
 
@@ -63,4 +76,13 @@ private:
 
 	class Game* mGame;
 
+	// アクター特有のメンバ変数
+	// ハイライト中のタイルのリスト
+	std::vector<sf::Vector2i> mMoveHighlightedTiles;
+	std::vector<sf::Vector2i> mPushHighlightedTiles;
+	// ハイライト用テクスチャ
+	sf::Texture* mMoveHighlightTexture;
+	sf::Texture* mPushHighlightTexture;
+
+	Baggage* mHighlightingBaggage;
 };

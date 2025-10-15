@@ -20,7 +20,9 @@ Player::Player(Game* game)
 	, mDirection(ESouth)
 	, prevDirection(ESouth)
 	, prevKeys(sf::Event::KeyEvent{})
-	, mMoveCooldown(0.0f)
+	, mCurrentHighlightState(HighlightState::Idle)
+	, mMovementPath(std::vector<sf::Vector2i>{})
+	, mPathMoveTimer(0.0f)
 	, mDetection(false)
 {
 	mGame->AddActor(this);
@@ -117,8 +119,6 @@ Player::~Player()
 
 void Player::Update(float deltaTime)
 {
-	mMoveCooldown -= deltaTime;
-
 	if (mState == IActor::ActorState::EActive)
 	{
 		UpdateComponents(deltaTime);
@@ -126,6 +126,100 @@ void Player::Update(float deltaTime)
 		// このアクター特有の更新処理があれば書く
 		// 向きの更新が入ったらコンポーネントのスプライトを切り替える
 		mSpriteComponent->SetTexture(mTextures[mDirection]);
+
+		// 自動移動の処理中かどうかを判定
+		if (mCurrentHighlightState == HighlightState::MovingOnPath)
+		{
+			mPathMoveTimer -= deltaTime;
+			if (mPathMoveTimer <= 0.0f)
+			{
+				sf::Vector2i currentPos = mBoardCoordinate;
+				sf::Vector2i nextPos = mMovementPath.front();
+
+				// 移動方向のベクトルを計算
+				sf::Vector2i moveDir = nextPos - currentPos;
+
+				// 向きを更新
+				if (moveDir.x > 0) mDirection = Direction::EEast;
+				else if (moveDir.x < 0) mDirection = Direction::EWest;
+				else if (moveDir.y > 0) mDirection = Direction::ESouth;
+				else if (moveDir.y < 0) mDirection = Direction::ENorth;
+
+				// --- 荷物を押すロジックをここに追加 ---
+				const auto& boardState = mGame->GetBoardState();
+				const auto& baggages = mGame->GetBaggages();
+				Baggage* baggageToPush = nullptr;
+
+				// 1. 移動先に荷物があるかチェック
+				for (auto baggage : baggages)
+				{
+					if (baggage->GetBoardCoordinate() == nextPos)
+					{
+						baggageToPush = baggage;
+						break;
+					}
+				}
+
+				if (baggageToPush == nullptr) // ケースA: 移動先に荷物がない
+				{
+					// プレイヤーだけ移動
+					SetBoardCoordinate(nextPos);
+
+					// ログを追加 (プレイヤーのみ)
+					mGame->RemoveRedo();
+					mGame->AddStep();
+					mGame->AddLog(currentPos, nextPos, prevDirection, mDirection);
+				}
+				else // ケースB: 移動先に荷物がある
+				{
+					// 荷物のさらに先の座標
+					sf::Vector2i baggageDest = nextPos + moveDir;
+
+					// 荷物の先が壁ではないかチェック
+					if (boardState[baggageDest.y][baggageDest.x] != '#')
+					{
+						// 荷物の先に別の荷物がないかチェック
+						bool isAnotherBaggage = false;
+						for (auto baggage : baggages)
+						{
+							if (baggage->GetBoardCoordinate() == baggageDest)
+							{
+								isAnotherBaggage = true;
+								break;
+							}
+						}
+
+						if (!isAnotherBaggage)
+						{
+							// 押せる場合：プレイヤーと荷物を両方移動
+							sf::Vector2i baggageLastPos = baggageToPush->GetBoardCoordinate();
+							baggageToPush->SetBoardCoordinate(baggageDest);
+							SetBoardCoordinate(nextPos);
+
+							// ログを追加 (プレイヤーと荷物)
+							mGame->RemoveRedo();
+							mGame->AddStep();
+							mGame->AddLog(currentPos, nextPos, baggageLastPos, baggageDest, prevDirection, mDirection);
+						}
+					}
+				}
+				// --- 荷物ロジックここまで ---
+
+				prevDirection = mDirection;
+				mMovementPath.erase(mMovementPath.begin()); // 移動したマスを経路リストから削除
+
+				if (mMovementPath.empty())
+				{
+					mCurrentHighlightState = HighlightState::Idle;
+					mGame->SetBaggagesIdleState();
+				}
+				else
+				{
+					mPathMoveTimer = PATH_MOVE_INTERVAL; // タイマーをリセット
+				}
+			}
+			return; // 自動移動中はキーボード移動処理をスキップ
+		}
 
 		// プレイヤーや荷物を抜いた盤面の情報
 		std::vector<std::string> boardState = mGame->GetBoardState();
@@ -243,140 +337,184 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 		// アクターが持つ全てのComponentの入力処理を行う
 		// どのComponentも特に独自の処理を実装していなければ何もしない
 		ProcessInputComponents(event, key_held_duration, auto_repeat_timer);
-
-		// 短押しの処理
-		if (event && event->type == sf::Event::KeyPressed)
+		
+		if (mCurrentHighlightState == HighlightState::Idle || mCurrentHighlightState == HighlightState::Highlighting)
 		{
-			// このキーが押されてから経過した時間を確認
-			float duration = key_held_duration.count(event->key.code) ? key_held_duration.at(event->key.code) : 0.0f;
+			// 短押しの処理
+			if (event && event->type == sf::Event::KeyPressed)
+			{
+				// このキーが押されてから経過した時間を確認
+				float duration = key_held_duration.count(event->key.code) ? key_held_duration.at(event->key.code) : 0.0f;
 
-			// 押された最初のフレーム（押下時間が非常に短い）かを判定
-			// deltaTime以下、などでも良い
-			if (duration < mGame->GetTapThresHold())
-			{
-				if (event->key.code == sf::Keyboard::Key::Right)
+				// 押された最初のフレーム（押下時間が非常に短い）かを判定
+				// deltaTime以下、などでも良い
+				if (duration < mGame->GetTapThresHold())
 				{
-					mDirection = Direction::EEast;
-					mRotation = 0.0f;
-					mDetection = true;
-				}
-				else if (event->key.code == sf::Keyboard::Key::Up)
-				{
-					mDirection = Direction::ENorth;
-					mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
-					mDetection = true;
-				}
-				else if (event->key.code == sf::Keyboard::Key::Left)
-				{
-					mDirection = Direction::EWest;
-					mRotation = static_cast<float>(std::acos(-1));
-					mDetection = true;
-				}
-				else if (event->key.code == sf::Keyboard::Key::Down)
-				{
-					mDirection = Direction::ESouth;
-					mRotation = static_cast<float>(std::acos(-1) / 2.0);
-					mDetection = true;
+					if (event->key.code == sf::Keyboard::Key::Right)
+					{
+						mDirection = Direction::EEast;
+						mRotation = 0.0f;
+						mDetection = true;
+					}
+					else if (event->key.code == sf::Keyboard::Key::Up)
+					{
+						mDirection = Direction::ENorth;
+						mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
+						mDetection = true;
+					}
+					else if (event->key.code == sf::Keyboard::Key::Left)
+					{
+						mDirection = Direction::EWest;
+						mRotation = static_cast<float>(std::acos(-1));
+						mDetection = true;
+					}
+					else if (event->key.code == sf::Keyboard::Key::Down)
+					{
+						mDirection = Direction::ESouth;
+						mRotation = static_cast<float>(std::acos(-1) / 2.0);
+						mDetection = true;
+					}
 				}
 			}
-		}
 
 
-		// 長押しの処理
-		// イベントとは関係なく、現在のキー押下状態とタイマーから判断
-		switch (event->key.code)
-		{
-		case sf::Keyboard::Right:
-			// 長押し状態にあり、かつリピートタイマーが0以下か？
-			if (key_held_duration.at(sf::Keyboard::Right) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Right) <= 0.0f)
-			{
-				mDirection = Direction::EEast;
-				mRotation = 0.0f;
-				mDetection = true;
-			}
-			break;
-		case sf::Keyboard::Up:
-			// 長押し状態にあり、かつリピートタイマーが0以下か？
-			if (key_held_duration.at(sf::Keyboard::Up) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Up) <= 0.0f)
-			{
-				mDirection = Direction::ENorth;
-				mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
-				mDetection = true;
-			}
-			break;
-		case sf::Keyboard::Left:
-			// 長押し状態にあり、かつリピートタイマーが0以下か？
-			if (key_held_duration.at(sf::Keyboard::Left) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Left) <= 0.0f)
-			{
-				mDirection = Direction::EWest;
-				mRotation = static_cast<float>(std::acos(-1));
-				mDetection = true;
-			}
-			break;
-		case sf::Keyboard::Down:
-			// 長押し状態にあり、かつリピートタイマーが0以下か？
-			if (key_held_duration.at(sf::Keyboard::Down) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Down) <= 0.0f)
-			{
-				mDirection = Direction::ESouth;
-				mRotation = static_cast<float>(std::acos(-1) / 2.0);
-				mDetection = true;
-			}
-			break;
-		default:
-			break;
-		}
-
-		// 以下は旧入力処理、あまり操作性はよくないが一応残しておく
-		// このアクター特有の振る舞いがあれば書く
-		// 移動入力のクールダウンが0以下なら入力を受け付ける
-		// ここではプレイヤーの移動や向きの切り替えの描画は行わないが、内部状態を更新する
-		/*
-		if (mMoveCooldown <= 0.0f)
-		{
-			// mDetectionは移動を更新処理部分でするかどうかを表す変数
-			mMoveCooldown = 0.13f;
-			mDetection = true;
+			// 長押しの処理
+			// イベントとは関係なく、現在のキー押下状態とタイマーから判断
 			switch (event->key.code)
 			{
 			case sf::Keyboard::Right:
-				if (prevKeys.code != sf::Keyboard::Right)
+				// 長押し状態にあり、かつリピートタイマーが0以下か？
+				if (key_held_duration.at(sf::Keyboard::Right) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Right) <= 0.0f)
 				{
 					mDirection = Direction::EEast;
 					mRotation = 0.0f;
-					std::cout << "Player::Input -> Move Right!" << std::endl;
+					mDetection = true;
 				}
 				break;
 			case sf::Keyboard::Up:
-				if (prevKeys.code != sf::Keyboard::Up)
+				// 長押し状態にあり、かつリピートタイマーが0以下か？
+				if (key_held_duration.at(sf::Keyboard::Up) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Up) <= 0.0f)
 				{
 					mDirection = Direction::ENorth;
 					mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
-					std::cout << "Player::Input -> Move North!" << std::endl;
+					mDetection = true;
 				}
 				break;
 			case sf::Keyboard::Left:
-				if (prevKeys.code != sf::Keyboard::Left)
+				// 長押し状態にあり、かつリピートタイマーが0以下か？
+				if (key_held_duration.at(sf::Keyboard::Left) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Left) <= 0.0f)
 				{
 					mDirection = Direction::EWest;
 					mRotation = static_cast<float>(std::acos(-1));
-					std::cout << "Player::Input -> Move Left!" << std::endl;
+					mDetection = true;
 				}
 				break;
 			case sf::Keyboard::Down:
-				if (prevKeys.code != sf::Keyboard::Down)
+				// 長押し状態にあり、かつリピートタイマーが0以下か？
+				if (key_held_duration.at(sf::Keyboard::Down) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Down) <= 0.0f)
 				{
 					mDirection = Direction::ESouth;
 					mRotation = static_cast<float>(std::acos(-1) / 2.0);
-					std::cout << "Player::Input -> Move South!" << std::endl;
+					mDetection = true;
 				}
 				break;
 			default:
-				mMoveCooldown = 0.0f;
-				mDetection = false;
 				break;
 			}
+
+			if (mDetection)
+			{
+				// もしハイライト表示中なら、移動の前にハイライトを消す
+				if (mCurrentHighlightState == HighlightState::Highlighting)
+				{
+					mGame->ClearMoveHighlights();
+					mCurrentHighlightState = HighlightState::Idle;
+				}
+				// 荷物の移動可能なマスのハイライトも無条件で消す
+				mGame->ClearPushHighlights();
+			}
+
+			// 以下は旧入力処理、あまり操作性はよくないが一応残しておく
+			// このアクター特有の振る舞いがあれば書く
+			// 移動入力のクールダウンが0以下なら入力を受け付ける
+			// ここではプレイヤーの移動や向きの切り替えの描画は行わないが、内部状態を更新する
+			/*
+			if (mMoveCooldown <= 0.0f)
+			{
+				// mDetectionは移動を更新処理部分でするかどうかを表す変数
+				mMoveCooldown = 0.13f;
+				mDetection = true;
+				switch (event->key.code)
+				{
+				case sf::Keyboard::Right:
+					if (prevKeys.code != sf::Keyboard::Right)
+					{
+						mDirection = Direction::EEast;
+						mRotation = 0.0f;
+						std::cout << "Player::Input -> Move Right!" << std::endl;
+					}
+					break;
+				case sf::Keyboard::Up:
+					if (prevKeys.code != sf::Keyboard::Up)
+					{
+						mDirection = Direction::ENorth;
+						mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
+						std::cout << "Player::Input -> Move North!" << std::endl;
+					}
+					break;
+				case sf::Keyboard::Left:
+					if (prevKeys.code != sf::Keyboard::Left)
+					{
+						mDirection = Direction::EWest;
+						mRotation = static_cast<float>(std::acos(-1));
+						std::cout << "Player::Input -> Move Left!" << std::endl;
+					}
+					break;
+				case sf::Keyboard::Down:
+					if (prevKeys.code != sf::Keyboard::Down)
+					{
+						mDirection = Direction::ESouth;
+						mRotation = static_cast<float>(std::acos(-1) / 2.0);
+						std::cout << "Player::Input -> Move South!" << std::endl;
+					}
+					break;
+				default:
+					mMoveCooldown = 0.0f;
+					mDetection = false;
+					break;
+				}
+			}
+			*/
+
+			// マウスクリックの処理を追加
+			if (event && event->type == sf::Event::MouseButtonPressed)
+			{
+				if (event->mouseButton.button == sf::Mouse::Left)
+				{
+					sf::Vector2f mousePos(static_cast<float>(event->mouseButton.x), static_cast<float>(event->mouseButton.y));
+					sf::Vector2i clickedTile = mGame->ScreenToTileCoords(mousePos);
+
+					if (clickedTile != sf::Vector2i{ -1, -1 })
+					{
+						// プレイヤーの現在の状態で処理を分岐
+						switch (mCurrentHighlightState)
+						{
+						case HighlightState::Idle:
+							HandleInputIdle(clickedTile);
+							break;
+						case HighlightState::Highlighting:
+							HandleInputHighlighting(clickedTile);
+							break;
+						case HighlightState::MovingOnPath:
+							// 経路移動中は入力を無視
+							break;
+						default:
+							break;
+						}
+					}
+				}
+			}
 		}
-		*/
 	}
 
 	prevKeys = event->key;
@@ -426,6 +564,9 @@ void Player::SetBoardCoordinate(const sf::Vector2i boardCoordinate)
 
 void Player::Reload()
 {
+	// アイドル状態に戻しておく
+	mCurrentHighlightState = HighlightState::Idle;
+
 	// 盤面データをGameクラスから取得する
 	mBoardName = mGame->GetCurrentKey();
 	std::vector<std::string> lines = mGame->GetInitBoardData(mBoardName);
@@ -488,4 +629,74 @@ void Player::Reload()
 		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(mTextures[Direction::EEast]->getSize().x * mGame->GetBoardSize().x) * mScale.x) / 2.0f + static_cast<float>(mTextures[Direction::EEast]->getSize().x * mBoardCoordinate.x) * mScale.x,
 		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(mTextures[Direction::EEast]->getSize().x * mGame->GetBoardSize().y) * mScale.y) / 2.0f + static_cast<float>(mTextures[Direction::EEast]->getSize().y * mBoardCoordinate.y) * mScale.y
 	};
+}
+
+void Player::InputMovePath(const std::vector<sf::Vector2i>& path)
+{
+	// 妥当な経路かどうか判定
+	if (Pathfinder::isValidPath(mBoardCoordinate, path, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize()))
+	{
+		mMovementPath = path;
+		mGame->ClearMoveHighlights();
+		mGame->ClearPushHighlights();
+		mCurrentHighlightState = HighlightState::MovingOnPath;
+		mPathMoveTimer = PATH_MOVE_INTERVAL;
+	}
+}
+
+void Player::HandleInputIdle(const sf::Vector2i& clickedTile)
+{
+	if (clickedTile == mBoardCoordinate) // プレイヤー自身がクリックされた
+	{
+		// 1. 移動可能なマスをすべて計算
+		auto reachable = Pathfinder::FindAllReachable(mBoardCoordinate, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+
+		// 2. Gameクラスにハイライト描画を依頼
+		mGame->SetMoveHighlights(reachable);
+
+		// 3. 状態を更新
+		mCurrentHighlightState = HighlightState::Highlighting;
+	}
+	else // 他のマスがクリックされた
+	{
+		mGame->ClearPushHighlights();
+
+		// 1. そこまでの経路を計算
+		mMovementPath = Pathfinder::FindPath(mBoardCoordinate, clickedTile, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+
+		// 2. 経路があれば、移動状態に移行
+		if (!mMovementPath.empty())
+		{
+			// Playerは自身の状態とパスを更新するだけ
+			mCurrentHighlightState = HighlightState::MovingOnPath;
+			mPathMoveTimer = PATH_MOVE_INTERVAL;
+		}
+	}
+}
+
+void Player::HandleInputHighlighting(const sf::Vector2i& clickedTile)
+{
+	// Gameクラスからハイライト中のマスリストを取得
+	const auto& highlightedTiles = mGame->GetMoveHighlightedTiles();
+
+	if (clickedTile == mBoardCoordinate) // プレイヤーが再度クリックされた
+	{
+		mGame->ClearMoveHighlights(); // ハイライトを消去依頼
+		mGame->ClearPushHighlights();
+		mCurrentHighlightState = HighlightState::Idle;
+	}
+	// ハイライトされているマスがクリックされたかチェック
+	else if (std::find(highlightedTiles.begin(), highlightedTiles.end(), clickedTile) != highlightedTiles.end())
+	{
+		mGame->ClearMoveHighlights();
+		mGame->ClearPushHighlights();
+
+		// 経路を計算して移動開始
+		mMovementPath = Pathfinder::FindPath(mBoardCoordinate, clickedTile, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+		if (!mMovementPath.empty())
+		{
+			mCurrentHighlightState = HighlightState::MovingOnPath;
+			mPathMoveTimer = PATH_MOVE_INTERVAL;
+		}
+	}
 }

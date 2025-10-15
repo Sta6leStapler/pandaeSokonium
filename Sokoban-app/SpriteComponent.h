@@ -8,7 +8,7 @@ class SpriteComponent : public IComponent
 {
 public:
 	// コンストラクタ
-	// updateOrderが低ければ,先に描画される(画面の後方に来る)
+	// drawOrderが低ければ,先に描画される(画面の後方に来る)
 	SpriteComponent(class IActor* owner, int updateOrder = 100, int drawOrder = 100);
 	// デストラクタ
 	~SpriteComponent();
