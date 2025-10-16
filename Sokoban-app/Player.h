@@ -2,6 +2,7 @@
 
 #include "SFML/Graphics.hpp"
 #include "IActor.h"
+#include "Pathfinder.h"
 
 #include <unordered_map>
 #include <cmath>
@@ -16,6 +17,14 @@ public:
 		EEast,
 		EWest,
 		ESouth
+	};
+
+	// プレイヤーの内部状態
+	enum class HighlightState
+	{
+		Idle,          // 通常待機
+		Highlighting,  // 移動可能マスをハイライト中
+		MovingOnPath   // 計算された経路上を移動中
 	};
 
 	Player(class Game* game);
@@ -49,6 +58,14 @@ public:
 	// プレイヤーの位置を更新する
 	void Reload();
 
+	// プレイヤーの内部状態を更新する関数
+	void SetIdleState() { mCurrentHighlightState = HighlightState::Idle; }
+	void SetHighlightingState() { mCurrentHighlightState = HighlightState::Highlighting; }
+
+	// プレイヤーの移動ルートを受け取る関数
+	// 移動に支障がなければその通りに移動する
+	void InputMovePath(const std::vector<sf::Vector2i>& path);
+
 	// ゲッターとセッター
 	Direction GetDirection() const { return mDirection; }
 	void SetDirection(const Direction& direction) { mDirection = direction; }
@@ -59,6 +76,12 @@ public:
 	void SetBoardCoordinate(const sf::Vector2i boardCoordinate);
 
 private:
+	// このアクター専用のヘルパー関数
+	// アイドル状態でプレイヤーがクリックされた場合
+	void HandleInputIdle(const sf::Vector2i& clickedTile);
+	// 移動可能なマスをハイライト中にプレイヤーがクリックされた場合
+	void HandleInputHighlighting(const sf::Vector2i& clickedTile);
+
 	// アクターの状態
 	IActor::ActorState mState;
 
@@ -86,8 +109,15 @@ private:
 	// 直前のフレームのキー入力
 	sf::Event::KeyEvent prevKeys;
 
-	// 移動入力のクールダウン
-	float mMoveCooldown;
+	// ハイライト状態管理用のメンバ変数を追加
+	HighlightState mCurrentHighlightState;
+
+	// 自動移動用の経路を保持する
+	std::vector<sf::Vector2i> mMovementPath;
+
+	// 経路移動の各ステップ間のタイマー
+	float mPathMoveTimer;
+	const float PATH_MOVE_INTERVAL = 0.03f; // 1マス移動するのにかかる時間(秒)
 
 	// 移動入力の検知
 	bool mDetection;

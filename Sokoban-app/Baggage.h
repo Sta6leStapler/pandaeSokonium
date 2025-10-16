@@ -14,6 +14,24 @@ public:
 		OnGoal,
 		OnFloor,
 		Deadlock
+	}; 
+	
+	// 向きを表現する列挙型
+	enum Direction
+	{
+		EEast,
+		ESouth,
+		EWest,
+		ENorth
+	};
+
+	// プレイヤーの内部状態
+	enum class HighlightState
+	{
+		Idle,          // 通常待機
+		Highlighting,  // 移動可能マスをハイライト中
+		DisplayDirection,	// 格納する向きをハイライト中
+		MovingOnPath   // 計算された経路上を移動中
 	};
 
 	Baggage(class Game* game, sf::Vector2i bCoordinate);
@@ -48,8 +66,23 @@ public:
 	sf::Vector2f GetForward() const { return sf::Vector2f(std::cos(mRotation), -std::sin(mRotation)); }
 	sf::Vector2i GetBoardCoordinate() const { return mBoardCoordinate; }
 	void SetBoardCoordinate(const sf::Vector2i boardCoordinate);
+	HighlightState GetCurrentHighlightState() const { return mCurrentHighlightState; }
+	sf::Vector2i GetDestination() const { return mDestination;  }
+
+	// 荷物の内部状態を更新する関数
+	void SetIdleState() { mCurrentHighlightState = HighlightState::Idle; }
+	void SetHighlightingState() { mCurrentHighlightState = HighlightState::Highlighting; }
+	void SetDisplayDirectionsState() { mCurrentHighlightState = HighlightState::DisplayDirection; }
 
 private:
+	// このアクター専用のヘルパー関数
+	// アイドル状態でプレイヤーがクリックされた場合
+	void HandleInputIdle(const sf::Vector2i& clickedTile);
+	// 移動可能なマスをハイライト中にプレイヤーがクリックされた場合
+	void HandleInputHighlighting(const sf::Vector2i& clickedTile);
+	// 運搬可能な方向をハイライト中にプレイヤーがクリックされた場合
+	void HandleInputDirection(const sf::Vector2i& clickedTile, const sf::Vector2f& mousePos);
+
 	// アクターの状態
 	IActor::ActorState mState;
 
@@ -74,4 +107,15 @@ private:
 
 	// 荷物がゴール上にあるかどうか
 	BState bState;
+
+	// ハイライト状態管理用のメンバ変数を追加
+	HighlightState mCurrentHighlightState;
+
+	// 運搬できる方向が複数ある運搬先の座標を保持
+	sf::Vector2i mDestination;
+	// 矢印が選択された時のプレイヤーの運搬経路を保持する変数
+	std::map<int, std::vector<sf::Vector2i>> mTransportingPathes;
+
+	// 移動入力の検知
+	bool mDetection;
 };

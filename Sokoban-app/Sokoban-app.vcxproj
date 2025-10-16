@@ -144,6 +144,7 @@
     <ClCompile Include="HUDHelper.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MySolution.cpp" />
+    <ClCompile Include="Pathfinder.cpp" />
     <ClCompile Include="PauseMenu.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="SpriteComponent.cpp" />
@@ -159,14 +160,17 @@
     <ClInclude Include="GameBoard.h" />
     <ClInclude Include="HUDHelper.h" />
     <ClInclude Include="IActor.h" />
+    <ClInclude Include="Commands\ICommand.h" />
     <ClInclude Include="IComponent.h" />
     <ClInclude Include="IUIScreen.h" />
     <ClInclude Include="MySolution.h" />
+    <ClInclude Include="Pathfinder.h" />
     <ClInclude Include="PauseMenu.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="SpriteComponent.h" />
     <ClInclude Include="State.h" />
     <ClInclude Include="THUD.h" />
+    <ClInclude Include="Commands\UndoCommand.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

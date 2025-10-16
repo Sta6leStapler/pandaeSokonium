@@ -657,6 +657,67 @@ void Game::AddBoard(const std::string& key, const std::vector<std::string>& line
 	}
 }
 
+sf::Vector2i Game::ScreenToTileCoords(const sf::Vector2f& screenPos) const
+{
+	sf::Vector2f bounding_area_pos(screenPos);
+	bounding_area_pos -= mBoardViewArea.first;
+	sf::Vector2i result{ -1, -1 };
+	// スケーリングを求める
+	// 現状描画範囲は正方形なので、盤面が横長か縦長かでスケーリングを変える
+	// スケーリングは大きい方に合わせる
+	float scaling = (mBoardSize.x > mBoardSize.y) ? ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mBoardSize.x)) : ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mBoardSize.y));
+
+	if (bounding_area_pos.x >= 0.0f && bounding_area_pos.y >= 0.0f)
+	{
+		// 横長なら縦方向の平行移動、縦長なら横方向の平行移動
+		if (mBoardSize.x > mBoardSize.y)
+		{
+			bounding_area_pos.y -= ((mBoardViewArea.second.y - mBoardViewArea.first.y) - ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mBoardSize.x)) * static_cast<float>(mBoardSize.y)) / 2.0f;
+		}
+		else if (mBoardSize.x < mBoardSize.y)
+		{
+			bounding_area_pos.x -= ((mBoardViewArea.second.x - mBoardViewArea.first.x) - ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mBoardSize.y)) * static_cast<float>(mBoardSize.x)) / 2.0f;
+		}
+
+		result.x = static_cast<int>(bounding_area_pos.x / scaling);
+		result.y = static_cast<int>(bounding_area_pos.y / scaling);
+	}
+
+	//std::cout << "ScreenToTileCoords : (" << screenPos.x << ", " << screenPos.y << ") -> (" << bounding_area_pos.x << ", " << bounding_area_pos.y << ") -> (" << result.x << ", " << result.y << ")" << std::endl;
+
+	return result;
+}
+
+sf::Vector2f Game::TileToScreenCoords(const sf::Vector2i& tileCorrdsPos) const
+{
+	sf::Vector2i bounding_area_pos(tileCorrdsPos);
+	sf::Vector2f result{ -1.0f, -1.0f };
+	float scaling = (mBoardSize.x > mBoardSize.y) ? (mBoardViewArea.second.x - mBoardViewArea.first.x) / mBoardSize.x : (mBoardViewArea.second.y - mBoardViewArea.first.y) / mBoardSize.y;
+
+	if (bounding_area_pos.x >= 0 && bounding_area_pos.x < mBoardSize.x &&
+		bounding_area_pos.y >= 0 && bounding_area_pos.y < mBoardSize.y)
+	{
+		result.x = static_cast<float>(static_cast<float>(bounding_area_pos.x) * scaling);
+		result.y = static_cast<float>(static_cast<float>(bounding_area_pos.y) * scaling);
+
+		// 横長なら縦方向の平行移動、縦長なら横方向の平行移動
+		if (mBoardSize.x > mBoardSize.y)
+		{
+			result.y += ((mBoardViewArea.second.y - mBoardViewArea.first.y) - ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mBoardSize.x)) * static_cast<float>(mBoardSize.y)) / 2.0f;
+		}
+		else if (mBoardSize.x < mBoardSize.y)
+		{
+			result.x += ((mBoardViewArea.second.x - mBoardViewArea.first.x) - ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mBoardSize.y)) * static_cast<float>(mBoardSize.x)) / 2.0f;
+		}
+	}
+
+	result += mBoardViewArea.first;
+
+	std::cout << "TileToScreenCoords : (" << tileCorrdsPos.x << ", " << tileCorrdsPos.y << ") -> (" << bounding_area_pos.x << ", " << bounding_area_pos.y << ") -> (" << result.x << ", " << result.y << ")" << std::endl;
+
+	return result;
+}
+
 void Game::CallUndo()
 {
 	// 移動のログがあり、ステップ数は1以上か
@@ -704,6 +765,8 @@ void Game::CallUndo()
 				ptrBaggage->SetBoardCoordinate(mLogs[mStep - 1].bCoordinate.first);
 			}
 		}
+		ClearMoveHighlights();
+		ClearPushHighlights();
 		mStep--;
 		
 	}
@@ -739,6 +802,8 @@ void Game::CallRedo()
 			mPlayer->SetDirection(mLogs[mStep].direction2);
 			ptrBaggage->SetBoardCoordinate(mLogs[mStep].bCoordinate.second);
 		}
+		ClearMoveHighlights();
+		ClearPushHighlights();
 		mStep++;
 	}
 }
@@ -2074,6 +2139,16 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 	}
 }
 
+sf::Vector2f Game::GetTileSize() const
+{
+	sf::Vector2f result{ 0.0f, 0.0f };
+	sf::Vector2f viewAreaSize = mBoardViewArea.second - mBoardViewArea.first;
+
+	result = viewAreaSize / static_cast<float>(std::max(mBoardSize.x, mBoardSize.y));
+
+	return result;
+}
+
 std::vector<sf::Vector2i> Game::GetBaggagesPos() const
 {
 	std::vector<sf::Vector2i> result{};
@@ -2124,4 +2199,96 @@ void Game::ClearParameters()
 	// HUDHelperを削除
 	delete mHUDHelper;
 	mHUDHelper = nullptr;
+}
+
+void Game::SetMoveHighlights(const std::vector<sf::Vector2i>& tiles)
+{
+	if (mGameBoard)
+	{
+		std::cout << "Game::UpdateMoveHighlights called with " << tiles.size() << " tiles." << std::endl;
+		mGameBoard->SetMoveHighlightedTiles(tiles);
+		mPlayer->SetHighlightingState();
+	}
+}
+
+void Game::ClearMoveHighlights()
+{
+	if (mGameBoard)
+	{
+		std::cout << "Game::ClearmoveHighlights called." << std::endl;
+		mGameBoard->ClearMoveHighlights();
+		mPlayer->SetIdleState();
+	}
+}
+
+void Game::SetPushHighlights(const std::vector<sf::Vector2i>& tiles, Baggage* baggage)
+{
+	if (mGameBoard && baggage)
+	{
+		std::cout << "Game::UpdatePushHighlights called with " << tiles.size() << " tiles." << std::endl;
+		mGameBoard->SetPushHighlightedTiles(tiles, baggage);
+		baggage->SetHighlightingState();
+	}
+}
+
+void Game::ClearPushHighlights()
+{
+	if (mGameBoard)
+	{
+		std::cout << "Game::ClearPushHighlights called." << std::endl;
+		mGameBoard->ClearPushHighlights();
+		for (auto baggage : mBaggages)
+		{
+			if (baggage->GetCurrentHighlightState() == Baggage::HighlightState::Highlighting)
+			{
+				baggage->SetIdleState();
+				break;
+			}
+		}
+	}
+}
+
+void Game::SetPushDirections(const std::vector<int>& indexes, class Baggage* baggage)
+{
+	if (mGameBoard && baggage)
+	{
+		std::cout << "Game::UpdatePushHighlights called with " << indexes.size() << " tiles." << std::endl;
+		mGameBoard->SetPushDirections(indexes, baggage);
+		baggage->SetDisplayDirectionsState();
+	}
+}
+
+void Game::ClearPushDirections()
+{
+	if (mGameBoard)
+	{
+		std::cout << "Game::ClearPushDirections called." << std::endl;
+		mGameBoard->ClearPushDirections();
+		for (auto baggage : mBaggages)
+		{
+			if (baggage->GetCurrentHighlightState() == Baggage::HighlightState::DisplayDirection)
+			{
+				baggage->SetIdleState();
+				break;
+			}
+		}
+	}
+}
+
+void Game::SetBaggagesIdleState()
+{
+	for (auto baggage : mBaggages)
+	{
+		baggage->SetIdleState();
+	}
+}
+
+bool Game::ExistsBaggagesHighlightingState()
+{
+	for (auto baggage : mBaggages)
+	{
+		if (baggage->GetCurrentHighlightState() == Baggage::HighlightState::Highlighting || baggage->GetCurrentHighlightState() == Baggage::HighlightState::DisplayDirection) return true;
+	}
+
+	return false;
 }
