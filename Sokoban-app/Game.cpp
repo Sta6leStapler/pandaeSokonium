@@ -2139,6 +2139,16 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 	}
 }
 
+sf::Vector2f Game::GetTileSize() const
+{
+	sf::Vector2f result{ 0.0f, 0.0f };
+	sf::Vector2f viewAreaSize = mBoardViewArea.second - mBoardViewArea.first;
+
+	result = viewAreaSize / static_cast<float>(std::max(mBoardSize.x, mBoardSize.y));
+
+	return result;
+}
+
 std::vector<sf::Vector2i> Game::GetBaggagesPos() const
 {
 	std::vector<sf::Vector2i> result{};
@@ -2238,10 +2248,47 @@ void Game::ClearPushHighlights()
 	}
 }
 
+void Game::SetPushDirections(const std::vector<int>& indexes, class Baggage* baggage)
+{
+	if (mGameBoard && baggage)
+	{
+		std::cout << "Game::UpdatePushHighlights called with " << indexes.size() << " tiles." << std::endl;
+		mGameBoard->SetPushDirections(indexes, baggage);
+		baggage->SetDisplayDirectionsState();
+	}
+}
+
+void Game::ClearPushDirections()
+{
+	if (mGameBoard)
+	{
+		std::cout << "Game::ClearPushDirections called." << std::endl;
+		mGameBoard->ClearPushDirections();
+		for (auto baggage : mBaggages)
+		{
+			if (baggage->GetCurrentHighlightState() == Baggage::HighlightState::DisplayDirection)
+			{
+				baggage->SetIdleState();
+				break;
+			}
+		}
+	}
+}
+
 void Game::SetBaggagesIdleState()
 {
 	for (auto baggage : mBaggages)
 	{
 		baggage->SetIdleState();
 	}
+}
+
+bool Game::ExistsBaggagesHighlightingState()
+{
+	for (auto baggage : mBaggages)
+	{
+		if (baggage->GetCurrentHighlightState() == Baggage::HighlightState::Highlighting || baggage->GetCurrentHighlightState() == Baggage::HighlightState::DisplayDirection) return true;
+	}
+
+	return false;
 }

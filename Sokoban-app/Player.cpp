@@ -646,30 +646,34 @@ void Player::InputMovePath(const std::vector<sf::Vector2i>& path)
 
 void Player::HandleInputIdle(const sf::Vector2i& clickedTile)
 {
-	if (clickedTile == mBoardCoordinate) // プレイヤー自身がクリックされた
+	// 荷物の移動可能位置をハイライトしている場合は処理を拒否する
+	if (!mGame->ExistsBaggagesHighlightingState())
 	{
-		// 1. 移動可能なマスをすべて計算
-		auto reachable = Pathfinder::FindAllReachable(mBoardCoordinate, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
-
-		// 2. Gameクラスにハイライト描画を依頼
-		mGame->SetMoveHighlights(reachable);
-
-		// 3. 状態を更新
-		mCurrentHighlightState = HighlightState::Highlighting;
-	}
-	else // 他のマスがクリックされた
-	{
-		mGame->ClearPushHighlights();
-
-		// 1. そこまでの経路を計算
-		mMovementPath = Pathfinder::FindPath(mBoardCoordinate, clickedTile, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
-
-		// 2. 経路があれば、移動状態に移行
-		if (!mMovementPath.empty())
+		if (clickedTile == mBoardCoordinate) // プレイヤー自身がクリックされた
 		{
-			// Playerは自身の状態とパスを更新するだけ
-			mCurrentHighlightState = HighlightState::MovingOnPath;
-			mPathMoveTimer = PATH_MOVE_INTERVAL;
+			// 1. 移動可能なマスをすべて計算
+			auto reachable = Pathfinder::FindAllReachable(mBoardCoordinate, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+
+			// 2. Gameクラスにハイライト描画を依頼
+			mGame->SetMoveHighlights(reachable);
+
+			// 3. 状態を更新
+			mCurrentHighlightState = HighlightState::Highlighting;
+		}
+		else // 他のマスがクリックされた
+		{
+			mGame->ClearPushHighlights();
+
+			// 1. そこまでの経路を計算
+			mMovementPath = Pathfinder::FindPath(mBoardCoordinate, clickedTile, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+
+			// 2. 経路があれば、移動状態に移行
+			if (!mMovementPath.empty())
+			{
+				// Playerは自身の状態とパスを更新するだけ
+				mCurrentHighlightState = HighlightState::MovingOnPath;
+				mPathMoveTimer = PATH_MOVE_INTERVAL;
+			}
 		}
 	}
 }

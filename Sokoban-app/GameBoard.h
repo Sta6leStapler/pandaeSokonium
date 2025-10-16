@@ -10,6 +10,15 @@
 class GameBoard : IActor
 {
 public:
+	// 向きを表現する列挙型
+	enum Direction
+	{
+		ENorth,
+		EEast,
+		EWest,
+		ESouth
+	};
+
 	GameBoard(class Game* game);
 	virtual ~GameBoard();
 
@@ -51,6 +60,10 @@ public:
 	void SetPushHighlightedTiles(const std::vector<sf::Vector2i>& tiles, class Baggage* baggage);
 	// 荷物が運搬可能なタイルのハイライトをすべてクリアする
 	void ClearPushHighlights();
+	// Gameクラスから呼ばれ、荷物を運搬可能な方向を設定する
+	void SetPushDirections(const std::vector<int>& indexes, class Baggage* baggage);
+	// 荷物が運搬可能な方向の表示をすべてクリアする
+	void ClearPushDirections();
 
 	// ゲッターとセッター
 	std::string GetBoardName() const { return this->mBoardName; }
@@ -83,6 +96,9 @@ private:
 	// ハイライト用テクスチャ
 	sf::Texture* mMoveHighlightTexture;
 	sf::Texture* mPushHighlightTexture;
+	// 矢印のテクスチャ
+	std::map<Direction, sf::Texture*> mIdleArrowTextures;
+	std::map<Direction, sf::Texture*> mOnCursorArrowTextures;
 
 	Baggage* mHighlightingBaggage;
 };

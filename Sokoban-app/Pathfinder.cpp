@@ -502,3 +502,166 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
 
     return playerPathResult;
 }
+
+std::map<int, std::vector<sf::Vector2i>> Pathfinder::FindAllDirectionTransportPath(
+    const sf::Vector2i& baggageStart,
+    const sf::Vector2i& baggageEnd,
+    const sf::Vector2i& playerStart,
+    const std::vector<std::string>& boardState,
+    const std::vector<sf::Vector2i>& initialBaggagePositions,
+    const sf::Vector2i& boardSize)
+{
+    // --- 1. 初期設定 ---
+    // 荷物を押す方向ベクトルとキーの定義
+    const std::vector<sf::Vector2i> directions{
+        { -1,  0 }, // 0: 荷物が左へ移動 (プレイヤーは右から押す)
+        {  0, -1 }, // 1: 荷物が上へ移動 (プレイヤーは下から押す)
+        {  1,  0 }, // 2: 荷物が右へ移動 (プレイヤーは左から押す)
+        {  0,  1 }  // 3: 荷物が下へ移動 (プレイヤーは上から押す)
+    };
+
+    // ダイクストラ法で用いる状態ノード
+    struct Node {
+        int cost;
+        sf::Vector2i baggagePos;
+        int pushedFromDirIndex;
+
+        bool operator>(const Node& other) const {
+            return cost > other.cost;
+        }
+    };
+
+    // 優先度付きキューと各種記録用マップ
+    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> pq;
+    std::map<sf::Vector2i, std::map<int, Node>, CompareVector2i> cameFrom;
+    std::map<sf::Vector2i, std::map<int, int>, CompareVector2i> costSoFar;
+
+    // explored[y][x][direction] が true の場合、その状態は探索済み
+    std::vector<std::vector<std::vector<bool>>> explored(
+        boardSize.y, std::vector<std::vector<bool>>(
+            boardSize.x, std::vector<bool>(directions.size(), false)
+        )
+    );
+
+    // 運搬対象外の荷物
+    std::set<sf::Vector2i, CompareVector2i> otherBaggages;
+    for (const auto& pos : initialBaggagePositions) {
+        if (pos != baggageStart) {
+            otherBaggages.insert(pos);
+        }
+    }
+
+    // --- 2. 探索の開始点をキューに追加 ---
+    for (int i = 0; i < directions.size(); ++i) {
+        const auto& pushDir = directions[i];
+        sf::Vector2i playerStandPos = baggageStart - pushDir;
+        sf::Vector2i baggageNextPos = baggageStart + pushDir;
+
+        if (playerStandPos.x < 0 || playerStandPos.y < 0 || playerStandPos.x >= boardSize.x || playerStandPos.y >= boardSize.y ||
+            baggageNextPos.x < 0 || baggageNextPos.y < 0 || baggageNextPos.x >= boardSize.x || baggageNextPos.y >= boardSize.y ||
+            boardState[playerStandPos.y][playerStandPos.x] == '#' ||
+            boardState[baggageNextPos.y][baggageNextPos.x] == '#' ||
+            otherBaggages.count(baggageNextPos)) {
+            continue;
+        }
+
+        std::vector<sf::Vector2i> path = FindPath(playerStart, playerStandPos, boardState, initialBaggagePositions, boardSize);
+
+        if (!path.empty() || playerStart == playerStandPos) {
+            int initialCost = static_cast<int>(path.size()) + 1;
+            pq.push({ initialCost, baggageNextPos, i });
+            costSoFar[baggageNextPos][i] = initialCost;
+            cameFrom[baggageNextPos][i] = { 0, baggageStart, -1 };
+        }
+    }
+
+    // --- 3. ダイクストラ法による探索 ---
+    std::map<int, Node> goalNodes;
+
+    while (!pq.empty()) {
+        Node current = pq.top();
+        pq.pop();
+
+        // この状態（荷物位置、押された方向）が探索済みならスキップ
+        if (explored[current.baggagePos.y][current.baggagePos.x][current.pushedFromDirIndex]) {
+            continue;
+        }
+        // これからこの状態を処理するので、探索済みの印をつける
+        explored[current.baggagePos.y][current.baggagePos.x][current.pushedFromDirIndex] = true;
+
+
+        // ゴールに到達した場合
+        if (current.baggagePos == baggageEnd) {
+            if (goalNodes.find(current.pushedFromDirIndex) == goalNodes.end() || current.cost < goalNodes[current.pushedFromDirIndex].cost) {
+                goalNodes[current.pushedFromDirIndex] = current;
+            }
+        }
+
+        sf::Vector2i playerCurrentPos = current.baggagePos - directions[current.pushedFromDirIndex];
+
+        for (int i = 0; i < directions.size(); ++i) {
+            const auto& nextPushDir = directions[i];
+            sf::Vector2i nextBaggagePos = current.baggagePos + nextPushDir;
+            sf::Vector2i nextPlayerStandPos = current.baggagePos - nextPushDir;
+
+            if (nextPlayerStandPos.x < 0 || nextPlayerStandPos.y < 0 || nextPlayerStandPos.x >= boardSize.x || nextPlayerStandPos.y >= boardSize.y ||
+                nextBaggagePos.x < 0 || nextBaggagePos.y < 0 || nextBaggagePos.x >= boardSize.x || nextBaggagePos.y >= boardSize.y ||
+                boardState[nextPlayerStandPos.y][nextPlayerStandPos.x] == '#' ||
+                boardState[nextBaggagePos.y][nextBaggagePos.x] == '#' ||
+                otherBaggages.count(nextBaggagePos)) {
+                continue;
+            }
+
+            std::vector<sf::Vector2i> baggageObstacles(otherBaggages.begin(), otherBaggages.end());
+            baggageObstacles.emplace_back(current.baggagePos);
+
+            std::vector<sf::Vector2i> path = FindPath(playerCurrentPos, nextPlayerStandPos, boardState, baggageObstacles, boardSize);
+
+            if (!path.empty() || playerCurrentPos == nextPlayerStandPos) {
+                int moveCost = static_cast<int>(path.size());
+                int newTotalCost = current.cost + moveCost + 1;
+
+                if (!costSoFar.count(nextBaggagePos) || !costSoFar[nextBaggagePos].count(i) || newTotalCost < costSoFar[nextBaggagePos][i]) {
+                    costSoFar[nextBaggagePos][i] = newTotalCost;
+                    pq.push({ newTotalCost, nextBaggagePos, i });
+                    cameFrom[nextBaggagePos][i] = current;
+                }
+            }
+        }
+    }
+
+    // --- 4. 経路の復元 ---
+    std::map<int, std::vector<sf::Vector2i>> resultPaths;
+    if (goalNodes.empty()) {
+        return {};
+    }
+
+    for (auto const& [dirIndex, goalNode] : goalNodes) {
+        std::vector<sf::Vector2i> playerPathResult;
+        std::vector<Node> baggagePath;
+        Node current = goalNode;
+
+        while (current.pushedFromDirIndex != -1) {
+            baggagePath.emplace_back(current);
+            current = cameFrom[current.baggagePos][current.pushedFromDirIndex];
+        }
+        std::reverse(baggagePath.begin(), baggagePath.end());
+
+        sf::Vector2i currentPlayerPos = playerStart;
+        sf::Vector2i lastBaggagePos = baggageStart;
+
+        for (const auto& move : baggagePath) {
+            sf::Vector2i playerStandPos = lastBaggagePos - directions[move.pushedFromDirIndex];
+            std::vector<sf::Vector2i> currentObstacles(otherBaggages.begin(), otherBaggages.end());
+            currentObstacles.emplace_back(lastBaggagePos);
+            std::vector<sf::Vector2i> segment = FindPath(currentPlayerPos, playerStandPos, boardState, currentObstacles, boardSize);
+            playerPathResult.insert(playerPathResult.end(), segment.begin(), segment.end());
+            playerPathResult.emplace_back(lastBaggagePos);
+            currentPlayerPos = lastBaggagePos;
+            lastBaggagePos = move.baggagePos;
+        }
+        resultPaths[dirIndex] = playerPathResult;
+    }
+
+    return resultPaths;
+}

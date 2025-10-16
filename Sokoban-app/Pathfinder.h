@@ -51,4 +51,13 @@ public:
         const std::vector<sf::Vector2i>& initialBaggagePositions,
         const sf::Vector2i& boardSize
     );
+
+    static std::map<int, std::vector<sf::Vector2i>> FindAllDirectionTransportPath(
+        const sf::Vector2i& baggageStart,
+        const sf::Vector2i& baggageEnd,
+        const sf::Vector2i& playerStart,
+        const std::vector<std::string>& boardState,
+        const std::vector<sf::Vector2i>& initialBaggagePositions,
+        const sf::Vector2i& boardSize
+    );
 };

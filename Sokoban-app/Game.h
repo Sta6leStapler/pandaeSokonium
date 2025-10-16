@@ -159,6 +159,7 @@ public:
 	// テクスチャ関連
 	sf::Texture* GetTexture(const std::string& fileName) const { return mTextures.at(fileName); }
 	std::unordered_map<std::string, sf::Texture*> GetTextures() const { return mTextures; }
+	sf::Vector2f GetTileSize() const;
 
 	// 盤面関連
 	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
@@ -176,7 +177,10 @@ public:
 	void SetPushHighlights(const std::vector<sf::Vector2i>& tiles, class Baggage* baggage);
 	void ClearPushHighlights();
 	std::vector<sf::Vector2i> GetPushHighlightedTiles() const { return mGameBoard->GetPushHighlightedTiles(); }
+	void SetPushDirections(const std::vector<int>& indexes, class Baggage* baggage);
+	void ClearPushDirections();
 	void SetBaggagesIdleState();
+	bool ExistsBaggagesHighlightingState();
 
 	class HUDHelper* GetHUDHelper() const { return mHUDHelper; }
 	std::vector<std::string> GetBoardState() const { return mBoardState; }

@@ -19,6 +19,8 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	, mBoardCoordinate(bCoordinate)
 	, bState(BState::OnFloor)
 	, mCurrentHighlightState(HighlightState::Idle)
+	, mDestination(sf::Vector2i{ -1, -1 })
+	, mTransportingPathes(std::map<int, std::vector<sf::Vector2i>>{})
 	, mDetection(false)
 {
 	mGame->AddActor(this);
@@ -132,12 +134,15 @@ void Baggage::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::
 		ProcessInputComponents(event, key_held_duration, auto_repeat_timer);
 
 		// このアクター特有の振る舞いがあれば書く
-		if (mCurrentHighlightState == HighlightState::Idle || mCurrentHighlightState == HighlightState::Highlighting)
+		if (mCurrentHighlightState == HighlightState::Idle ||
+			mCurrentHighlightState == HighlightState::Highlighting ||
+			mCurrentHighlightState == HighlightState::DisplayDirection)
 		{
 			if (mDetection)
 			{
 				// もしハイライト表示中なら、移動の前にハイライトを消す
-				if (mCurrentHighlightState == HighlightState::Highlighting)
+				if (mCurrentHighlightState == HighlightState::Highlighting ||
+					mCurrentHighlightState == HighlightState::DisplayDirection)
 				{
 					mGame->ClearMoveHighlights();
 					mCurrentHighlightState = HighlightState::Idle;
@@ -161,29 +166,10 @@ void Baggage::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::
 							HandleInputIdle(clickedTile);
 							break;
 						case HighlightState::Highlighting:
-							break;
-						case HighlightState::MovingOnPath:
-							// 経路移動中は入力を無視
-							break;
-						default:
-							break;
-						}
-					}
-				}
-				else if (event->mouseButton.button == sf::Mouse::Right)
-				{
-					sf::Vector2f mousePos(static_cast<float>(event->mouseButton.x), static_cast<float>(event->mouseButton.y));
-					sf::Vector2i clickedTile = mGame->ScreenToTileCoords(mousePos);
-
-					if (clickedTile != sf::Vector2i{ -1, -1 })
-					{
-						// 荷物の現在の状態で処理を分岐
-						switch (mCurrentHighlightState)
-						{
-						case HighlightState::Idle:
-							break;
-						case HighlightState::Highlighting:
 							HandleInputHighlighting(clickedTile);
+							break;
+						case HighlightState::DisplayDirection:
+							HandleInputDirection(clickedTile, mousePos);
 							break;
 						case HighlightState::MovingOnPath:
 							// 経路移動中は入力を無視
@@ -248,12 +234,16 @@ void Baggage::HandleInputIdle(const sf::Vector2i& clickedTile)
 	{
 		// 1. 移動可能なマスをすべて計算
 		auto transportable = Pathfinder::FindAllTransportable(mBoardCoordinate, mGame->GetBoardState(), mGame->GetPlayer()->GetBoardCoordinate(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+		
+		// 移動可能なマスがあれば、ハイライト処理を行い、ハイライト状態に移行する
+		if (!transportable.empty())
+		{
+			// 2. Gameクラスにハイライト描画を依頼
+			mGame->SetPushHighlights(transportable, this);
 
-		// 2. Gameクラスにハイライト描画を依頼
-		mGame->SetPushHighlights(transportable, this);
-
-		// 3. 状態を更新
-		mCurrentHighlightState = HighlightState::Highlighting;
+			// 3. 状態を更新
+			mCurrentHighlightState = HighlightState::Highlighting;
+		}
 	}
 }
 
@@ -263,18 +253,113 @@ void Baggage::HandleInputHighlighting(const sf::Vector2i& clickedTile)
 	const auto& highlightedTiles = mGame->GetPushHighlightedTiles();
 
 	auto iter = std::find(highlightedTiles.begin(), highlightedTiles.end(), clickedTile);
-	if (clickedTile == mBoardCoordinate) // 荷物が再度クリックされた
+	// ハイライトされているマスがクリックされたかチェック
+	if (iter == highlightedTiles.end()) 
 	{
+		// ハイライトされていないマスがクリックされた場合
 		mGame->ClearPushHighlights(); // ハイライトを消去依頼
 		mCurrentHighlightState = HighlightState::Idle;
 	}
-	// ハイライトされているマスがクリックされたかチェック
 	else if (iter != highlightedTiles.end())
 	{
 		mGame->ClearPushHighlights();
 
-		// 経路を計算し、移動経路をプレイヤーに送る
-		std::vector<sf::Vector2i> path = Pathfinder::FindTransportPath(mBoardCoordinate, *iter, mGame->GetPlayer()->GetBoardCoordinate(), mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
-		mGame->GetPlayer()->InputMovePath(path);
+		// ハイライトされているマスがクリックされた場合
+		// もし移動先の候補が複数ある場合は方向を指定する状態に遷移させる
+		// 移動先の候補を探索
+		mDestination = sf::Vector2i{ -1, -1 };
+		mTransportingPathes.clear();
+		mTransportingPathes = Pathfinder::FindAllDirectionTransportPath(mBoardCoordinate, *iter, mGame->GetPlayer()->GetBoardCoordinate(), mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+		if (mTransportingPathes.size() > 1)
+		{
+			std::cout << "Baggage : Find " << mTransportingPathes.size() << "'s path!" << std::endl;
+			// 運搬先の座標を登録
+			mDestination = *iter;
+			// Gameクラスに運搬可能な方向の表示を依頼
+			std::vector<int> indexes{};
+			for (const auto& path : mTransportingPathes)
+			{
+				indexes.emplace_back(path.first);
+			}
+			mGame->SetPushDirections(indexes, this);
+
+			// 状態を更新
+			mCurrentHighlightState = HighlightState::DisplayDirection;
+		}
+		else
+		{
+			// 経路を計算し、移動経路をプレイヤーに送る
+			std::vector<sf::Vector2i> path = Pathfinder::FindTransportPath(mBoardCoordinate, *iter, mGame->GetPlayer()->GetBoardCoordinate(), mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
+			mGame->GetPlayer()->InputMovePath(path);
+		}
+	}
+}
+
+void Baggage::HandleInputDirection(const sf::Vector2i& clickedTile, const sf::Vector2f& mousePos)
+{
+	// クリックされた座標が移動先の座標か？
+	if (clickedTile == mDestination)
+	{
+		// マスの上下左右度の部分がクリックされたか判定
+		Direction tmpDir = Direction::EEast;
+		sf::Vector2f topLeft = mGame->TileToScreenCoords(clickedTile);
+		sf::Vector2f topRight = topLeft + sf::Vector2f{ mGame->GetTileSize().x, 0.0f };
+		sf::Vector2f bottomLeft = topLeft + sf::Vector2f{ 0.0f, mGame->GetTileSize().y };
+		sf::Vector2f bottomRight = topLeft + mGame->GetTileSize();
+
+		std::cout << "Baggage::HandleInputDirection -> Mouse pos is: (" << mousePos.x << ", " << mousePos.y << ")" << std::endl;
+		std::cout << "Baggage::HandleInputDirection -> Bounding box is: (" << 
+			topLeft.x << ", " << topLeft.y << "), (" <<
+			topRight.x << ", " << topRight.y << "), (" <<
+			bottomLeft.x << ", " << bottomLeft.y << "), (" <<
+			bottomRight.x << ", " << bottomRight.y << ")" << std::endl;
+
+		// 対角線1 (左上 -> 右下) に対する位置を計算
+		float val1 = (bottomRight.x - topLeft.x) * (mousePos.y - topLeft.y) - (bottomRight.y - topLeft.y) * (mousePos.x - topLeft.x);
+		// 対角線2 (左下 -> 右上) に対する位置を計算
+		float val2 = (topRight.x - bottomLeft.x) * (mousePos.y - bottomLeft.y) - (topRight.y - bottomLeft.y) * (mousePos.x - bottomLeft.x);
+
+		if (val1 >= 0)
+		{
+			// val1が正: クリック位置は対角線(左上->右下)の下側
+			if (val2 >= 0)
+			{
+				// val2が正: クリック位置は対角線(左下->右上)の上側
+				tmpDir = Direction::ESouth; // よって「下の三角形」
+				std::cout << "Baggage::HandleInputDirection -> Input ESouth!" << std::endl;
+			}
+			else
+			{
+				// val2が負: クリック位置は対角線(左下->右上)の下側
+				tmpDir = Direction::EWest; // よって「左の三角形」
+				std::cout << "Baggage::HandleInputDirection -> Input EWest!" << std::endl;
+			}
+		}
+		else
+		{
+			// val1が負: クリック位置は対角線(左上->右下)の上側
+			if (val2 >= 0)
+			{
+				// val2が正: クリック位置は対角線(左下->右上)の上側
+				tmpDir = Direction::EEast; // よって「右の三角形」
+				std::cout << "Baggage::HandleInputDirection -> Input EEast!" << std::endl;
+			}
+			else
+			{
+				// val2が負: クリック位置は対角線(左下->右上)の下側
+				tmpDir = Direction::ENorth; // よって「上の三角形」
+				std::cout << "Baggage::HandleInputDirection -> Input ENorth!" << std::endl;
+			}
+		}
+
+		// クリックされた方向から運搬できるなら、
+		// その方向から押し込むように運搬の支持をプレイヤーに送る
+		if (mTransportingPathes.count(tmpDir))
+		{
+			mGame->ClearPushHighlights();
+			mGame->ClearPushDirections();
+			// 経路は既に保持してある
+			mGame->GetPlayer()->InputMovePath(mTransportingPathes[tmpDir]);
+		}
 	}
 }
