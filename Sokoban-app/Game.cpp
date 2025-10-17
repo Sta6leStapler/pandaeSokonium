@@ -767,6 +767,7 @@ void Game::CallUndo()
 		}
 		ClearMoveHighlights();
 		ClearPushHighlights();
+		ClearPushDirections();
 		mStep--;
 		
 	}
@@ -804,6 +805,7 @@ void Game::CallRedo()
 		}
 		ClearMoveHighlights();
 		ClearPushHighlights();
+		ClearPushDirections();
 		mStep++;
 	}
 }

@@ -362,4 +362,10 @@ void Baggage::HandleInputDirection(const sf::Vector2i& clickedTile, const sf::Ve
 			mGame->GetPlayer()->InputMovePath(mTransportingPathes[tmpDir]);
 		}
 	}
+	else
+	{
+		// ハイライトされていないマスがクリックされた場合
+		mGame->ClearPushDirections(); // ハイライトを消去依頼
+		mCurrentHighlightState = HighlightState::Idle;
+	}
 }
