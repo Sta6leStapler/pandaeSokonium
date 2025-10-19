@@ -63,3 +63,5 @@
 追加次第、逐次こちらにも書き込んでいきます。
 
 [1]:https://deepwiki.com/Sta6leStapler/pandaeSokonium/1-overview
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Sta6leStapler/pandaeSokonium)
