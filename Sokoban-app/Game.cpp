@@ -12,6 +12,8 @@
 #include "MySolution.h"
 #include "THUD.h"
 #include "HUDHelper.h"
+#include "SnapshotDialog.h"
+#include "SnapshotScreen.h"
 
 #include <iostream>
 #include <filesystem>
@@ -29,7 +31,7 @@ Game::Game()
 	, mUpdatingActors(false)
 	, mIsComplete(false)
 	, mWindowSize(1600.0, 900.0)
-	, mBoardViewArea(BoundingBox{ sf::Vector2f{ mWindowSize.x - mWindowSize.y, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y } })
+	, mBoardViewArea(BoundingBox{ sf::Vector2f{ mWindowSize.x - mWindowSize.y + 60.0f, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y - 60.0f } })
 	, mKeyHeldDuration(std::map<sf::Keyboard::Key, float>{})
 	, mAutoRepeatTimer(std::map<sf::Keyboard::Key, float>{})
 	, mBoardSize(sf::Vector2i{ 0, 0 })
@@ -282,100 +284,117 @@ void Game::ProcessInput()
 			break;
 		}
 
-		// ゲーム全体に関する各種入力処理
-		// 単押し処理
-		if (event.type == sf::Event::KeyPressed)
+		if (mGameState == GameState::EGamePlay)
 		{
-			// このキーが押されてから経過した時間を確認
-			float duration = mKeyHeldDuration.count(event.key.code) ? mKeyHeldDuration.at(event.key.code) : 0.0f;
-
-			// 押された最初のフレーム（押下時間が非常に短い）かを判定
-			if (duration < GetTapThresHold())
+			// ゲーム全体に関する各種入力処理
+			// 単押し処理
+			if (event.type == sf::Event::KeyPressed)
 			{
-				// Escキーでポーズメニューを開く
-				if (event.key.code == sf::Keyboard::Escape && mGameState == GameState::EGamePlay)
-				{
-					new PauseMenu(this);
-					mGameState = GameState::EPaused;
-				}
+				// このキーが押されてから経過した時間を確認
+				float duration = mKeyHeldDuration.count(event.key.code) ? mKeyHeldDuration.at(event.key.code) : 0.0f;
 
-				// z でundo処理
-				if (event.key.code == sf::Keyboard::Z)
+				// 押された最初のフレーム（押下時間が非常に短い）かを判定
+				if (duration < GetTapThresHold())
+				{
+					// Escキーでポーズメニューを開く
+					if (event.key.code == sf::Keyboard::Escape && mGameState == GameState::EGamePlay)
+					{
+						// ボタンの長押しを解除
+						CancelAllUIHolds();
+						new PauseMenu(this);
+						mGameState = GameState::EPaused;
+					}
+
+					// z でundo処理
+					if (event.key.code == sf::Keyboard::Z)
+					{
+						// ボタンの長押しを解除
+						CancelAllUIHolds();
+						CallUndo();
+					}
+
+					// y でredo処理
+					if (event.key.code == sf::Keyboard::Y)
+					{
+						// ボタンの長押しを解除
+						CancelAllUIHolds();
+						CallRedo();
+					}
+
+					// PGUPで最新の状態にする
+					if (event.key.code == sf::Keyboard::PageUp)
+					{
+						// ボタンの長押しを解除
+						CancelAllUIHolds();
+						CallRedoAll();
+					}
+
+					// PGDNで初期状態にする
+					if (event.key.code == sf::Keyboard::PageDown)
+					{
+						// ボタンの長押しを解除
+						CancelAllUIHolds();
+						CallReset();
+					}
+
+					// Ctrl + rで全てリセット
+					if (event.key.control && event.key.code == sf::Keyboard::R)
+					{
+						// ボタンの長押しを解除
+						CancelAllUIHolds();
+						CallRestart();
+					}
+
+					// Ctrl + s で現在の盤面をセーブ
+					if (event.key.control && event.key.code == sf::Keyboard::S)
+					{
+						// ボタンの長押しを解除
+						CancelAllUIHolds();
+						CallSave();
+					}
+
+					// H でヘルプ画面の表示
+					if (event.key.code == sf::Keyboard::H)
+					{
+						// ボタンの長押しを解除
+						CancelAllUIHolds();
+						DisplayHelpWindow();
+					}
+
+					// F5 で盤面のリロード（自動生成の盤面なら新たな盤面の生成）
+					if (event.key.code == sf::Keyboard::F5)
+					{
+						// ボタンの長押しを解除
+						CancelAllUIHolds();
+						CallReload();
+					}
+				}
+			}
+
+			// 長押しの処理
+			// イベントとは関係なく、現在のキー押下状態とタイマーから判断
+			switch (event.key.code)
+			{
+			case sf::Keyboard::Z:
+				// Undo処理
+				// 長押し状態にあり、かつリピートタイマーが0以下か？
+				if (mKeyHeldDuration.at(sf::Keyboard::Z) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Z) <= 0.0f)
 				{
 					CallUndo();
 				}
-
-				// y でredo処理
-				if (event.key.code == sf::Keyboard::Y)
+				break;
+			case sf::Keyboard::Y:
+				// Redo処理
+				// 長押し状態にあり、かつリピートタイマーが0以下か？
+				if (mKeyHeldDuration.at(sf::Keyboard::Y) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Y) <= 0.0f)
 				{
 					CallRedo();
 				}
-
-				// PGUPで最新の状態にする
-				if (event.key.code == sf::Keyboard::PageUp)
-				{
-					CallRedoAll();
-				}
-
-				// PGDNで初期状態にする
-				if (event.key.code == sf::Keyboard::PageDown)
-				{
-					CallReset();
-				}
-
-				// Ctrl + rで全てリセット
-				if (event.key.control && event.key.code == sf::Keyboard::R)
-				{
-					CallRestart();
-				}
-
-				// Ctrl + s で現在の盤面をセーブ
-				if (event.key.control && event.key.code == sf::Keyboard::S)
-				{
-					CallSave();
-				}
-
-				// H でヘルプ画面の表示
-				if (event.key.code == sf::Keyboard::H)
-				{
-					DisplayHelpWindow();
-				}
-
-				// F5 で盤面のリロード（自動生成の盤面なら新たな盤面の生成）
-				if (event.key.code == sf::Keyboard::F5)
-				{
-					CallReload();
-				}
+				break;
+			default:
+				break;
 			}
-		}
 
-		// 長押しの処理
-		// イベントとは関係なく、現在のキー押下状態とタイマーから判断
-		switch (event.key.code)
-		{
-		case sf::Keyboard::Z:
-			// Undo処理
-			// 長押し状態にあり、かつリピートタイマーが0以下か？
-			if (mKeyHeldDuration.at(sf::Keyboard::Z) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Z) <= 0.0f)
-			{
-				CallUndo();
-			}
-			break;
-		case sf::Keyboard::Y:
-			// Redo処理
-			// 長押し状態にあり、かつリピートタイマーが0以下か？
-			if (mKeyHeldDuration.at(sf::Keyboard::Y) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Y) <= 0.0f)
-			{
-				CallRedo();
-			}
-			break;
-		default:
-			break;
-		}
-
-		// ゲームプレイ状態ならアクターの入力処理を行う
-		if (mGameState == GameState::EGamePlay)
-		{
 			// 全てのActorの入力処理を行う
 			mUpdatingActors = true;
 
@@ -866,6 +885,9 @@ void Game::CallReload()
 		OutputLogs();
 		ClearParameters();
 
+		// スナップショットもリセット
+		ClearSnapshots();
+
 		// 更新されたGameクラスのメンバ変数を参照して盤面を生成
 		MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
 		std::vector<std::string> lines = gen->GetBoard();
@@ -961,6 +983,9 @@ void Game::CallRestart()
 	// ログをファイル出力してからパラメータをリセット
 	OutputLogs();
 	ResetParameters();
+
+	// スナップショットもリセット
+	ClearSnapshots();
 
 	mBoardData[mCurrentKey] = mInitBoardData[mCurrentKey];
 
@@ -1082,6 +1107,193 @@ void Game::OutputLogs()
 	}
 }
 
+void Game::AddSnapshot(const std::string& name, const std::string& comment)
+{
+	GameSnapshot snapshot;
+
+	// UI用データを設定
+	snapshot.snapshotName = name;
+	snapshot.snapshotComment = comment;
+	snapshot.timestamp = GetDateTime(); // 既存のヘルパー関数を利用
+
+	// 復元用データを保存
+	snapshot.playerPosition = mPlayer->GetBoardCoordinate();
+	snapshot.playerDirection = mPlayer->GetDirection();
+	snapshot.stepCount = mStep;
+	snapshot.logs = mLogs;
+
+	// 荷物の座標を保存
+	for (const auto& baggage : mBaggages)
+	{
+		snapshot.baggagePositions.emplace_back(baggage->GetBoardCoordinate());
+	}
+
+	mSnapshots.emplace_back(snapshot);
+	std::cout << "Snapshot saved: " << name << std::endl;
+}
+
+void Game::DisplaySnapshot()
+{
+	// 新しいSnapshotScreenのインスタンスを作成
+	// コンストラクタ内で、UIスタックへのプッシュと
+	// ゲーム状態の EPaused への設定が行われる
+	new SnapshotScreen(this, mWindow);
+
+	std::cout << "DisplaySnapshot called. Game state set to EPaused." << std::endl;
+}
+
+void Game::AddSnapshotDialog()
+{
+	// 新しいAddSnapshotDialogのインスタンスを作成
+	// コンストラクタ内で、ダイアログ自身がUIスタックにプッシュされ、
+	// ゲーム状態が EPaused に設定される
+	new SnapshotDialog(this, mWindow);
+
+	std::cout << "DisplayAddSnapshotDialog called. Game state set to EPaused." << std::endl;
+}
+
+void Game::RestoreSnapshot(int snapshotIndex)
+{
+	if (snapshotIndex < 0 || snapshotIndex >= mSnapshots.size())
+	{
+		return; // 無効なインデックス
+	}
+
+	const auto& snapshot = mSnapshots[snapshotIndex];
+
+	// プレイヤーの状態を復元
+	mPlayer->SetBoardCoordinate(snapshot.playerPosition);
+	mPlayer->SetDirection(snapshot.playerDirection);
+
+	// 荷物の状態を復元 (mBaggagesの順序が変わらないことが前提)
+	for (int i = 0; i < mBaggages.size(); ++i)
+	{
+		if (i < snapshot.baggagePositions.size())
+		{
+			mBaggages[i]->SetBoardCoordinate(snapshot.baggagePositions[i]);
+		}
+	}
+
+	// ゲームの状態を復元
+	mStep = snapshot.stepCount;
+	mLogs = snapshot.logs;
+
+	// ハイライトなどをクリア
+	ClearMoveHighlights();
+	ClearPushHighlights();
+	ClearPushDirections();
+	mPlayer->SetIdleState();
+
+	std::cout << "Snapshot restored: " << snapshot.snapshotName << std::endl;
+}
+
+void Game::ClearSnapshots()
+{
+	mSnapshots.clear();
+	std::cout << "All snapshots cleared." << std::endl;
+}
+
+sf::Texture* Game::GenerateThumbnail(const GameSnapshot& snapshotData)
+{
+	// 盤面テクスチャを取得（これが背景になる）
+	sf::Texture* boardTexture = mGameBoard->GetBoardTexture();
+	if (!boardTexture)
+	{
+		std::cout << "Game::GenerateThumbnail: Failed get board texture!" << std::endl;
+		return nullptr;
+	}
+
+	sf::Vector2u texSize = boardTexture->getSize();
+
+	// 1. 描画ターゲットとしてのRenderTextureを作成
+	sf::RenderTexture* rt = new sf::RenderTexture();
+	if (!rt->create(texSize.x, texSize.y))
+	{
+		std::cout << "Game::GenerateThumbnail: Failed create render texture!" << std::endl;
+		delete rt;
+		return nullptr;
+	}
+	rt->clear(sf::Color::Transparent);
+
+	// 2. 背景（盤面）を描画
+	sf::Sprite boardSprite(*boardTexture);
+	// 上下反転
+	boardSprite.setScale(1.f, -1.f);
+	// そのままだと上下がずれるので、原点を画像の高さにする
+	boardSprite.setOrigin(0.0f, static_cast<float>(boardTexture->getSize().y));
+	rt->draw(boardSprite);
+
+	// 3. 荷物を描画
+	// 荷物の数が0出なければ描画
+	if (!mBaggages.empty())
+	{
+		for (const auto& pos : snapshotData.baggagePositions)
+		{
+			// Baggageクラスからテクスチャを取得
+			sf::Texture* baggageTex(nullptr);
+			if (std::find(mGoalPos.begin(), mGoalPos.end(), pos) == mGoalPos.end())
+			{
+				baggageTex = mBaggages.front()->GetBaggageTexture(Baggage::BState::OnFloor);
+			}
+			else
+			{
+				baggageTex = mBaggages.front()->GetBaggageTexture(Baggage::BState::OnGoal);
+			}
+			sf::Sprite baggageSprite(*baggageTex);
+
+			// タイル座標をピクセル座標に変換
+			sf::Vector2f pixelPos(static_cast<float>(pos.x * baggageTex->getSize().x), static_cast<float>(pos.y * baggageTex->getSize().y));
+			baggageSprite.setPosition(pixelPos);
+			rt->draw(baggageSprite);
+		}
+	}
+
+	// 4. プレイヤーを描画
+	sf::Texture* playerTex = mPlayer->GetTextureForDirection(snapshotData.playerDirection);
+	if (playerTex)
+	{
+		sf::Sprite playerSprite(*playerTex);
+		sf::Vector2f pixelPos(static_cast<float>(snapshotData.playerPosition.x * playerTex->getSize().x), static_cast<float>(snapshotData.playerPosition.y * playerTex->getSize().y));
+		playerSprite.setPosition(pixelPos);
+		rt->draw(playerSprite);
+	}
+
+	// 5. 描画を確定
+	rt->display();
+
+	// 6. RenderTextureからTextureをコピーして返す
+	sf::Texture* thumbnail = new sf::Texture(rt->getTexture());
+	delete rt; // RenderTextureは不要になったので破棄
+
+	std::cout << "Game::GenerateThumbnail: Created thumbnail texture!" << std::endl;
+	return thumbnail;
+}
+
+sf::Texture* Game::GenerateCurrentThumbnail()
+{
+	// 現在の状態からダミーのスナップショットを作ってGenerateThumbnailに渡す
+	GameSnapshot currentData;
+	currentData.playerPosition = mPlayer->GetBoardCoordinate();
+	currentData.playerDirection = mPlayer->GetDirection();
+	for (const auto& baggage : mBaggages)
+	{
+		currentData.baggagePositions.push_back(baggage->GetBoardCoordinate());
+	}
+	return GenerateThumbnail(currentData);
+}
+
+sf::Vector2u Game::GetThumbnailSize() const
+{
+	// 盤面テクスチャを取得（これが背景になる）
+	sf::Texture* boardTexture = mGameBoard->GetBoardTexture();
+	if (!boardTexture)
+	{
+		std::cout << "Game::GetThumbnailSize: Failed get board texture!" << std::endl;
+		return sf::Vector2u{ 0, 0 };
+	}
+	return boardTexture->getSize();
+}
+
 std::string Game::GetDateTime()
 {
 	// 日付と時刻を取得
@@ -1148,6 +1360,9 @@ void Game::HasComplete()
 
 void Game::DisplayResult()
 {
+	// ボタンの長押しを解除
+	CancelAllUIHolds();
+
 	bool isChildWindowOpened = true;
 	bool isPlayLog = false;
 	// 表示用のウィンドウを作成
@@ -1529,6 +1744,21 @@ void Game::SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr ed
 					editBox->setText(std::to_string(slider->getValue()));
 				}
 			});
+	}
+}
+
+void Game::CancelAllUIHolds()
+{
+
+	// UIスタックの中からTHUDを探して、長押し状態を解除する
+	for (auto uiScreen : mUIStack)
+	{
+		// dynamic_castを使って、IUIScreen*がTHUD*に変換できるか試す
+		if (THUD* thud = dynamic_cast<THUD*>(uiScreen))
+		{
+			thud->CancelButtonHolds();
+			break; // THUDは一つしかないので見つけたらループを抜ける
+		}
 	}
 }
 
@@ -1921,6 +2151,9 @@ void Game::ChangeBoard()
 	OutputLogs();
 	mLogs.clear();
 
+	// スナップショットを消去
+	ClearSnapshots();
+
 	// 更新されたGameクラスのメンバ変数を参照して盤面を生成
 	std::vector<std::string> lines{ mInitBoardData[mCurrentKey] };
 
@@ -2151,6 +2384,19 @@ sf::Vector2f Game::GetTileSize() const
 	return result;
 }
 
+Baggage* Game::GetBaggageFromPos(const sf::Vector2i& pos)
+{
+	for (auto& baggage : mBaggages)
+	{
+		if (pos == baggage->GetBoardCoordinate())
+		{
+			return baggage;
+		}
+	}
+
+	return nullptr;
+}
+
 std::vector<sf::Vector2i> Game::GetBaggagesPos() const
 {
 	std::vector<sf::Vector2i> result{};
@@ -2228,6 +2474,7 @@ void Game::SetPushHighlights(const std::vector<sf::Vector2i>& tiles, Baggage* ba
 	if (mGameBoard && baggage)
 	{
 		std::cout << "Game::UpdatePushHighlights called with " << tiles.size() << " tiles." << std::endl;
+		SetBaggagesIdleState();
 		mGameBoard->SetPushHighlightedTiles(tiles, baggage);
 		baggage->SetHighlightingState();
 	}

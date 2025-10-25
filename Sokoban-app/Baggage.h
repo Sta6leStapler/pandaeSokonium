@@ -68,6 +68,8 @@ public:
 	void SetBoardCoordinate(const sf::Vector2i boardCoordinate);
 	HighlightState GetCurrentHighlightState() const { return mCurrentHighlightState; }
 	sf::Vector2i GetDestination() const { return mDestination;  }
+	sf::Texture* GetBaggageTexture() const { return mTextures.at(mBState); }
+	sf::Texture* GetBaggageTexture(const BState bstate) const { return mTextures.at(bstate); }
 
 	// 荷物の内部状態を更新する関数
 	void SetIdleState() { mCurrentHighlightState = HighlightState::Idle; }
@@ -106,7 +108,7 @@ private:
 	sf::Vector2i mBoardCoordinate;
 
 	// 荷物がゴール上にあるかどうか
-	BState bState;
+	BState mBState;
 
 	// ハイライト状態管理用のメンバ変数を追加
 	HighlightState mCurrentHighlightState;

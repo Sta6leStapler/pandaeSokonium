@@ -75,6 +75,8 @@ public:
 	sf::Vector2i GetBoardCoordinate() const { return this->mBoardCoordinate; }
 	void SetBoardCoordinate(const sf::Vector2i boardCoordinate);
 
+	sf::Texture* GetTextureForDirection(const Direction direction) const { return mTextures.at(direction); }
+
 private:
 	// このアクター専用のヘルパー関数
 	// アイドル状態でプレイヤーがクリックされた場合

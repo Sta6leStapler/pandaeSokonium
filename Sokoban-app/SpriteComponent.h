@@ -34,6 +34,7 @@ public:
 	void SetCoordinateX(const int& coordinateX) { this->mCoordinate.x = coordinateX; }
 	void SetCoordinateY(const int& coordinateY) { this->mCoordinate.y = coordinateY; }
 	void SetCoordinate(const sf::Vector2i& coordinate) { this->mCoordinate = coordinate; }
+	sf::Texture* GetTexture() const { return mTexture; }
 
 private:
 	// 自身を保持しているアクター
