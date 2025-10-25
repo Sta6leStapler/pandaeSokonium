@@ -17,7 +17,7 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	, mGame(game)
 	, mBoardName(game->GetCurrentKey())
 	, mBoardCoordinate(bCoordinate)
-	, bState(BState::OnFloor)
+	, mBState(BState::OnFloor)
 	, mCurrentHighlightState(HighlightState::Idle)
 	, mDestination(sf::Vector2i{ -1, -1 })
 	, mTransportingPathes(std::map<int, std::vector<sf::Vector2i>>{})
@@ -46,10 +46,10 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	// コンポーネントを作成
 	mSpriteComponent = new SpriteComponent(this, 100, 100);
 	// 初期位置がゴール上にあるかどうか
-	bState = BState::OnFloor;
+	mBState = BState::OnFloor;
 	if (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x] == '.')
 	{
-		bState = BState::OnGoal;
+		mBState = BState::OnGoal;
 	}
 
 	// ファイルを読み込む
@@ -65,13 +65,13 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	mTextures.emplace(BState::Deadlock, game->LoadTexture(filename));
 
 	// コンポーネントにテクスチャをセット
-	mSpriteComponent->SetTexture(mTextures[bState]);
+	mSpriteComponent->SetTexture(mTextures[mBState]);
 
 	// スケーリングと位置の初期化を行う
 	// 表示エリアのサイズ　/ 盤面のサイズ を求める
 	// 表示エリアの方が小さければタイルは縮小すべきで、逆なら拡大するべき
-	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[bState]->getSize().x * mGame->GetBoardSize().x),
-		(viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[bState]->getSize().y * mGame->GetBoardSize().y));
+	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[mBState]->getSize().x * mGame->GetBoardSize().x),
+		(viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[mBState]->getSize().y * mGame->GetBoardSize().y));
 
 	mScale = sf::Vector2f(minScale, minScale);
 
@@ -79,8 +79,8 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	// *メモ UI等でずれる場合はオフセットを加えておく
 	mPosition = sf::Vector2f
 	{
-		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(mTextures[bState]->getSize().x * mGame->GetBoardSize().x) * mScale.x) / 2.0f + static_cast<float>(mTextures[bState]->getSize().x * mBoardCoordinate.x) * mScale.x,
-		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(mTextures[bState]->getSize().x * mGame->GetBoardSize().y) * mScale.y) / 2.0f + static_cast<float>(mTextures[bState]->getSize().y * mBoardCoordinate.y) * mScale.y
+		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(mTextures[mBState]->getSize().x * mGame->GetBoardSize().x) * mScale.x) / 2.0f + static_cast<float>(mTextures[mBState]->getSize().x * mBoardCoordinate.x) * mScale.x,
+		viewArea.first.y + (viewArea.second.y - viewArea.first.y - static_cast<float>(mTextures[mBState]->getSize().x * mGame->GetBoardSize().y) * mScale.y) / 2.0f + static_cast<float>(mTextures[mBState]->getSize().y * mBoardCoordinate.y) * mScale.y
 	};
 }
 
@@ -104,14 +104,17 @@ void Baggage::Update(float deltaTime)
 		// このアクターの位置に応じてテクスチャを変える
 		if (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x] == '.')
 		{
+			mBState = BState::OnGoal;
 			mSpriteComponent->SetTexture(mTextures[BState::OnGoal]);
 		}
 		else if (mGame->GetHUDHelper()->isDeadlockedBaggage(mBoardCoordinate))
 		{
+			mBState = BState::Deadlock;
 			mSpriteComponent->SetTexture(mTextures[BState::Deadlock]);
 		}
 		else
 		{
+			mBState = BState::OnFloor;
 			mSpriteComponent->SetTexture(mTextures[BState::OnFloor]);
 		}
 	}
@@ -222,8 +225,8 @@ void Baggage::RemoveComponent(IComponent* component)
 void Baggage::SetBoardCoordinate(const sf::Vector2i boardCoordinate)
 {
 	mPosition = sf::Vector2f(
-		mPosition.x + static_cast<float>(mTextures[bState]->getSize().x) * mScale.x * static_cast<float>(boardCoordinate.x - mBoardCoordinate.x),
-		mPosition.y + static_cast<float>(mTextures[bState]->getSize().y) * mScale.y * static_cast<float>(boardCoordinate.y - mBoardCoordinate.y)
+		mPosition.x + static_cast<float>(mTextures[mBState]->getSize().x) * mScale.x * static_cast<float>(boardCoordinate.x - mBoardCoordinate.x),
+		mPosition.y + static_cast<float>(mTextures[mBState]->getSize().y) * mScale.y * static_cast<float>(boardCoordinate.y - mBoardCoordinate.y)
 	);
 	mBoardCoordinate = boardCoordinate;
 }

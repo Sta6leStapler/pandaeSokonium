@@ -1,8 +1,102 @@
-Commands :
-D-pad  ->  Move player
-z  ->  undo
-y  ->  redo
-Fn + down key  ->  Restore initial state
-Fn + up key  ->  restore latest state
-F5  ->  generate new board
-H  ->  help screen (this screen)
+[Game Rules]
+
+The objective is to move the player, push all baggages,
+and place every baggage onto a goal tile (green tiles).
+
+- The player can push baggages, but cannot pull them.
+- The player cannot push two or more baggages at the same time.
+
+---------------------------------
+[1. Basic Controls (Keyboard)]
+
+  Arrow Keys : Move the player
+  
+  Baggages can only be pushed, not pulled.
+
+---------------------------------
+[2. Shortcuts & Features]
+
+  Z (Hold OK) : Undo last move
+  Y (Hold OK) : Redo move
+  
+  PageDown   : Reset the board to the start
+  PageUp     : Redo all undone moves
+  
+  Ctrl + R   : Fully restart the board
+  Ctrl + S   : Save the current board state to a file
+  
+  F5         : Generate a new random board
+  H          : Show this help window
+  Esc        : Open the pause menu
+
+---------------------------------
+[3. Mouse Controls]
+
+  Click reachable floor:
+    Automatically move to that tile.
+  
+  Click the player:
+    Highlight all reachable tiles.
+    
+  Click a highlighted tile:
+    Move to that tile.
+    
+  Click the player again:
+    Cancel the highlight.
+
+---------------------------------
+[4. Snapshot Function]
+
+  You can save and restore the game state
+  at any time using the UI buttons.
+  
+  Add Snapshot:
+    Saves the current board state (positions,
+    steps, comments) to a list.
+    
+  Load Snapshot:
+    Shows the list of saved snapshots.
+    You can restore any state you saved.
+    
+  *Snapshots are cleared when you load a new board.
+
+---------------------------------
+[5. UI Button Functions]
+
+  [Load Board]
+  Loads a level from text files stored in 'Assets/Boards'.
+  The characters in the text files represent:
+    ' ' : Floor
+    '#' : Wall
+    '.' : Goal tile
+    '$' : Baggage (on a floor tile)
+    '*' : Baggage (on a goal tile)
+    '@' : Player (on a floor tile)
+    '+' : Player (on a goal tile)
+
+  [Generate Board]
+  Generates a new random level based on parameters:
+    - Width/Height: Size of the board (includes outer walls).
+    - Baggage: Number of baggages.
+    - Number of times reset: How many times to update
+      terrain during generation.
+    - Number of times transportation: Minimum baggage
+      moves before a terrain update.
+    - wall tile rate: Ratio of random walls placed
+      at the start of generation.
+    - visited tile rate: Ratio of tiles pre-marked
+      as 'visited' at the start.
+    - evaluation function: Switches the evaluation
+      function used by the generator.
+
+  [Save Board]
+  Saves the current board's layout (walls, goals,
+  initial positions) to a new .txt file in 'Assets/Boards'.
+
+  [Save Log]
+  Saves your complete operation history (all moves
+  and undos) for the current session to 'Assets/Logs'.
+    - Note: This log is discarded if you change
+      to a different board.
+    - Logs are also saved automatically when you
+      clear a level.

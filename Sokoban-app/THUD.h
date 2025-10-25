@@ -32,6 +32,9 @@ public:
 
 	// 状態を取得
 	UIState GetState() override { return mState; }
+	
+	// ボタンの長押しを解除するメンバ変数
+	void CancelButtonHolds();
 
 private:
 	class Game* mGame;
@@ -47,13 +50,21 @@ private:
 	std::unordered_map<TextIndex, std::string> mTextInfo;
 
 	// 各種制御用変数
-	sf::Vector2i mButtonSize;
+	sf::Vector2i mRollBackLargeButtonSize;
+	sf::Vector2i mRollBackSmallButtonSize;
+	sf::Vector2i mGameSystemButtonSize;
 	sf::Vector2i mButtonInitialPos;
 	sf::Vector2i mButtonMergin;
 	sf::Vector2i mListBoxSize;
 	sf::Vector2i mListBoxPos;
 	unsigned int mListBoxItemHeight;
 	float mIconImageScale;
+
+	// Undo/Redoボタンの制御
+	bool mIsUndoHeld;   // Undoボタンが押され続けているか
+	bool mIsRedoHeld;   // Redoボタンが押され続けているか
+	float mUndoRepeatTimer; // Undoのリピートタイマー
+	float mRedoRepeatTimer; // Redoのリピートタイマー
 
 	// 状態
 	UIState mState;

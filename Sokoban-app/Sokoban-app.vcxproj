@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="SnapshotDialog.cpp" />
     <ClCompile Include="BackGround.cpp" />
     <ClCompile Include="Baggage.cpp" />
     <ClCompile Include="Button.cpp" />
@@ -147,11 +148,13 @@
     <ClCompile Include="Pathfinder.cpp" />
     <ClCompile Include="PauseMenu.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="SnapshotScreen.cpp" />
     <ClCompile Include="SpriteComponent.cpp" />
     <ClCompile Include="State.cpp" />
     <ClCompile Include="THUD.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SnapshotDialog.h" />
     <ClInclude Include="BackGround.h" />
     <ClInclude Include="Baggage.h" />
     <ClInclude Include="Button.h" />
@@ -167,6 +170,7 @@
     <ClInclude Include="Pathfinder.h" />
     <ClInclude Include="PauseMenu.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="SnapshotScreen.h" />
     <ClInclude Include="SpriteComponent.h" />
     <ClInclude Include="State.h" />
     <ClInclude Include="THUD.h" />

@@ -488,3 +488,8 @@ void GameBoard::ClearPushDirections()
 		mHighlightSpriteComponent = nullptr;
 	}
 }
+
+sf::Texture* GameBoard::GetBoardTexture() const
+{
+	return mBoardSpriteComponent->GetTexture();
+}

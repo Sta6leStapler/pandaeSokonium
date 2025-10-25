@@ -49,6 +49,22 @@ public:
 		EQuit
 	};
 
+	// スナップショット保存用の構造体
+	struct GameSnapshot
+	{
+		// 1. 復元用データ
+		sf::Vector2i playerPosition;
+		Player::Direction playerDirection;
+		std::vector<sf::Vector2i> baggagePositions; // 全ての荷物の座標
+		unsigned int stepCount;
+		std::vector<Log> logs; // その時点までのログ
+
+		// 2. UI表示用データ
+		std::string snapshotName;
+		std::string snapshotComment;
+		std::string timestamp; // 保存時刻 (例: "2025/10/20 19:30")
+	};
+
 	// テクスチャのロード
 	sf::Texture* LoadTexture(const std::string& fileName);
 
@@ -110,6 +126,53 @@ public:
 	// ログの出力
 	void OutputLogs();
 
+	// スナップショット関連の関数
+	// 現在のゲーム状態をスナップショットとして保存
+	void AddSnapshot(const std::string& name, const std::string& comment);
+	// スナップショット一覧UIを表示
+	void DisplaySnapshot();
+	// スナップショットの名前・コメント入力UIを表示
+	void AddSnapshotDialog();
+	// 指定されたインデックスのスナップショットを復元
+	void RestoreSnapshot(int snapshotIndex);
+	// 保持しているスナップショットをすべて消去
+	void ClearSnapshots();
+	// スナップショットのリスト（データのみ）を取得
+	const std::vector<GameSnapshot>& GetSnapshots() const { return mSnapshots; }
+	// スナップショットデータからサムネイルテクスチャを動的に生成
+	sf::Texture* GenerateThumbnail(const GameSnapshot& snapshotData);
+	// 現在の盤面状況からサムネイルを動的に生成
+	sf::Texture* GenerateCurrentThumbnail();
+	// サムネイルのサイズを取得
+	sf::Vector2u GetThumbnailSize() const;
+	// スナップショットのコメントを更新
+	void SetSnapshotComment(const int index, const std::string& comment = "") { mSnapshots[index].snapshotComment = comment; }
+	void SetSnapshotComment(const std::string& title, const std::string& comment = "")
+	{
+		for (auto& snapshot : mSnapshots)
+		{
+			if (snapshot.snapshotName == title)
+			{
+				snapshot.snapshotComment = comment;
+				return;
+			}
+		}
+	}
+	// 指定されたスナップショットを削除
+	void RemoveSnapshot(const int index) { if (index >= 0 && index < mSnapshots.size()) mSnapshots.erase(mSnapshots.begin() + index); }
+	void RemoveSnapshot(const std::string& title)
+	{
+		for (auto iter = mSnapshots.begin(); iter != mSnapshots.end(); iter++)
+		{
+			if (iter->snapshotName == title)
+			{
+				mSnapshots.erase(iter);
+				return;
+			}
+		}
+	}
+	// スナップショット関連の関数ここまで
+
 	// 現在日時を文字列で出力
 	std::string GetDateTime();
 
@@ -163,7 +226,9 @@ public:
 
 	// 盤面関連
 	std::vector<class Baggage*>& GetBaggages() { return mBaggages; }
+	class Baggage* GetBaggageFromPos(const sf::Vector2i& pos);
 	std::vector<sf::Vector2i> GetBaggagesPos() const;
+	std::vector<sf::Vector2i> GetGoalPos() const { return mGoalPos; }
 	class Player* GetPlayer() const { return mPlayer; }
 	int GetBaggageNumLimit(const sf::Vector2i& size, const double& wallRate = 0.0) const;
 	void SetCurrentKey(const std::string& key) { mCurrentKey = key; }
@@ -194,6 +259,8 @@ private:
 
 	// ヘルパー関数は以下に定義
 	void SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr editBox, const bool& isInteger);
+	// 長押し処理のあるボタンの長押し状態を解除する関数
+	void CancelAllUIHolds();
 
 	// ロードされたテクスチャのマップ
 	std::unordered_map<std::string, sf::Texture*> mTextures;
@@ -284,4 +351,8 @@ private:
 	// (初期状態から遷移できる状態は基本的に複数あるので、リスト形式)
 	// (つまり、このリストに格納されるログは、プレイヤーの移動前の座標が必ず初期座標になる)
 	std::vector<Log> mLogs;
+
+	// 現在の盤面のスナップショットをリストで保持
+	// 盤面が切り替わった場合は破棄
+	std::vector<GameSnapshot> mSnapshots;
 };

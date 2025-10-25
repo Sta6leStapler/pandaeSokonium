@@ -9,12 +9,18 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	: mGame(game)
 	, mGui(std::make_unique<tgui::Gui>(*window))
 	, mTheme(std::make_unique<tgui::Theme>("Assets/themes/Black.txt"))
-	, mButtonSize(sf::Vector2i{ 150 , 40 })
+	, mRollBackLargeButtonSize(sf::Vector2i{ 120 , 50 })
+	, mRollBackSmallButtonSize(sf::Vector2i{ 120 , 40 })
+	, mGameSystemButtonSize(sf::Vector2i{ 150 , 40 })
 	, mButtonInitialPos(sf::Vector2i{ 20, 30 })
 	, mButtonMergin(sf::Vector2i{ 20, 20 })
 	, mListBoxItemHeight(32)
 	, mIconImageScale(0.7f)
 	, mState(IUIScreen::UIState::EActive)
+	, mIsUndoHeld(false)
+	, mIsRedoHeld(false)
+	, mUndoRepeatTimer(0.0f)
+	, mRedoRepeatTimer(0.0f)
 {
 	mGame->PushUI(this);
 
@@ -22,20 +28,41 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	tgui::Theme::setDefault();
 
 	// 各種ボタンを追加
-	// Undoボタン;
+	// Undo/Redo操作関連のボタン
+	// 盤面の描画範囲の下に配置する
+	// ボタンの基準位置
+	sf::Vector2f rollbackButtonInitialPos{ mGame->GetBoardViewArea().second.x, mGame->GetBoardViewArea().second.y };
+	// 盤面の描画範囲とウィンドウの間のマージン
+	sf::Vector2f rollbackLargeButtonMargin{ (mGame->GetWindowSize().y - (mGame->GetBoardViewArea().second.y - mGame->GetBoardViewArea().first.y) - static_cast<float>(mRollBackLargeButtonSize.y)) / 2.0f, (mGame->GetWindowSize().y - (mGame->GetBoardViewArea().second.y - mGame->GetBoardViewArea().first.y) - static_cast<float>(mRollBackLargeButtonSize.y)) / 2.0f };
+	sf::Vector2f rollbackSmallButtonMargin{ (mGame->GetWindowSize().y - (mGame->GetBoardViewArea().second.y - mGame->GetBoardViewArea().first.y) - static_cast<float>(mRollBackSmallButtonSize.y)) / 2.0f, (mGame->GetWindowSize().y - (mGame->GetBoardViewArea().second.y - mGame->GetBoardViewArea().first.y) - static_cast<float>(mRollBackSmallButtonSize.y)) / 2.0f };
+	// Undoボタン
 	sf::Image tmpImage = mGame->LoadTexture("Assets/Undo.png")->copyToImage();
 	tgui::Texture tmpTGuiTex{};
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	auto undoButton = tgui::BitmapButton::create("Undo");
-	undoButton->setPosition(mButtonInitialPos.x, mButtonInitialPos.y); // ボタンの位置
-	undoButton->setSize(mButtonSize.x, mButtonSize.y);    // ボタンのサイズ
+	undoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
+	// ボタンの位置
+	undoButton->setPosition(
+		rollbackButtonInitialPos.x - rollbackLargeButtonMargin.x - mRollBackLargeButtonSize.x,
+		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
 	undoButton->setRenderer(mTheme->getRenderer("BitmapButton"));
 	undoButton->setImage(tmpTGuiTex);
 	undoButton->setImageScaling(mIconImageScale);
 	undoButton->setTextSize(16);
-	undoButton->onPress([=]() {
+	undoButton->onMousePress([this]() {
 		std::cout << "Undo action triggered!" << std::endl;
-		mGame->CallUndo();
+		mIsUndoHeld = true;
+		mGame->CallUndo(); // 押した瞬間にまず1回実行
+		// 最初の長押し判定までの時間を設定
+		mUndoRepeatTimer = mGame->GetHoldThresHold();
+		});
+	undoButton->onMouseRelease([this]() {
+		std::cout << "Released undo Button!" << std::endl;
+		mIsUndoHeld = false;
+		});
+	// ボタンの領域外にマウスが出ても停止する
+	undoButton->onMouseLeave([this]() {
+		mIsUndoHeld = false;
 		});
 	mGui->add(undoButton);
 
@@ -43,15 +70,27 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	tmpImage = mGame->LoadTexture("Assets/Redo.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	auto redoButton = tgui::BitmapButton::create("Redo");
-	redoButton->setPosition(mButtonInitialPos.x + mButtonSize.x + mButtonMergin.x, mButtonInitialPos.y); // ボタンの位置
-	redoButton->setSize(mButtonSize.x, mButtonSize.y);    // ボタンのサイズ
+	redoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
+	// ボタンの位置
+	redoButton->setPosition(
+		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0f - rollbackLargeButtonMargin.x * 3.0f,
+		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
 	redoButton->setRenderer(mTheme->getRenderer("BitmapButton"));
 	redoButton->setImage(tmpTGuiTex);
 	redoButton->setImageScaling(mIconImageScale);
 	redoButton->setTextSize(16);
-	redoButton->onPress([=]() {
+	redoButton->onMousePress([this]() {
 		std::cout << "Redo action triggered!" << std::endl;
-		mGame->CallRedo();
+		mIsRedoHeld = true;
+		mGame->CallRedo(); // 押した瞬間にまず1回実行
+		// 最初の長押し判定までの時間を設定
+		mRedoRepeatTimer = mGame->GetHoldThresHold();
+		});
+	redoButton->onMouseRelease([this]() {
+		mIsRedoHeld = false;
+		});
+	redoButton->onMouseLeave([this]() {
+		mIsRedoHeld = false;
 		});
 	mGui->add(redoButton);
 
@@ -59,8 +98,11 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	tmpImage = mGame->LoadTexture("Assets/Reset.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	auto resetButton = tgui::BitmapButton::create("Reset");
-	resetButton->setPosition(mButtonInitialPos.x, mButtonInitialPos.y + mButtonSize.y + mButtonMergin.y); // ボタンの位置
-	resetButton->setSize(mButtonSize.x, mButtonSize.y);    // ボタンのサイズ
+	resetButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ボタンのサイズ
+	// ボタンの位置
+	resetButton->setPosition(
+		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0 - mRollBackSmallButtonSize.x - rollbackLargeButtonMargin.x * 4.0f - rollbackSmallButtonMargin.x,
+		rollbackButtonInitialPos.y + rollbackSmallButtonMargin.y);
 	resetButton->setRenderer(mTheme->getRenderer("BitmapButton"));
 	resetButton->setImage(tmpTGuiTex);
 	resetButton->setImageScaling(mIconImageScale);
@@ -75,8 +117,11 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	tmpImage = mGame->LoadTexture("Assets/RedoAll.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	auto redoAllButton = tgui::BitmapButton::create("Redo All");
-	redoAllButton->setPosition(mButtonInitialPos.x + mButtonSize.x + mButtonMergin.x, mButtonInitialPos.y + mButtonSize.y + mButtonMergin.y); // ボタンの位置
-	redoAllButton->setSize(mButtonSize.x, mButtonSize.y);    // ボタンのサイズ
+	redoAllButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ボタンのサイズ
+	// ボタンの位置
+	redoAllButton->setPosition(
+		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0 - mRollBackSmallButtonSize.x * 2.0f - rollbackLargeButtonMargin.x * 4.0f - rollbackSmallButtonMargin.x * 3.0f,
+		rollbackButtonInitialPos.y + rollbackSmallButtonMargin.y);
 	redoAllButton->setRenderer(mTheme->getRenderer("BitmapButton"));
 	redoAllButton->setImage(tmpTGuiTex);
 	redoAllButton->setImageScaling(mIconImageScale);
@@ -87,12 +132,74 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 		});
 	mGui->add(redoAllButton);
 
+	// Load Snapshotボタン
+	auto loadSnapshotButton = tgui::Button::create("Load Snapshot");
+	loadSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
+	// ボタンの位置
+	loadSnapshotButton->setPosition(
+		mGame->GetBoardViewArea().first.x + rollbackLargeButtonMargin.x,
+		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
+	loadSnapshotButton->setRenderer(mTheme->getRenderer("Button"));
+	loadSnapshotButton->setTextSize(16);
+	loadSnapshotButton->onPress([=]() {
+		std::cout << "Load Snapshot action triggered!" << std::endl;
+		// スナップショットマネージャーを呼び出す
+		mGame->DisplaySnapshot();
+		});
+	mGui->add(loadSnapshotButton);
+
+	// Add Snapshotボタン
+	auto addSnapshotButton = tgui::Button::create("Add Snapshot");
+	addSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
+	// ボタンの位置
+	addSnapshotButton->setPosition(
+		mGame->GetBoardViewArea().first.x + mRollBackLargeButtonSize.x + rollbackLargeButtonMargin.x * 3.0f,
+		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
+	addSnapshotButton->setRenderer(mTheme->getRenderer("Button"));
+	addSnapshotButton->setTextSize(16);
+	addSnapshotButton->onPress([=]() {
+		std::cout << "Add Snapshot action triggered!" << std::endl;
+		// スナップショットをリストに追加する処理を呼び出す
+		mGame->AddSnapshotDialog();
+		});
+	mGui->add(addSnapshotButton);
+
+	// Undo/Redo操作関連のボタンの配置ここまで
+	
+	// 以下はゲームシステム関連のボタンの配置
+	// 各ボタンの基準位置のマージン
+	sf::Vector2i listBoxMargin{ static_cast<int>((mGame->GetWindowSize().x - (mGame->GetBoardViewArea().second.x - mGame->GetBoardViewArea().first.x) - (mGameSystemButtonSize.x * 4 + mButtonMergin.x * 3)) / 2.0f), static_cast<int>((mGame->GetWindowSize().x - (mGame->GetBoardViewArea().second.x - mGame->GetBoardViewArea().first.x) - (mGameSystemButtonSize.x * 4 + mButtonMergin.x * 3)) / 4.0f) };
+
+	// Load Boardボタン
+	auto loadBoardButton = tgui::Button::create("Load Board");
+	loadBoardButton->setPosition(listBoxMargin.x, mButtonInitialPos.y); // ボタンの位置
+	loadBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
+	loadBoardButton->setRenderer(mTheme->getRenderer("Button"));
+	loadBoardButton->setTextSize(16);
+	loadBoardButton->onPress([=]() {
+		std::cout << "Load board action triggered!" << std::endl;
+		mGame->SelectBoards();
+		});
+	mGui->add(loadBoardButton);
+
+	// Generate Boardボタン
+	auto genBoardButton = tgui::Button::create("Generate Board");
+	genBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x), mButtonInitialPos.y); // ボタンの位置
+	genBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
+	genBoardButton->setRenderer(mTheme->getRenderer("Button"));
+	genBoardButton->setTextSize(16);
+	genBoardButton->onPress([=]() {
+		std::cout << "Generate board action triggered!" << std::endl;
+		mGame->CallReload();
+		});
+	mGui->add(genBoardButton);
+	
 	// Save Boardボタン
 	tmpImage = mGame->LoadTexture("Assets/SaveBoard.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	auto saveBoardButton = tgui::BitmapButton::create("Save Board");
-	saveBoardButton->setPosition(mButtonInitialPos.x, mButtonInitialPos.y + (mButtonSize.y + mButtonMergin.y) * 2); // ボタンの位置
-	saveBoardButton->setSize(mButtonSize.x, mButtonSize.y);    // ボタンのサイズ
+	saveBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y); // ボタンの位置
+	saveBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
 	saveBoardButton->setRenderer(mTheme->getRenderer("BitmapButton"));
 	saveBoardButton->setImage(tmpTGuiTex);
 	saveBoardButton->setImageScaling(mIconImageScale);
@@ -107,8 +214,8 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	tmpImage = mGame->LoadTexture("Assets/SaveLog.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	auto saveLogButton = tgui::BitmapButton::create("Save Log");
-	saveLogButton->setPosition(mButtonInitialPos.x + mButtonSize.x + mButtonMergin.x, mButtonInitialPos.y + (mButtonSize.y + mButtonMergin.y) * 2); // ボタンの位置
-	saveLogButton->setSize(mButtonSize.x, mButtonSize.y);    // ボタンのサイズ
+	saveLogButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 3, mButtonInitialPos.y); // ボタンの位置
+	saveLogButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
 	saveLogButton->setRenderer(mTheme->getRenderer("BitmapButton"));
 	saveLogButton->setImage(tmpTGuiTex);
 	saveLogButton->setImageScaling(mIconImageScale);
@@ -119,34 +226,10 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 		});
 	mGui->add(saveLogButton);
 
-	// Load Boardボタン
-	auto loadBoardButton = tgui::Button::create("Load Board");
-	loadBoardButton->setPosition(mButtonInitialPos.x + (mButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y); // ボタンの位置
-	loadBoardButton->setSize(mButtonSize.x, mButtonSize.y);    // ボタンのサイズ
-	loadBoardButton->setRenderer(mTheme->getRenderer("Button"));
-	loadBoardButton->setTextSize(16);
-	loadBoardButton->onPress([=]() {
-		std::cout << "Load board action triggered!" << std::endl;
-		mGame->SelectBoards();
-		});
-	mGui->add(loadBoardButton);
-	
-	// Generate Boardボタン
-	auto genBoardButton = tgui::Button::create("Generate Board");
-	genBoardButton->setPosition(mButtonInitialPos.x + (mButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y + mButtonSize.y + mButtonMergin.y); // ボタンの位置
-	genBoardButton->setSize(mButtonSize.x, mButtonSize.y);    // ボタンのサイズ
-	genBoardButton->setRenderer(mTheme->getRenderer("Button"));
-	genBoardButton->setTextSize(16);
-	genBoardButton->onPress([=]() {
-		std::cout << "Generate board action triggered!" << std::endl;
-		mGame->CallReload();
-		});
-	mGui->add(genBoardButton);
-
 	// Helpボタン
 	auto helpButton = tgui::Button::create("Help");
-	helpButton->setPosition(mButtonInitialPos.x + (mButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y + (mButtonSize.y + mButtonMergin.y) * 2); // ボタンの位置
-	helpButton->setSize(mButtonSize.x, mButtonSize.y);    // ボタンのサイズ
+	helpButton->setPosition(listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
+	helpButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
 	helpButton->setRenderer(mTheme->getRenderer("Button"));
 	helpButton->setTextSize(16);
 	helpButton->onPress([=]() {
@@ -155,9 +238,11 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 		});
 	mGui->add(helpButton);
 
+	// ゲームシステム関連のボタンの配置ここまで
+	
 	// TODO 各種情報のテキストを表示する矩形
-	mListBoxSize = sf::Vector2i{ static_cast<int>(mGame->GetWindowSize().x - mGame->GetWindowSize().y - 40.0), static_cast<int>(mGame->GetWindowSize().y) - (mButtonInitialPos.y + (mButtonSize.y + mButtonMergin.y) * 3) - 20 };
-	mListBoxPos = sf::Vector2i{ 20, mButtonInitialPos.y + (mButtonSize.y + mButtonMergin.y) * 3 };
+	mListBoxSize = sf::Vector2i{ static_cast<int>(mGame->GetWindowSize().x - (mGame->GetBoardViewArea().second.x - mGame->GetBoardViewArea().first.x) - listBoxMargin.x * 2), static_cast<int>(mGame->GetWindowSize().y) - (mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y) * 2) - 20};
+	mListBoxPos = sf::Vector2i{ listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y) * 2 };
 
 	mTextInfo[TextIndex::EMoveCount] = "Moves : " + std::to_string(mGame->GetStep());
 	mTextInfo[TextIndex::ETime] = "Time : 00:00";
@@ -228,6 +313,30 @@ void THUD::Update(float deltaTime)
 	{
 		mListBox->changeItemById(std::to_string(text.first), text.second);
 	}
+	// テキストの更新はここまで
+
+	// --- UIボタンの長押しリピート処理 ---
+	if (mIsUndoHeld)
+	{
+		mUndoRepeatTimer -= deltaTime;
+		if (mUndoRepeatTimer <= 0.0f)
+		{
+			mGame->CallUndo();
+			// 次のリピート間隔を設定
+			mUndoRepeatTimer = mGame->GetAutoRepeatInterval();
+		}
+	}
+
+	if (mIsRedoHeld)
+	{
+		mRedoRepeatTimer -= deltaTime;
+		if (mRedoRepeatTimer <= 0.0f)
+		{
+			mGame->CallRedo();
+			// 次のリピート間隔を設定
+			mRedoRepeatTimer = mGame->GetAutoRepeatInterval();
+		}
+	}
 }
 
 void THUD::ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos)
@@ -241,4 +350,14 @@ void THUD::Draw(sf::RenderWindow* mWindow)
 {
 	// GUIの描画
 	mGui->draw();
+}
+
+void THUD::CancelButtonHolds()
+{
+	mIsUndoHeld = false;
+	mIsRedoHeld = false;
+
+	// タイマーもリセットしておく
+	mUndoRepeatTimer = 0.0f;
+	mRedoRepeatTimer = 0.0f;
 }
