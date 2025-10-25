@@ -3,6 +3,8 @@
 
 #include "SnapshotDialog.h"
 
+#include <iostream>
+
 SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
     : mGame(game),
     mWindow(window),
