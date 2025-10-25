@@ -4,6 +4,7 @@
 #include "SpriteComponent.h"
 #include "HUDHelper.h"
 
+#include <iostream>
 #include <fstream>
 
 Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
