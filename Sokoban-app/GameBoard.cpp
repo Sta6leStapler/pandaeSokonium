@@ -97,6 +97,10 @@ GameBoard::GameBoard(Game* game)
 	
 	// スプライトをテクスチャに貼り付けていく
 	boardTexture->create(static_cast<int>(tmpFloor.getGlobalBounds().width * maxX), static_cast<int>(tmpFloor.getGlobalBounds().height * lines.size()));
+	
+	// RenderTextureのテクスチャをクリア
+	boardTexture->clear(sf::Color::Transparent);
+	
 	for (int i = 0; i < lines.size(); i++)
 	{
 		for (int j = 0; j < lines[i].length(); j++)
@@ -263,6 +267,10 @@ void GameBoard::Reload()
 
 	// スプライトをテクスチャに貼り付けていく
 	boardTexture->create(static_cast<int>(tmpFloor.getGlobalBounds().width * maxX), static_cast<int>(tmpFloor.getGlobalBounds().height * lines.size()));
+
+	// RenderTextureのテクスチャをクリア
+	boardTexture->clear(sf::Color::Transparent);
+
 	for (int i = 0; i < lines.size(); i++)
 	{
 		for (int j = 0; j < lines[i].length(); j++)
@@ -347,6 +355,9 @@ void GameBoard::SetMoveHighlightedTiles(const std::vector<sf::Vector2i>& tiles)
 	// スプライトをテクスチャに貼り付けていく
 	highlightTexture->create(static_cast<int>(tmpHighlight.getGlobalBounds().width * mGame->GetBoardSize().x), static_cast<int>(tmpHighlight.getGlobalBounds().height * mGame->GetBoardSize().y));
 
+	// RendererTextureのテクスチャをクリア
+	highlightTexture->clear(sf::Color::Transparent);
+
 	for (const auto& tile : mMoveHighlightedTiles)
 	{
 		tmpHighlight.setPosition(tmpHighlight.getGlobalBounds().width * static_cast<float>(tile.x), tmpHighlight.getGlobalBounds().height * static_cast<float>(tile.y));
@@ -392,6 +403,9 @@ void GameBoard::SetPushHighlightedTiles(const std::vector<sf::Vector2i>& tiles, 
 
 	// スプライトをテクスチャに貼り付けていく
 	highlightTexture->create(static_cast<int>(tmpHighlight.getGlobalBounds().width * mGame->GetBoardSize().x), static_cast<int>(tmpHighlight.getGlobalBounds().height * mGame->GetBoardSize().y));
+
+	// RenderTextureのテクスチャをクリア
+	highlightTexture->clear(sf::Color::Transparent);
 
 	for (const auto& tile : mPushHighlightedTiles)
 	{
@@ -443,6 +457,9 @@ void GameBoard::SetPushDirections(const std::vector<int>& indexes, class Baggage
 
 	// スプライトをテクスチャに貼り付けていく
 	highlightTexture->create(static_cast<int>(tmpIdleEast.getGlobalBounds().width * mGame->GetBoardSize().x), static_cast<int>(tmpIdleEast.getGlobalBounds().height * mGame->GetBoardSize().y));
+
+	// RenderTextureのテクスチャをクリア
+	highlightTexture->clear(sf::Color::Transparent);
 
 	tmpHighlight.setPosition(tmpHighlight.getGlobalBounds().width * static_cast<float>(destination.x), tmpHighlight.getGlobalBounds().height * static_cast<float>(destination.y));
 	highlightTexture->draw(tmpHighlight);
