@@ -77,7 +77,7 @@ MySolution::MySolution(
 void MySolution::InitSettings()
 {
 	// 壁タイルの配置数を求める
-	int wallCount = ((mSize.x - 2) * (mSize.y - 2) - mBaggageNum - 1) * mInitialWallRatio;
+	int wallCount = static_cast<int>(((mSize.x - 2) * (mSize.y - 2) - mBaggageNum - 1) * mInitialWallRatio);
 	SetWallTiles(wallCount);
 
 	// 盤面情報のコピー
@@ -225,7 +225,7 @@ void MySolution::RunSimulation()
 			MoveOnPath(pRoute.second, cpBoard, vpPoint, vbPoints[pRoute.first], PPassCount, BPassCount, true);
 
 			// 解の上界を求めるために、経路の長さだけ加算
-			mSolveUpper += pRoute.second.size();
+			mSolveUpper += static_cast<int>(pRoute.second.size());
 
 			// 履歴に重複がないか確認する
 			if (existsDuplicateHistory(currentHistory, cpBoard))
@@ -858,7 +858,7 @@ void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::V
 	}
 
 	// 直前に運んだ荷物以外の全ての荷物に対して調べる
-	for (size_t i = 0; i < bPositions.size(); i++)
+	for (int i = 0; i < static_cast<int>(bPositions.size()); i++)
 	{
 		if (i != prevBaggageIndex)
 		{
@@ -925,7 +925,7 @@ void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::V
 	}
 
 	// 全ての荷物に対して調べる
-	for (size_t i = 0; i < bPositions.size(); i++)
+	for (int i = 0; i < static_cast<int>(bPositions.size()); i++)
 	{
 		// 対象の荷物の座標のみを荷物に戻す
 		Board tmpBoard = baseBoard;
@@ -1037,14 +1037,14 @@ void MySolution::SetRoutes(
 		// first -> 移動元のタイル
 		// second -> 移動先のタイル
 		// 距離は移動先のタイルまでの距離
-		std::map<std::pair<std::pair<int, int>, std::pair<int, int>>, unsigned int> distances;
+		std::map<std::pair<std::pair<int, int>, std::pair<int, int>>, int> distances;
 		//初期化
 		for (const auto& fromPos : graph)
 		{
 			for (const auto& toPos : fromPos.second)
 			{
-				distances[std::make_pair(fromPos.first, toPos.first)] = UINT_MAX;
-				distances[std::make_pair(toPos.first, fromPos.first)] = UINT_MAX;
+				distances[std::make_pair(fromPos.first, toPos.first)] = INT_MAX;
+				distances[std::make_pair(toPos.first, fromPos.first)] = INT_MAX;
 			}
 		}
 
@@ -1193,11 +1193,11 @@ Route MySolution::FindRouteToBaggage(const sf::Vector2i& pCoordinate, const sf::
 	}
 
 	// スタート地点からの各床タイルへの距離を表す変数
-	std::map<std::pair<int, int>, unsigned int> distance;
+	std::map<std::pair<int, int>, int> distance;
 	//初期化
 	for (const auto& item : graph)
 	{
-		distance[item.first] = UINT_MAX;
+		distance[item.first] = INT_MAX;
 	}
 	// スタート地点の座標は距離を0としておく
 	distance[std::make_pair(pCoordinate.x, pCoordinate.y)] = 0;
@@ -1229,7 +1229,7 @@ Route MySolution::FindRouteToBaggage(const sf::Vector2i& pCoordinate, const sf::
 	}
 	
 	// 経路が見つからなかった場合は空のまま出力
-	if (distance[std::make_pair(goal.x, goal.y)] == UINT_MAX)
+	if (distance[std::make_pair(goal.x, goal.y)] == INT_MAX)
 	{
 		return result;
 	}
@@ -1625,7 +1625,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 		{
 			if (mRates[cerRoute.first][i].totalRate == minRate.second.second)
 			{
-				candidate[cerRoute.second.size()].emplace_back(std::make_pair(cerRoute.first, i));
+				candidate[static_cast<int>(cerRoute.second.size())].emplace_back(std::make_pair(cerRoute.first, i));
 				minRateRoutes.emplace_back(std::make_pair(cerRoute.first, i));
 			}
 		}
