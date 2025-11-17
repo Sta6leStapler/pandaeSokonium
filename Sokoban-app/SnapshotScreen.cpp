@@ -71,7 +71,7 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
             thumbnailCommentOffset.x = thumbnailTitleOffset.x;
         }
 
-        for (int i = 0, size = snapshots.size(); i < size; ++i)
+        for (int i = 0, size = static_cast<int>(snapshots.size()); i < size; ++i)
         {
             // sf::Textureからtgui::textureへの変換
             sf::Texture* currentBoardTex = mGame->GenerateThumbnail(snapshots[i]);
@@ -532,7 +532,7 @@ void SnapshotScreen::AddSnapshot(const std::string& name, const std::string& com
         });
 
     // サムネイルリストに追加
-    auto templatePanel = mThumbnailListBox->addItem(snapshot.snapshotName, mThumbnailListBox->getItemCount());
+    auto templatePanel = mThumbnailListBox->addItem(snapshot.snapshotName, static_cast<int>(mThumbnailListBox->getItemCount()));
     templatePanel->add(templatePic, snapshot.snapshotName);
     std::cout << "SnapshotScreen: Add name label -> " << nameLabel->getText() << std::endl;
     templatePanel->add(nameLabel, snapshot.snapshotName);

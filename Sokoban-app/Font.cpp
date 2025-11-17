@@ -101,7 +101,7 @@ sf::Texture* Font::RenderTextOnCenter(const std::string& text, const sf::Vector2
 		sf::Vector2f pos{ (boundingBox.x - textBounds.width) / 2.0f - textBounds.left, (boundingBox.y - textBounds.height) / 2.0f - textBounds.top };
 
 		sf::RenderTexture renderTexture;
-		if (!renderTexture.create(boundingBox.x, boundingBox.y)) {
+		if (!renderTexture.create(static_cast<unsigned int>(boundingBox.x), static_cast<unsigned int>(boundingBox.y))) {
 			std::cerr << "RenderTexture‚Ìì¬‚ÉŽ¸”s‚µ‚Ü‚µ‚½B" << std::endl;
 		}
 
