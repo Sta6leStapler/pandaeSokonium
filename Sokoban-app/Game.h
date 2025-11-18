@@ -46,6 +46,7 @@ public:
 	{
 		EGamePlay,
 		EPaused,
+		EEditMode,
 		EQuit
 	};
 
@@ -172,6 +173,12 @@ public:
 		}
 	}
 	// スナップショット関連の関数ここまで
+
+	// エディットモード関連の関数
+	// レベルエディタUIを表示する。editCurrentBoard trueならば現在の盤面をロードして編集
+	void DisplayEditorScreen(const bool editCurrentBoard = false);
+	
+	// エディットモード関連の関数ここまで
 
 	// 現在日時を文字列で出力
 	std::string GetDateTime();

@@ -226,9 +226,21 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 		});
 	mGui->add(saveLogButton);
 
+	// Edit Modeボタン
+	auto editModeButton = tgui::Button::create("Edit Mode");
+	editModeButton->setPosition(listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
+	editModeButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
+	editModeButton->setRenderer(mTheme->getRenderer("Button"));
+	editModeButton->setTextSize(16);
+	editModeButton->onPress([=]() {
+		std::cout << "Edit Mode action triggered!" << std::endl;
+		mGame->DisplayEditorScreen();
+		});
+	mGui->add(editModeButton);
+
 	// Helpボタン
 	auto helpButton = tgui::Button::create("Help");
-	helpButton->setPosition(listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
+	helpButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 1, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
 	helpButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
 	helpButton->setRenderer(mTheme->getRenderer("Button"));
 	helpButton->setTextSize(16);

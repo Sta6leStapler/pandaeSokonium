@@ -14,6 +14,7 @@
 #include "HUDHelper.h"
 #include "SnapshotDialog.h"
 #include "SnapshotScreen.h"
+#include "EditorScreen.h"
 
 #include <iostream>
 #include <filesystem>
@@ -284,6 +285,7 @@ void Game::ProcessInput()
 			break;
 		}
 
+		// ゲームプレイ状態ならば、キーボードやボタンの入力処理を受け付ける
 		if (mGameState == GameState::EGamePlay)
 		{
 			// ゲーム全体に関する各種入力処理
@@ -1292,6 +1294,13 @@ sf::Vector2u Game::GetThumbnailSize() const
 		return sf::Vector2u{ 0, 0 };
 	}
 	return boardTexture->getSize();
+}
+
+void Game::DisplayEditorScreen(const bool editCurrentBoard)
+{
+	new EditorScreen(this, mWindow, editCurrentBoard);
+
+	std::cout << "DisplayEditorScreen called. Game state set to EEditMode." << std::endl;
 }
 
 std::string Game::GetDateTime()

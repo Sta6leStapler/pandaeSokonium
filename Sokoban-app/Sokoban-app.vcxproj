@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="EditorScreen.cpp" />
     <ClCompile Include="SnapshotDialog.cpp" />
     <ClCompile Include="BackGround.cpp" />
     <ClCompile Include="Baggage.cpp" />
@@ -154,6 +155,7 @@
     <ClCompile Include="THUD.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="EditorScreen.h" />
     <ClInclude Include="SnapshotDialog.h" />
     <ClInclude Include="BackGround.h" />
     <ClInclude Include="Baggage.h" />
