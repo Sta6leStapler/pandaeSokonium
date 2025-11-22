@@ -46,7 +46,6 @@ public:
 	{
 		EGamePlay,
 		EPaused,
-		EEditMode,
 		EQuit
 	};
 
@@ -175,8 +174,13 @@ public:
 	// スナップショット関連の関数ここまで
 
 	// エディットモード関連の関数
+	// レベルエディタの初期設定を行うウィンドウを呼び出す。
+	// レベルエディタウィンドウのDisplayEditorScreen関数の呼び出しまでやる。
+	void CallEditorSetup();
 	// レベルエディタUIを表示する。editCurrentBoard trueならば現在の盤面をロードして編集
-	void DisplayEditorScreen(const bool editCurrentBoard = false);
+	void DisplayEditorScreen(const int mode = 0);
+	// エディタで編集した盤面を適用してリロード
+	void ApplyEditedBoard(const std::vector<std::string>& newBoardData);
 	
 	// エディットモード関連の関数ここまで
 
@@ -241,6 +245,9 @@ public:
 	void SetCurrentKey(const std::string& key) { mCurrentKey = key; }
 	std::vector<std::string> GetCurrentInitBoardData() const { return mInitBoardData.at(mCurrentKey); }
 	std::vector<std::string> GetInitBoardData(const std::string& boardKey) const { return mInitBoardData.at(boardKey); }
+	// 現在の盤面（動いている状態）を文字列配列で取得
+	std::vector<std::string> GetBoardStateWithObjects() const;
+
 
 	// アクターからハイライトの更新依頼を受け取り、更新が必要アクターに指示を出す関数
 	void SetMoveHighlights(const std::vector<sf::Vector2i>& tiles);

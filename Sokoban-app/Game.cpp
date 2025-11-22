@@ -14,6 +14,7 @@
 #include "HUDHelper.h"
 #include "SnapshotDialog.h"
 #include "SnapshotScreen.h"
+#include "EditorSetupDialog.h"
 #include "EditorScreen.h"
 
 #include <iostream>
@@ -411,7 +412,7 @@ void Game::ProcessInput()
 
 		// その他の状態ではUIの入力処理を行う
 		// ゲームプレイ中に使えるUIは未実装
-		if (!mUIStack.empty())
+		if (!mUIStack.empty())// && mGameState != GameState::EUIPaused)
 		{
 			// 一番手前のレイヤのUIの入力処理のみ行う
 			mUIStack.back()->ProcessInput(&event, sf::Mouse::getPosition(*mWindow));
@@ -1296,11 +1297,27 @@ sf::Vector2u Game::GetThumbnailSize() const
 	return boardTexture->getSize();
 }
 
-void Game::DisplayEditorScreen(const bool editCurrentBoard)
+void Game::CallEditorSetup()
 {
-	new EditorScreen(this, mWindow, editCurrentBoard);
+	// エディタの初期設定ダイアログを起動
+	new EditorSetupDialog(this, mWindow);
+}
 
-	std::cout << "DisplayEditorScreen called. Game state set to EEditMode." << std::endl;
+void Game::DisplayEditorScreen(const int mode)
+{
+	// エディタを起動
+	new EditorScreen(this, mWindow, mode);
+	std::cout << "Display EditorScreen from Game::DisplayEditorScreen()!" << std::endl;
+}
+
+void Game::ApplyEditedBoard(const std::vector<std::string>& newBoardData)
+{
+	// 一時的な名前で盤面リストに追加し、それをロードする
+	std::string tempName = "Applied_" + GetDateTime();
+	AddBoard(tempName, newBoardData);
+
+	mCurrentKey = tempName;
+	CallReload(); // 新しいキーでリロード
 }
 
 std::string Game::GetDateTime()
@@ -1502,8 +1519,10 @@ bool Game::InputBoardData()
 	child->setClientSize({ 960, 540 });
 	child->setPosition(420, 80);
 	child->setTitle("Input Prompt");
-	child->onClose([&isChildWindowOpened]() {
+	child->onClose([&]() {
+		std::cout << "Closed setting window!" << std::endl;
 		isChildWindowOpened = false;
+		result = false;
 		});
 	mGui->add(child);
 
@@ -2456,6 +2475,29 @@ void Game::ClearParameters()
 	// HUDHelperを削除
 	delete mHUDHelper;
 	mHUDHelper = nullptr;
+}
+
+std::vector<std::string> Game::GetBoardStateWithObjects() const
+{
+	// mBoardState (地形のみ) をコピーし、現在のプレイヤーと荷物の位置を書き込む
+	std::vector<std::string> currentData = mBoardState;
+
+	// 荷物
+	for (const auto& baggage : mBaggages)
+	{
+		sf::Vector2i pos = baggage->GetBoardCoordinate();
+		char& c = currentData[pos.y][pos.x];
+		if (c == '.') c = '*'; // ゴール上
+		else c = '$';          // 床上
+	}
+
+	// プレイヤー
+	sf::Vector2i pPos = mPlayer->GetBoardCoordinate();
+	char& c = currentData[pPos.y][pPos.x];
+	if (c == '.') c = '+'; // ゴール上
+	else c = '@';          // 床上
+
+	return currentData;
 }
 
 void Game::SetMoveHighlights(const std::vector<sf::Vector2i>& tiles)
