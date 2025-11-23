@@ -26,10 +26,6 @@ EditorSetupDialog::EditorSetupDialog(Game* game, sf::RenderWindow* window)
 	msgBox->addButton("Cancel");
 	msgBox->setPosition((mGame->GetWindowSize().x - msgBox->getFullSize().x) / 2.0f, (mGame->GetWindowSize().y - msgBox->getFullSize().y) / 2.0f);
 
-	std::cout << msgBox->getFullSize().x << ", " << msgBox->getFullSize().y << std::endl;
-	std::cout << msgBox->getSize().x << ", " << msgBox->getSize().y << std::endl;
-	std::cout << msgBox->getPosition().x << ", " << msgBox->getPosition().y << std::endl;
-
 	msgBox->onButtonPress([this, msgBox](const tgui::String& button) {
 		if (button == "Cancel")
 		{

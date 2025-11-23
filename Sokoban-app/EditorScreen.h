@@ -58,6 +58,8 @@ private:
 	void CheckUnsavedChangesAndClose(); // 終了時のチェック
 	void PerformSave(bool closeAfterSave); // セーブ実行
 	void PerformApply(); // 適用実行
+	// 上下左右の余白を切り詰めた盤面データを生成して返す
+	std::vector<std::string> GetTrimmedBoardData() const;
 
 	// システム関連のメンバ変数
 	Game* mGame;

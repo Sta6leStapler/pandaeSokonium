@@ -1318,12 +1318,16 @@ void EditorScreen::PerformSave(bool closeAfterSave)
 {
     if (!mIsValidLevel) return;
 
-    std::string newLevelName = "Edited_" + mGame->GetDateTime();
-    mGame->AddBoard(newLevelName, mEditorBoardData);
-    // ファイル書き出しもここで行う
-    // TODO Gameクラスに作る
+    // 余計な床パネルを切り詰めた盤面データを取得
+    std::vector<std::string> trimmedBoard = GetTrimmedBoardData();
 
+    // メモリ上のリストに追加（既存処理）
+    std::string newLevelName = "Edited_" + mGame->GetDateTime();
+    mGame->AddBoard(newLevelName, trimmedBoard);
     mLastSavedData = mEditorBoardData; // セーブ済み状態に更新
+
+    // ファイルダイアログを開いて保存
+    mGame->CallSave(trimmedBoard);
 
     if (closeAfterSave)
     {
@@ -1331,8 +1335,11 @@ void EditorScreen::PerformSave(bool closeAfterSave)
     }
     else
     {
+        // メッセージボックスで保存完了通知（CallSaveがキャンセルされた場合でも出るが、仕様上許容）
+        // CallSave内でキャンセルされたかを判別したい場合はCallSaveの戻り値をboolにする必要がありますが
+        // ここでは「保存フローが終わった」ことの通知とします。
         mIsDialogOpen = true;
-        auto msg = tgui::MessageBox::create("Saved", "Level saved as:\n" + newLevelName, { "OK" });
+        auto msg = tgui::MessageBox::create("Info", "Save sequence finished.", { "OK" });
         msg->setRenderer(mTheme->getRenderer("MessageBox"));
         msg->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
         msg->onButtonPress([this, msg]() {
@@ -1347,8 +1354,13 @@ void EditorScreen::PerformApply()
 {
     if (!mIsValidLevel) return;
 
+    // 余計な床パネルを切り詰めた盤面データを取得
+    std::vector<std::string> trimmedBoard = GetTrimmedBoardData();
+
     // 現在の盤面を適用してゲーム再開
-    // TODO Gameクラスに作る
+    mGame->ApplyEditedBoard(trimmedBoard);
+
+    // エディタを閉じる
     Close();
 }
 

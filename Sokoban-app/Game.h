@@ -105,7 +105,7 @@ public:
 	void CallRedoAll();
 
 	// 盤面をセーブ
-	void CallSave();
+	void CallSave(const std::vector<std::string>& boardData = {});
 
 	// 盤面のリロード
 	void CallReload();
