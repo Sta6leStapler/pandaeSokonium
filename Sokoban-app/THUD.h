@@ -60,6 +60,8 @@ private:
 	unsigned int mListBoxItemHeight;
 	float mIconImageScale;
 
+	tgui::Panel::Ptr mBlocker;
+
 	// Undo/Redoボタンの制御
 	bool mIsUndoHeld;   // Undoボタンが押され続けているか
 	bool mIsRedoHeld;   // Redoボタンが押され続けているか

@@ -14,6 +14,8 @@
 #include "HUDHelper.h"
 #include "SnapshotDialog.h"
 #include "SnapshotScreen.h"
+#include "EditorSetupDialog.h"
+#include "EditorScreen.h"
 
 #include <iostream>
 #include <filesystem>
@@ -284,6 +286,7 @@ void Game::ProcessInput()
 			break;
 		}
 
+		// ゲームプレイ状態ならば、キーボードやボタンの入力処理を受け付ける
 		if (mGameState == GameState::EGamePlay)
 		{
 			// ゲーム全体に関する各種入力処理
@@ -409,7 +412,7 @@ void Game::ProcessInput()
 
 		// その他の状態ではUIの入力処理を行う
 		// ゲームプレイ中に使えるUIは未実装
-		if (!mUIStack.empty())
+		if (!mUIStack.empty())// && mGameState != GameState::EUIPaused)
 		{
 			// 一番手前のレイヤのUIの入力処理のみ行う
 			mUIStack.back()->ProcessInput(&event, sf::Mouse::getPosition(*mWindow));
@@ -845,34 +848,105 @@ void Game::CallRedoAll()
 	}
 }
 
-void Game::CallSave()
+void Game::CallSave(const std::vector<std::string>& boardData)
 {
-	auto now = std::chrono::system_clock::now();
-	std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
-
-	// 文字列に変換
-	std::tm localTime;
-	localtime_s(&localTime, &currentTime);
-	char buffer[80];
-	std::strftime(buffer, sizeof(buffer), "%Y%m%d %H%M%S", &localTime);
-	std::string timeStr = buffer;
-
-	std::string fileName = "Save/" + timeStr + ".txt";
-	std::ofstream outputFile(fileName);
-
-	if (outputFile.is_open())
+	// 保存対象のデータを決定
+	std::vector<std::string> dataToSave = boardData;
+	if (dataToSave.empty())
 	{
-		for (const auto& str : mInitBoardData[mCurrentKey])
+		// 引数が空なら、メインゲームの現在の盤面（初期状態）を使用
+		dataToSave = mInitBoardData[mCurrentKey];
+	}
+
+	bool isDialogActive = true;
+
+	// ファイルダイアログの作成
+	auto fileDialog = tgui::FileDialog::create();
+	fileDialog->setRenderer(mTheme->getRenderer("FileDialog"));
+	fileDialog->setTitle("Save Board");
+	fileDialog->setFileMustExist(false); // 保存用なので存在しないファイル名も許可
+	fileDialog->setConfirmButtonText("Save");
+	fileDialog->setPath("Assets/Boards"); // デフォルトパス
+	fileDialog->setFilename("Level_" + GetDateTime() + ".txt"); // デフォルトファイル名
+	// 既存ファイルを選択した場合の上書き確認
+	// (TGUIのバージョンによっては setConfirmOverwrite(true) がデフォルトまたは存在しない場合がありますが、
+	//  多くのバージョンでサポートされています)
+	// fileDialog->setConfirmOverwrite(true); 
+
+	// シグナル設定
+	fileDialog->onFileSelect([&](const tgui::String& paths) {
+		// pathsは選択されたファイルのフルパス
+		std::string path = paths.toStdString();
+
+		// ファイル書き出し
+		std::ofstream outputFile(path);
+		if (outputFile.is_open())
 		{
-			outputFile << str << std::endl;
+			for (const auto& str : dataToSave)
+			{
+				outputFile << str << std::endl;
+			}
+			outputFile.close();
+			std::cout << "Saved to " << path << std::endl;
+		}
+		else
+		{
+			std::cerr << "Error: Unable to open file '" << path << "' for writing." << std::endl;
+		}
+		isDialogActive = false;
+		});
+
+	fileDialog->onCancel([&]() {
+		std::cout << "Save cancelled." << std::endl;
+		isDialogActive = false;
+		});
+
+	fileDialog->onClose([&]() {
+		isDialogActive = false;
+		});
+
+	// 画面中央に配置（サイズ決定後に計算したほうが正確ですが、簡易的に）
+	fileDialog->setSize(600, 400);
+	fileDialog->setPosition((mWindowSize.x - 600) / 2, (mWindowSize.y - 400) / 2);
+
+	mGui->add(fileDialog);
+
+	// ブロッキングループ（ダイアログが閉じるまで待機）
+	// ゲームループを一時停止
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+
+	while (isDialogActive)
+	{
+		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
+		if (deltaTime > 0.05f) deltaTime = 0.05f;
+		ticksCount = mClock.getElapsedTime();
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				isDialogActive = false;
+				mGameState = GameState::EQuit; // アプリ終了
+			}
+			mGui->handleEvent(event);
 		}
 
-		outputFile.close();
+		mWindow->clear();
+
+		// 背面の描画（ゲーム画面と他のUI）
+		for (auto& sprite : mSprites) sprite->Draw(mWindow);
+		for (const auto& ui : mUIStack) ui->Draw(mWindow);
+
+		// TGUI（ダイアログ）の描画
+		mGui->draw();
+		mWindow->display();
 	}
-	else
-	{
-		std::cerr << "Error: Unable to open file '" << fileName << "' for writing." << std::endl;
-	}
+
+	mGui->remove(fileDialog);
+	mWindow->setActive(true);
 }
 
 void Game::CallReload()
@@ -901,6 +975,7 @@ void Game::CallReload()
 		mBaggageLimit = GetBaggageNumLimit(mBoardSize, mRepetition03);
 
 		// 盤面の初期状態をセット
+		mBoardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
 		std::vector<sf::Vector2i> mBoxesPos;
 		{
 			int i = 0, j = 0;
@@ -1294,6 +1369,122 @@ sf::Vector2u Game::GetThumbnailSize() const
 	return boardTexture->getSize();
 }
 
+void Game::CallEditorSetup()
+{
+	// エディタの初期設定ダイアログを起動
+	new EditorSetupDialog(this, mWindow);
+}
+
+void Game::DisplayEditorScreen(const int mode)
+{
+	// エディタを起動
+	new EditorScreen(this, mWindow, mode);
+	std::cout << "Display EditorScreen from Game::DisplayEditorScreen()!" << std::endl;
+}
+
+void Game::ApplyEditedBoard(const std::vector<std::string>& newBoardData)
+{
+	// 一時的な名前で盤面リストに追加
+	std::string tempName = "Applied_" + GetDateTime();
+	AddBoard(tempName, newBoardData);
+
+	// カレントキーを更新
+	mCurrentKey = tempName;
+
+	// ログをファイル出力してから全て消す
+	OutputLogs();
+	ClearParameters();
+
+	// スナップショットもリセット
+	ClearSnapshots();
+
+	// 生成された盤面のキーは時刻を文字列に変換したものにする
+	mCurrentKey = GetDateTime();
+	mFilenames.emplace_back(mCurrentKey);
+	mBoardData.emplace(mCurrentKey, newBoardData);
+	mInitBoardData.emplace(mCurrentKey, newBoardData);
+	mBaggageLimit = GetBaggageNumLimit(mBoardSize, mRepetition03);
+
+	// 盤面の初期状態をセット
+	mBoardSize = sf::Vector2i{ static_cast<int>(newBoardData.front().length()), static_cast<int>(newBoardData.size()) };
+	std::vector<sf::Vector2i> mBoxesPos;
+	{
+		int i = 0, j = 0;
+		std::string tmpstr = "";
+		for (const auto& line : newBoardData)
+		{
+
+			for (const auto& item : line)
+			{
+				switch (item)
+				{
+				case ' ':
+					tmpstr += ' ';
+					break;
+				case '#':
+					tmpstr += '#';
+					break;
+				case '$':
+					tmpstr += ' ';
+					mBoxesPos.push_back(sf::Vector2i(j, i));
+					break;
+				case '.':
+					tmpstr += '.';
+					mGoalPos.push_back(sf::Vector2i(j, i));
+					break;
+				case '*':
+					tmpstr += '.';
+					mBoxesPos.push_back(sf::Vector2i(j, i));
+					mGoalPos.push_back(sf::Vector2i(j, i));
+					break;
+				case '@':
+					tmpstr += ' ';
+					mInitialPlayerPos = sf::Vector2i(j, i);
+					break;
+				case '+':
+					tmpstr += '.';
+					mInitialPlayerPos = sf::Vector2i(j, i);
+					mGoalPos.push_back(sf::Vector2i(j, i));
+					break;
+				default:
+					break;
+				}
+				j++;
+			}
+			mBoardState.push_back(tmpstr);
+			tmpstr = "";
+			i++;
+			j = 0;
+		}
+	}
+
+	// ボードを再構築
+	mGameBoard->Reload();
+
+	// プレイヤーを再構築
+	mPlayer->Reload();
+
+	// 荷物を再構築
+	while (!mBaggages.empty())
+	{
+		delete mBaggages.back();
+		mBaggages.pop_back();
+	}
+
+	for (const auto& item : mBoxesPos)
+	{
+		mBaggages.emplace_back(new Baggage(this, item));
+		mInitialBaggagePos.emplace(mBaggages.back(), item);
+	}
+
+	// HUDHelperを再構築
+	mHUDHelper = new HUDHelper(this);
+
+	mStart = std::chrono::system_clock::now();
+
+	std::cout << "Applied edited board: " << tempName << std::endl;
+}
+
 std::string Game::GetDateTime()
 {
 	// 日付と時刻を取得
@@ -1493,7 +1684,8 @@ bool Game::InputBoardData()
 	child->setClientSize({ 960, 540 });
 	child->setPosition(420, 80);
 	child->setTitle("Input Prompt");
-	child->onClose([&isChildWindowOpened]() {
+	child->onClose([&]() {
+		std::cout << "Closed setting window!" << std::endl;
 		isChildWindowOpened = false;
 		});
 	mGui->add(child);
@@ -1598,6 +1790,9 @@ bool Game::InputBoardData()
 		result = false;
 		});
 	child->add(canselButton);
+
+	// ゲームループを停止
+	mWindow->setActive(false);
 
 	// デルタタイム関連
 	sf::Time ticksCount = mClock.getElapsedTime();
@@ -2449,6 +2644,29 @@ void Game::ClearParameters()
 	mHUDHelper = nullptr;
 }
 
+std::vector<std::string> Game::GetBoardStateWithObjects() const
+{
+	// mBoardState (地形のみ) をコピーし、現在のプレイヤーと荷物の位置を書き込む
+	std::vector<std::string> currentData = mBoardState;
+
+	// 荷物
+	for (const auto& baggage : mBaggages)
+	{
+		sf::Vector2i pos = baggage->GetBoardCoordinate();
+		char& c = currentData[pos.y][pos.x];
+		if (c == '.') c = '*'; // ゴール上
+		else c = '$';          // 床上
+	}
+
+	// プレイヤー
+	sf::Vector2i pPos = mPlayer->GetBoardCoordinate();
+	char& c = currentData[pPos.y][pPos.x];
+	if (c == '.') c = '+'; // ゴール上
+	else c = '@';          // 床上
+
+	return currentData;
+}
+
 void Game::SetMoveHighlights(const std::vector<sf::Vector2i>& tiles)
 {
 	if (mGameBoard)
@@ -2540,4 +2758,47 @@ bool Game::ExistsBaggagesHighlightingState()
 	}
 
 	return false;
+}
+
+std::vector<std::string> EditorScreen::GetTrimmedBoardData() const
+{
+	int minX = mEditorCanvasSize.x;
+	int maxX = -1;
+	int minY = mEditorCanvasSize.y;
+	int maxY = -1;
+
+	// 1. オブジェクトが存在する範囲(Bounding Box)を検出
+	for (int y = 0; y < mEditorCanvasSize.y; ++y)
+	{
+		for (int x = 0; x < mEditorCanvasSize.x; ++x)
+		{
+			// 床(' ')以外の文字があれば、有効な範囲として記録
+			if (mEditorBoardData[y][x] != ' ')
+			{
+				if (x < minX) minX = x;
+				if (x > maxX) maxX = x;
+				if (y < minY) minY = y;
+				if (y > maxY) maxY = y;
+			}
+		}
+	}
+
+	// 盤面が空っぽ、または床しかない場合
+	if (maxX == -1)
+	{
+		// 空のデータを返すか、最小限の床を返す
+		return std::vector<std::string>();
+	}
+
+	// 2. 検出した範囲だけを切り出す
+	std::vector<std::string> trimmedData;
+	int width = maxX - minX + 1;
+
+	for (int y = minY; y <= maxY; ++y)
+	{
+		// substr(開始位置, 長さ) で行を切り出す
+		trimmedData.push_back(mEditorBoardData[y].substr(minX, width));
+	}
+
+	return trimmedData;
 }
