@@ -80,6 +80,8 @@ tgui.lib
 ## 実装予定/実装中の機能
 
 - 問題クリア後に、直接問題選択画面や盤面生成画面に遷移する機能
+- アニメーション
+- サウンド
 
 [1]:https://deepwiki.com/Sta6leStapler/pandaeSokonium/1-overview
 
