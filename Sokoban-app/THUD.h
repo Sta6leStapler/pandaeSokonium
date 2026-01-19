@@ -42,9 +42,6 @@ private:
 	// tgui::Guiクラス
 	std::unique_ptr<tgui::Gui> mGui;
 
-	// UIのテーマ
-	std::unique_ptr<tgui::Theme> mTheme;
-
 	// テキストUI用の変数
 	tgui::ListBox::Ptr mListBox;
 	std::unordered_map<TextIndex, std::string> mTextInfo;
