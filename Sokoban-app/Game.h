@@ -9,6 +9,7 @@
 #include "Player.h"
 #include "Baggage.h"
 #include "GameBoard.h"
+#include "ParamStruct.h"
 
 #include "TGUI/TGUI.hpp"
 #include "TGUI/Backend/SFML-Graphics.hpp"
@@ -221,7 +222,7 @@ public:
 	std::string GetCurrentKey() const { return mCurrentKey; }
 	std::string GetFilename(unsigned int num) const { return mFilenames.at(num); }
 	std::unordered_map<std::string, std::vector<std::string>> GetBoardData() const { return mBoardData; }
-	sf::Vector2i GetBoardSize() const { return mBoardSize; }
+	sf::Vector2i GetBoardSize() const { return mGenParams.boardSize; }
 	BoundingBox GetBoardViewArea() const { return mBoardViewArea; }
 	unsigned int GetStep() const { return mStep; }
 	double GetSecTime() const { return static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - mStart).count()); }
@@ -229,6 +230,9 @@ public:
 	float GetTapThresHold() const { return TAP_THRESHOLD; }
 	float GetHoldThresHold() const { return HOLD_THRESHOLD; }
 	float GetAutoRepeatInterval() const { return AUTO_REPEAT_INTERVAL; }
+	sf::Font GetFontSFML() const { return mFontSFML; }
+	tgui::Font GetFontTGUI() const { return *mFontTGUI; }
+	tgui::Theme GetTheme() const { return *mTheme; };
 
 	// テクスチャ関連
 	sf::Texture* GetTexture(const std::string& fileName) const { return mTextures.at(fileName); }
@@ -294,7 +298,7 @@ private:
 	sf::RenderWindow* mWindow;
 	sf::Clock mClock;
 	sf::Time mTicksCount;
-	sf::Font mFont;
+	sf::Font mFontSFML;
 	sf::Text mInfoTxt;
 
 	// ゲーム状態を格納する変数
@@ -313,15 +317,7 @@ private:
 	// ベースとなるgui
 	std::unique_ptr<tgui::Gui> mGui;
 	std::unique_ptr<tgui::Theme> mTheme;
-
-	// 盤面の基礎的情報
-	sf::Vector2i mBoardSize;
-	int mBaggageNum;
-	int mRepetition01;			// 荷物とプレイヤーの配置のリセット回数
-	int mRepetition02;			// 荷物の運搬回数
-	double mRepetition03;		// あらかじめ設置しておく壁マスの割合
-	double mRepetition04;		// 訪問済みにあらかじめ割り振る割合
-	int mRepetition05;			// 評価関数のインデックス
+	std::unique_ptr<tgui::Font> mFontTGUI;
 
 	// ゲーム特有のメンバ変数があれば追加
 	sf::Vector2f mWindowSize;
@@ -345,6 +341,10 @@ private:
 
 	// 盤面の描画範囲
 	BoundingBox mBoardViewArea;
+
+	// 盤面の基礎的情報
+	// レベル生成時のパラメータ管理もする
+	GenerationParameters mGenParams;
 
 	// 各キーの押下時間を記録するマップ
 	// 長押し中の次の入力までの時間を計るタイマー

@@ -16,6 +16,7 @@
 #include "SnapshotScreen.h"
 #include "EditorSetupDialog.h"
 #include "EditorScreen.h"
+#include "BoardConfigDialog.h"
 
 #include <iostream>
 #include <filesystem>
@@ -36,26 +37,15 @@ Game::Game()
 	, mBoardViewArea(BoundingBox{ sf::Vector2f{ mWindowSize.x - mWindowSize.y + 60.0f, 0.0 }, sf::Vector2f{ mWindowSize.x, mWindowSize.y - 60.0f } })
 	, mKeyHeldDuration(std::map<sf::Keyboard::Key, float>{})
 	, mAutoRepeatTimer(std::map<sf::Keyboard::Key, float>{})
-	, mBoardSize(sf::Vector2i{ 0, 0 })
-	, mBaggageNum(5)
 	, mBaggageLimit(1)
-	, mRepetition01(1)
-	, mRepetition02(10)
-	, mRepetition03(0.0)
-	, mRepetition04(0.0)
-	, mRepetition05(0)
 	, mStep(0)
 {
 	// 盤面をロードする度に更新するのは以下のメンバ変数
-	// mBoardSize
+	// mGenParams.boardSize
 	// 現在の盤面サイズ
 	// mBaggageNum
 	// 現在の盤面の荷物の数
-	// mRepetition01
-	// mRepetition02
-	// mRepetition03
-	// mRepetition04
-	// mRepetition05
+	// m	Params
 	// 盤面の自動生成を行う際のパラメータ
 	// mCurrentKey
 	// 現在の盤面のキー (ゲーム起動時からロードされた盤面を読み込むのに使う)
@@ -112,18 +102,22 @@ void Game::RunLoop()
 
 void Game::LoadData()
 {
-	// guiのテーマをロード
-	mGui = std::make_unique<tgui::Gui>(*mWindow);
-	mTheme = std::make_unique<tgui::Theme>("Assets/themes/Black.txt");
-
 	// フォントをロードし、初期化
-	if (!mFont.loadFromFile("Assets/fonts/arial.ttf"))
+	std::string font_name = "Assets/fonts/meiryo.ttc";
+	if (!mFontSFML.loadFromFile(font_name))
 	{
 		std::cout << "error : failed loading font." << std::endl;
 	}
-	mInfoTxt.setFont(mFont);
+	mInfoTxt.setFont(mFontSFML);
 	mInfoTxt.setCharacterSize(mWindow->getSize().y);
 	mInfoTxt.setScale(20.0f / static_cast<float>(mWindow->getSize().y), 20.0f / static_cast<float>(mWindow->getSize().y));
+
+	// guiのテーマをロード
+	mGui = std::make_unique<tgui::Gui>(*mWindow);
+	mTheme = std::make_unique<tgui::Theme>("Assets/themes/Black.txt");
+	// guiのフォントもロード
+	mFontTGUI = std::make_unique<tgui::Font>(font_name);
+	mGui->setFont(*mFontTGUI);
 
 	// 盤面データを読み取る
 	//*
@@ -153,7 +147,7 @@ void Game::LoadData()
 	// MySolution
 	/*
 	InputBoardData();
-	MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
+	MySolution* gen = new MySolution(mGenParams.boardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
 	std::vector<std::string> lines = gen->GetBoard();
 	delete(gen);
 	mCurrentKey = GetDateTime();
@@ -220,7 +214,16 @@ void Game::LoadData()
 
 	// ボードを作成
 	mGameBoard = new GameBoard(this);
-	mBoardSize = sf::Vector2i{ static_cast<int>(lines.front().size()), static_cast<int>(lines.size()) };
+
+	// 自動生成用のパラメータを初期化
+	// デフォルトの盤面は自動生成されないので、適当な値を入れておく
+	mGenParams.boardSize = sf::Vector2i{ static_cast<int>(lines.front().size()), static_cast<int>(lines.size()) };
+	mGenParams.baggageNum = static_cast<int>(mBoxesPos.size());
+	mGenParams.resetCount = 1;
+	mGenParams.transportCount = mGenParams.baggageNum * 2;
+	mGenParams.wallRate = 0.0f;
+	mGenParams.visitedRate = 0.0f;
+	mGenParams.evalFuncIndex = 0;
 
 	// プレイヤーの作成
 	mPlayer = new Player(this);
@@ -687,18 +690,18 @@ sf::Vector2i Game::ScreenToTileCoords(const sf::Vector2f& screenPos) const
 	// スケーリングを求める
 	// 現状描画範囲は正方形なので、盤面が横長か縦長かでスケーリングを変える
 	// スケーリングは大きい方に合わせる
-	float scaling = (mBoardSize.x > mBoardSize.y) ? ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mBoardSize.x)) : ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mBoardSize.y));
+	float scaling = (mGenParams.boardSize.x > mGenParams.boardSize.y) ? ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mGenParams.boardSize.x)) : ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mGenParams.boardSize.y));
 
 	if (bounding_area_pos.x >= 0.0f && bounding_area_pos.y >= 0.0f)
 	{
 		// 横長なら縦方向の平行移動、縦長なら横方向の平行移動
-		if (mBoardSize.x > mBoardSize.y)
+		if (mGenParams.boardSize.x > mGenParams.boardSize.y)
 		{
-			bounding_area_pos.y -= ((mBoardViewArea.second.y - mBoardViewArea.first.y) - ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mBoardSize.x)) * static_cast<float>(mBoardSize.y)) / 2.0f;
+			bounding_area_pos.y -= ((mBoardViewArea.second.y - mBoardViewArea.first.y) - ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mGenParams.boardSize.x)) * static_cast<float>(mGenParams.boardSize.y)) / 2.0f;
 		}
-		else if (mBoardSize.x < mBoardSize.y)
+		else if (mGenParams.boardSize.x < mGenParams.boardSize.y)
 		{
-			bounding_area_pos.x -= ((mBoardViewArea.second.x - mBoardViewArea.first.x) - ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mBoardSize.y)) * static_cast<float>(mBoardSize.x)) / 2.0f;
+			bounding_area_pos.x -= ((mBoardViewArea.second.x - mBoardViewArea.first.x) - ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mGenParams.boardSize.y)) * static_cast<float>(mGenParams.boardSize.x)) / 2.0f;
 		}
 
 		result.x = static_cast<int>(bounding_area_pos.x / scaling);
@@ -714,22 +717,22 @@ sf::Vector2f Game::TileToScreenCoords(const sf::Vector2i& tileCorrdsPos) const
 {
 	sf::Vector2i bounding_area_pos(tileCorrdsPos);
 	sf::Vector2f result{ -1.0f, -1.0f };
-	float scaling = (mBoardSize.x > mBoardSize.y) ? (mBoardViewArea.second.x - mBoardViewArea.first.x) / mBoardSize.x : (mBoardViewArea.second.y - mBoardViewArea.first.y) / mBoardSize.y;
+	float scaling = (mGenParams.boardSize.x > mGenParams.boardSize.y) ? (mBoardViewArea.second.x - mBoardViewArea.first.x) / mGenParams.boardSize.x : (mBoardViewArea.second.y - mBoardViewArea.first.y) / mGenParams.boardSize.y;
 
-	if (bounding_area_pos.x >= 0 && bounding_area_pos.x < mBoardSize.x &&
-		bounding_area_pos.y >= 0 && bounding_area_pos.y < mBoardSize.y)
+	if (bounding_area_pos.x >= 0 && bounding_area_pos.x < mGenParams.boardSize.x &&
+		bounding_area_pos.y >= 0 && bounding_area_pos.y < mGenParams.boardSize.y)
 	{
 		result.x = static_cast<float>(static_cast<float>(bounding_area_pos.x) * scaling);
 		result.y = static_cast<float>(static_cast<float>(bounding_area_pos.y) * scaling);
 
 		// 横長なら縦方向の平行移動、縦長なら横方向の平行移動
-		if (mBoardSize.x > mBoardSize.y)
+		if (mGenParams.boardSize.x > mGenParams.boardSize.y)
 		{
-			result.y += ((mBoardViewArea.second.y - mBoardViewArea.first.y) - ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mBoardSize.x)) * static_cast<float>(mBoardSize.y)) / 2.0f;
+			result.y += ((mBoardViewArea.second.y - mBoardViewArea.first.y) - ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mGenParams.boardSize.x)) * static_cast<float>(mGenParams.boardSize.y)) / 2.0f;
 		}
-		else if (mBoardSize.x < mBoardSize.y)
+		else if (mGenParams.boardSize.x < mGenParams.boardSize.y)
 		{
-			result.x += ((mBoardViewArea.second.x - mBoardViewArea.first.x) - ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mBoardSize.y)) * static_cast<float>(mBoardSize.x)) / 2.0f;
+			result.x += ((mBoardViewArea.second.x - mBoardViewArea.first.x) - ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mGenParams.boardSize.y)) * static_cast<float>(mGenParams.boardSize.x)) / 2.0f;
 		}
 	}
 
@@ -963,7 +966,15 @@ void Game::CallReload()
 		ClearSnapshots();
 
 		// 更新されたGameクラスのメンバ変数を参照して盤面を生成
-		MySolution* gen = new MySolution(mBoardSize, mBaggageNum, mRepetition01, mRepetition02, mRepetition03, mRepetition04, mRepetition05);
+		MySolution* gen = new MySolution(
+			mGenParams.boardSize,
+			mGenParams.baggageNum,
+			mGenParams.resetCount,
+			mGenParams.transportCount,
+			mGenParams.wallRate,
+			mGenParams.visitedRate,
+			mGenParams.evalFuncIndex
+		);
 		std::vector<std::string> lines = gen->GetBoard();
 		delete(gen);
 
@@ -972,10 +983,10 @@ void Game::CallReload()
 		mFilenames.emplace_back(mCurrentKey);
 		mBoardData.emplace(mCurrentKey, lines);
 		mInitBoardData.emplace(mCurrentKey, lines);
-		mBaggageLimit = GetBaggageNumLimit(mBoardSize, mRepetition03);
+		mBaggageLimit = GetBaggageNumLimit(mGenParams.boardSize, mGenParams.wallRate);
 
-		// 盤面の初期状態をセット
-		mBoardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
+		// 盤面の初期状態をセット（生成結果に合わせてサイズを再確定）
+		mGenParams.boardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
 		std::vector<sf::Vector2i> mBoxesPos;
 		{
 			int i = 0, j = 0;
@@ -1403,10 +1414,10 @@ void Game::ApplyEditedBoard(const std::vector<std::string>& newBoardData)
 	mFilenames.emplace_back(mCurrentKey);
 	mBoardData.emplace(mCurrentKey, newBoardData);
 	mInitBoardData.emplace(mCurrentKey, newBoardData);
-	mBaggageLimit = GetBaggageNumLimit(mBoardSize, mRepetition03);
+	mBaggageLimit = GetBaggageNumLimit(mGenParams.boardSize, mGenParams.wallRate);
 
 	// 盤面の初期状態をセット
-	mBoardSize = sf::Vector2i{ static_cast<int>(newBoardData.front().length()), static_cast<int>(newBoardData.size()) };
+	mGenParams.boardSize = sf::Vector2i{ static_cast<int>(newBoardData.front().length()), static_cast<int>(newBoardData.size()) };
 	std::vector<sf::Vector2i> mBoxesPos;
 	{
 		int i = 0, j = 0;
@@ -1676,208 +1687,18 @@ void Game::DisplayResult()
 
 bool Game::InputBoardData()
 {
-	bool result = true;
-	bool isChildWindowOpened = true;
-	// 入力用のウィンドウを作成
-	auto child = tgui::ChildWindow::create();
-	child->setRenderer(mTheme->getRenderer("ChildWindow"));	
-	child->setClientSize({ 960, 540 });
-	child->setPosition(420, 80);
-	child->setTitle("Input Prompt");
-	child->onClose([&]() {
-		std::cout << "Closed setting window!" << std::endl;
-		isChildWindowOpened = false;
-		});
-	mGui->add(child);
+	BoardConfigDialog dialog(this, *mGui, *mTheme, mGenParams);
 
-	// テキスト
-	struct BoardInfo
+	auto [result, newParams] = dialog.run(*mWindow, mClock);
+
+	if (result == BoardConfigDialog::Result::Apply)
 	{
-		std::string mName;
-		double mMin;
-		double mMax;
-		double mInitialValue;
-		sf::Vector2i mPos;
-		bool mIsInteger;
-	};
-	std::vector<BoardInfo> textInfoes(8, BoardInfo{ "", 0.0, 0.0, 0.0, sf::Vector2i{ 0, 0 } });
-	textInfoes[0] = BoardInfo{ "width : ", static_cast<double>(mSizeMin.x), static_cast<double>(mSizeMax.x), static_cast<double>(mBoardSize.x), sf::Vector2i{ 500, 12 }, true };
-	textInfoes[1] = BoardInfo{ "height : ", static_cast<double>(mSizeMin.y), static_cast<double>(mSizeMax.y), static_cast<double>(mBoardSize.y), sf::Vector2i{ 500, 48 }, true };
-	textInfoes[2] = BoardInfo{ "baggage : ", 1.0, static_cast<double>(GetBaggageNumLimit(mBoardSize)), static_cast<double>(mBaggageNum), sf::Vector2i{500, 84}, true};
-	textInfoes[3] = BoardInfo{ "number of times reset : ", 0.0, 32.0, static_cast<double>(mRepetition01), sf::Vector2i{ 500, 120 }, true };
-	textInfoes[4] = BoardInfo{ "number of times transportation : ", 1.0, 256.0, static_cast<double>(mRepetition02), sf::Vector2i{ 500, 156 }, true };
-	textInfoes[5] = BoardInfo{ "wall tile rate : ", 0.0, mWallRateLimit, mRepetition03, sf::Vector2i{ 500, 192 }, false };
-	textInfoes[6] = BoardInfo{ "visited tile rate : ", 0.0, mVisitedRateLimit, mRepetition04, sf::Vector2i{ 500, 228 }, false };
-	textInfoes[7] = BoardInfo{ "evaluation function : ", static_cast<double>(mEvaluateFancIndexRange.first), static_cast<double>(mEvaluateFancIndexRange.second), static_cast<double>(mRepetition05), sf::Vector2i{ 500, 264 }, true };
-	auto listBox = tgui::ListBox::create();
-	listBox->setRenderer(mTheme->getRenderer("ListBox"));
-	listBox->setSize(960, 500);
-	listBox->setItemHeight(36);
-	listBox->setPosition(0, 0);
-	for (int i = 0, size = static_cast<int>(textInfoes.size()); i < size; ++i)
-	{
-		listBox->addItem(textInfoes[i].mName, std::to_string(i));
-	}
-	child->add(listBox);
-
-	// 入力用のスライダーとテキストボックスの追加
-	std::map<int, std::pair<tgui::Slider::Ptr, tgui::EditBox::Ptr>> inputers{};
-	int index = 0;
-	for (const auto& textInfo : textInfoes)
-	{
-		// スライダーの追加
-		auto slider = tgui::Slider::create();
-		slider->setRenderer(mTheme->getRenderer("Slider"));
-		slider->setPosition(textInfo.mPos.x, textInfo.mPos.y);
-		slider->setSize(400, 18);
-		slider->setValue(static_cast<float>(textInfo.mInitialValue));
-		slider->setMinimum(static_cast<float>(textInfo.mMin));
-		slider->setMaximum(static_cast<float>(textInfo.mMax));
-		// 入力を整数と実数で分ける
-		if (textInfo.mIsInteger)
-		{
-			slider->setStep(1.0f);
-		}
-		else
-		{
-			slider->setStep(0.001f);
-		}
-		child->add(slider);
-
-		// テキストボックスの追加
-		auto editBox = tgui::EditBox::create();
-		editBox->setRenderer(mTheme->getRenderer("EditBox"));
-		editBox->setSize(80, 25);
-		editBox->setTextSize(18);
-		editBox->setPosition(textInfo.mPos.x - 100, textInfo.mPos.y);
-		child->add(editBox);
-		if (textInfo.mIsInteger)
-		{
-			editBox->setText(std::to_string(static_cast<int>(textInfo.mInitialValue)));
-
-		}
-		else
-		{
-			editBox->setText(std::to_string(std::floor(textInfo.mInitialValue * 1000.0) / 1000.0));
-		}
-
-		// スライダーとテキストボックスを同期
-		inputers.emplace(index, std::pair<tgui::Slider::Ptr, tgui::EditBox::Ptr>{ slider, editBox });
-		SyncSliderWithEditBox(inputers[index].first, inputers[index].second, textInfo.mIsInteger);
-
-		++index;
+		mGenParams = newParams; // 構造体を一括更新
+		return true;
 	}
 
-	// 入力終了用ボタン
-	auto exitButton = tgui::Button::create("Enter");
-	exitButton->setRenderer(mTheme->getRenderer("Button"));
-	exitButton->setSize(120, 30);
-	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - 10, static_cast<int>(listBox->getSize().y) + 5);
-	exitButton->onPress([&]() {
-		std::cout << "Exit child window action triggered!" << std::endl;
-		isChildWindowOpened = false;
-		});
-	child->add(exitButton);
+	return false;
 
-	// 入力キャンセル用ボタン
-	auto canselButton = tgui::Button::create("Cansel");
-	canselButton->setRenderer(mTheme->getRenderer("Button"));
-	canselButton->setSize(120, 30);
-	canselButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 2.0) - 15, static_cast<int>(listBox->getSize().y) + 5);
-	canselButton->onPress([&]() {
-		std::cout << "Cansel input action triggered!" << std::endl;
-		isChildWindowOpened = false;
-		result = false;
-		});
-	child->add(canselButton);
-
-	// ゲームループを停止
-	mWindow->setActive(false);
-
-	// デルタタイム関連
-	sf::Time ticksCount = mClock.getElapsedTime();
-
-	// 入力と更新とウィンドウの終了処理
-	// ウィンドウが閉じるまでループ
-	while (isChildWindowOpened)
-	{
-		// 60FPSに合わせて遅延をかける
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
-
-		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
-		if (deltaTime > 0.05f)
-		{
-			deltaTime = 0.05f;
-		}
-		ticksCount = mClock.getElapsedTime();
-
-		// 荷物の数は盤面サイズとwall rateによって上限が変わるので、更新する
-		int tmpBaggageLimit = GetBaggageNumLimit(sf::Vector2i{ static_cast<int>(inputers[0].first->getValue()), static_cast<int>(inputers[1].first->getValue()) }, inputers[5].first->getValue());
-		if (static_cast<int>(inputers[2].first->getValue()) > tmpBaggageLimit)
-		{
-			inputers[2].first->setValue(static_cast<float>(tmpBaggageLimit));
-		}
-		textInfoes[2].mMax = static_cast<double>(tmpBaggageLimit);
-		inputers[2].first->setMaximum(static_cast<float>(tmpBaggageLimit));
-
-		// ListBoxの内容を更新
-		textInfoes[0].mName = "width : " + std::to_string(static_cast<int>(inputers[0].first->getValue()));
-		textInfoes[1].mName = "height : " + std::to_string(static_cast<int>(inputers[1].first->getValue()));
-		textInfoes[2].mName = "baggage : " + std::to_string(static_cast<int>(inputers[2].first->getValue()));
-		textInfoes[3].mName = "number of times reset : " + std::to_string(static_cast<int>(inputers[3].first->getValue()));
-		textInfoes[4].mName = "number of times transportation : " + std::to_string(static_cast<int>(inputers[4].first->getValue()));
-		textInfoes[5].mName = "wall tile rate : " + std::to_string(inputers[5].first->getValue());
-		textInfoes[6].mName = "visited tile rate : " + std::to_string(inputers[6].first->getValue());
-		textInfoes[7].mName = "evaluation function : " + std::to_string(static_cast<int>(inputers[7].first->getValue()));
-
-		// イベントキューが存在する場合、それに応じた処理を全て行う
-		sf::Event event;
-		while (mWindow->pollEvent(event))
-		{
-			if (event.type == sf::Event::Closed)
-			{
-				isChildWindowOpened = false;
-			}
-
-			mGui->handleEvent(event);
-		}
-
-		mWindow->clear();
-
-		// 背面から描画
-		for (auto& sprite : mSprites)
-		{
-			sprite->Draw(mWindow);
-		}
-
-		// UIはゲームオブジェクトの上に描画するのでここに処理を書く
-		for (const auto& ui : mUIStack)
-		{
-			ui->Draw(mWindow);
-		}
-
-		mGui->draw(); // TGUIの描画
-		mWindow->display();
-	}
-
-	// 入力をキャンセルしないのであれば、数値を更新
-	if (result)
-	{
-		mBoardSize = sf::Vector2i{ static_cast<int>(inputers[0].first->getValue()), static_cast<int>(inputers[1].first->getValue()) };
-		mBaggageNum = static_cast<int>(inputers[2].first->getValue());
-		mRepetition01 = static_cast<int>(inputers[3].first->getValue());
-		mRepetition02 = static_cast<int>(inputers[4].first->getValue());
-		mRepetition03 = inputers[5].first->getValue();
-		mRepetition04 = inputers[6].first->getValue();
-		mRepetition05 = static_cast<int>(inputers[7].first->getValue());
-	}
-
-	child->close();
-
-	// ゲームループを再開
-	mWindow->setActive(true);
-
-	return result;
 }
 
 void Game::SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr editBox, const bool& isInteger)
@@ -2352,8 +2173,10 @@ void Game::ChangeBoard()
 	// 更新されたGameクラスのメンバ変数を参照して盤面を生成
 	std::vector<std::string> lines{ mInitBoardData[mCurrentKey] };
 
-	mBoardSize = sf::Vector2i{ 0, 0 };
-	mBaggageNum = 0;
+	// 既存の状態をリセットしつつ、mGenParamsをロードした盤面に同期させる準備
+	mGenParams.boardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
+	mGenParams.baggageNum = 0; // 下記のループでカウント
+
 	mInitialPlayerPos = sf::Vector2i{ -1, -1 };
 	mInitialBaggagePos.clear();
 	mGoalPos.clear();
@@ -2362,8 +2185,8 @@ void Game::ChangeBoard()
 	delete  mHUDHelper;
 
 	// 生成された盤面のキーは時刻を文字列に変換したものにする
-	mBoardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
-	mBaggageLimit = GetBaggageNumLimit(mBoardSize);
+	mGenParams.boardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
+	mBaggageLimit = GetBaggageNumLimit(mGenParams.boardSize);
 
 	// 盤面の初期状態をセット
 	std::vector<sf::Vector2i> mBoxesPos;
@@ -2385,7 +2208,7 @@ void Game::ChangeBoard()
 					break;
 				case '$':
 					tmpstr += ' ';
-					++mBaggageNum;
+					++mGenParams.baggageNum;
 					mBoxesPos.push_back(sf::Vector2i(j, i));
 					break;
 				case '.':
@@ -2394,7 +2217,7 @@ void Game::ChangeBoard()
 					break;
 				case '*':
 					tmpstr += '.';
-					++mBaggageNum;
+					++mGenParams.baggageNum;
 					mBoxesPos.push_back(sf::Vector2i(j, i));
 					mGoalPos.push_back(sf::Vector2i(j, i));
 					break;
@@ -2574,7 +2397,7 @@ sf::Vector2f Game::GetTileSize() const
 	sf::Vector2f result{ 0.0f, 0.0f };
 	sf::Vector2f viewAreaSize = mBoardViewArea.second - mBoardViewArea.first;
 
-	result = viewAreaSize / static_cast<float>(std::max(mBoardSize.x, mBoardSize.y));
+	result = viewAreaSize / static_cast<float>(std::max(mGenParams.boardSize.x, mGenParams.boardSize.y));
 
 	return result;
 }

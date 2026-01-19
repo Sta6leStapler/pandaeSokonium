@@ -8,7 +8,6 @@
 THUD::THUD(Game* game, sf::RenderWindow* window)
 	: mGame(game)
 	, mGui(std::make_unique<tgui::Gui>(*window))
-	, mTheme(std::make_unique<tgui::Theme>("Assets/themes/Black.txt"))
 	, mRollBackLargeButtonSize(sf::Vector2i{ 120 , 50 })
 	, mRollBackSmallButtonSize(sf::Vector2i{ 120 , 40 })
 	, mGameSystemButtonSize(sf::Vector2i{ 150 , 40 })
@@ -24,8 +23,8 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 {
 	mGame->PushUI(this);
 
-	// テーマを設定
-	tgui::Theme::setDefault();
+	// フォントを設定
+	mGui->setFont(mGame->GetFontTGUI());
 
 	// ブロッカー用のパネル
 	mBlocker = tgui::Panel::create();
@@ -50,7 +49,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	undoButton->setPosition(
 		rollbackButtonInitialPos.x - rollbackLargeButtonMargin.x - mRollBackLargeButtonSize.x,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
-	undoButton->setRenderer(mTheme->getRenderer("BitmapButton"));
+	undoButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
 	undoButton->setImage(tmpTGuiTex);
 	undoButton->setImageScaling(mIconImageScale);
 	undoButton->setTextSize(16);
@@ -80,7 +79,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	redoButton->setPosition(
 		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0f - rollbackLargeButtonMargin.x * 3.0f,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
-	redoButton->setRenderer(mTheme->getRenderer("BitmapButton"));
+	redoButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
 	redoButton->setImage(tmpTGuiTex);
 	redoButton->setImageScaling(mIconImageScale);
 	redoButton->setTextSize(16);
@@ -108,7 +107,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	resetButton->setPosition(
 		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0 - mRollBackSmallButtonSize.x - rollbackLargeButtonMargin.x * 4.0f - rollbackSmallButtonMargin.x,
 		rollbackButtonInitialPos.y + rollbackSmallButtonMargin.y);
-	resetButton->setRenderer(mTheme->getRenderer("BitmapButton"));
+	resetButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
 	resetButton->setImage(tmpTGuiTex);
 	resetButton->setImageScaling(mIconImageScale);
 	resetButton->setTextSize(16);
@@ -127,7 +126,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	redoAllButton->setPosition(
 		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0 - mRollBackSmallButtonSize.x * 2.0f - rollbackLargeButtonMargin.x * 4.0f - rollbackSmallButtonMargin.x * 3.0f,
 		rollbackButtonInitialPos.y + rollbackSmallButtonMargin.y);
-	redoAllButton->setRenderer(mTheme->getRenderer("BitmapButton"));
+	redoAllButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
 	redoAllButton->setImage(tmpTGuiTex);
 	redoAllButton->setImageScaling(mIconImageScale);
 	redoAllButton->setTextSize(16);
@@ -144,7 +143,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	loadSnapshotButton->setPosition(
 		mGame->GetBoardViewArea().first.x + rollbackLargeButtonMargin.x,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
-	loadSnapshotButton->setRenderer(mTheme->getRenderer("Button"));
+	loadSnapshotButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	loadSnapshotButton->setTextSize(16);
 	loadSnapshotButton->onPress([=]() {
 		std::cout << "Load Snapshot action triggered!" << std::endl;
@@ -160,7 +159,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	addSnapshotButton->setPosition(
 		mGame->GetBoardViewArea().first.x + mRollBackLargeButtonSize.x + rollbackLargeButtonMargin.x * 3.0f,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
-	addSnapshotButton->setRenderer(mTheme->getRenderer("Button"));
+	addSnapshotButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	addSnapshotButton->setTextSize(16);
 	addSnapshotButton->onPress([=]() {
 		std::cout << "Add Snapshot action triggered!" << std::endl;
@@ -179,7 +178,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	auto loadBoardButton = tgui::Button::create("Load Board");
 	loadBoardButton->setPosition(listBoxMargin.x, mButtonInitialPos.y); // ボタンの位置
 	loadBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	loadBoardButton->setRenderer(mTheme->getRenderer("Button"));
+	loadBoardButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	loadBoardButton->setTextSize(16);
 	loadBoardButton->onPress([=]() {
 		std::cout << "Load board action triggered!" << std::endl;
@@ -191,7 +190,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	auto genBoardButton = tgui::Button::create("Generate Board");
 	genBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x), mButtonInitialPos.y); // ボタンの位置
 	genBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	genBoardButton->setRenderer(mTheme->getRenderer("Button"));
+	genBoardButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	genBoardButton->setTextSize(16);
 	genBoardButton->onPress([=]() {
 		std::cout << "Generate board action triggered!" << std::endl;
@@ -205,7 +204,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	auto saveBoardButton = tgui::BitmapButton::create("Save Board");
 	saveBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y); // ボタンの位置
 	saveBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	saveBoardButton->setRenderer(mTheme->getRenderer("BitmapButton"));
+	saveBoardButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
 	saveBoardButton->setImage(tmpTGuiTex);
 	saveBoardButton->setImageScaling(mIconImageScale);
 	saveBoardButton->setTextSize(16);
@@ -221,7 +220,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	auto saveLogButton = tgui::BitmapButton::create("Save Log");
 	saveLogButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 3, mButtonInitialPos.y); // ボタンの位置
 	saveLogButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	saveLogButton->setRenderer(mTheme->getRenderer("BitmapButton"));
+	saveLogButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
 	saveLogButton->setImage(tmpTGuiTex);
 	saveLogButton->setImageScaling(mIconImageScale);
 	saveLogButton->setTextSize(16);
@@ -235,7 +234,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	auto editModeButton = tgui::Button::create("Edit Mode");
 	editModeButton->setPosition(listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
 	editModeButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	editModeButton->setRenderer(mTheme->getRenderer("Button"));
+	editModeButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	editModeButton->setTextSize(16);
 	editModeButton->onPress([=]() {
 		std::cout << "Edit Mode action triggered!" << std::endl;
@@ -247,7 +246,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	auto helpButton = tgui::Button::create("Help");
 	helpButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 1, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
 	helpButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	helpButton->setRenderer(mTheme->getRenderer("Button"));
+	helpButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	helpButton->setTextSize(16);
 	helpButton->onPress([=]() {
 		std::cout << "Help action triggered!" << std::endl;
@@ -269,7 +268,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	mTextInfo[TextIndex::EDeadlockedBaggages] = "Deadlocked baggages : ";
 
 	mListBox = tgui::ListBox::create();
-	mListBox->setRenderer(mTheme->getRenderer("ListBox"));
+	mListBox->setRenderer(mGame->GetTheme().getRenderer("ListBox"));
 	mListBox->setSize(mListBoxSize.x, mListBoxSize.y);
 	mListBox->setItemHeight(mListBoxItemHeight);
 	mListBox->setPosition(mListBoxPos.x, mListBoxPos.y);
