@@ -24,4 +24,7 @@ public:
 
     // ó‘Ô‚ğæ“¾
     virtual UIState GetState() = 0;
+
+    // Œ¾Œê‚Ì•ÏX‚Ì’Ê’m
+    virtual void OnLanguageChanged() = 0;
 };

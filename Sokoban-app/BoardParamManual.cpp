@@ -7,7 +7,7 @@ void BoardParamManual::display(Game* game, tgui::Gui& gui)
 {
     auto theme = game->GetTheme();
 
-    auto window = tgui::ChildWindow::create("Parameter Manual");
+    auto window = tgui::ChildWindow::create(game->GetLoc()->Get("BORAD_PARAM_MANUAL_TITLE"));
     window->setRenderer(theme.getRenderer("ChildWindow"));
     window->setSize(800, 600);
     window->setPosition("center", "center");
@@ -20,12 +20,12 @@ void BoardParamManual::display(Game* game, tgui::Gui& gui)
     textArea->setReadOnly(true);
 
     // ファイルからテキストを読み込んでセット
-    std::string content = loadManualText("Assets/ManualData.txt");
+    std::string content = loadManualText(game->GetLoc()->Get("BORAD_PARAM_MANUAL_PATH"));
     textArea->setText(content);
     window->add(textArea);
 
     // 閉じるボタン
-    auto closeBtn = tgui::Button::create("Close");
+    auto closeBtn = tgui::Button::create(game->GetLoc()->Get("BTN_CLOSE"));
     closeBtn->setRenderer(game->GetTheme().getRenderer("Button"));
     closeBtn->setSize(100, 30);
     closeBtn->setPosition("100% - 120", "100% - 45");

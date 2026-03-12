@@ -18,6 +18,7 @@
 #include "EditorSetupDialog.h"
 #include "EditorScreen.h"
 #include "BoardConfigDialog.h"
+#include "LocalizationManager.h"
 
 #include <iostream>
 #include <filesystem>
@@ -112,6 +113,13 @@ void Game::LoadData()
 	mInfoTxt.setFont(mFontSFML);
 	mInfoTxt.setCharacterSize(mWindow->getSize().y);
 	mInfoTxt.setScale(20.0f / static_cast<float>(mWindow->getSize().y), 20.0f / static_cast<float>(mWindow->getSize().y));
+
+	// UIのテキストを読み込み
+	mLoc = new LocalizationManager();
+	mLoc->LoadLanguage("Assets/Languages/jp.txt"); // デフォルト言語は日本語
+
+	// ウィンドウのタイトルを設定
+	mWindow->setTitle(mLoc->Get("GAME_TITLE"));
 
 	// guiのテーマをロード
 	mGui = std::make_unique<tgui::Gui>(*mWindow);
@@ -311,7 +319,7 @@ void Game::ProcessInput()
 						{
 							// ボタンの長押しを解除
 							CancelAllUIHolds();
-							new PauseMenu(this);
+							new PauseMenu(this, mWindow);
 							mGameState = GameState::EPaused;
 						}
 
@@ -891,9 +899,14 @@ void Game::CallSave(const std::vector<std::string>& boardData)
 	// ファイルダイアログの作成
 	auto fileDialog = tgui::FileDialog::create();
 	fileDialog->setRenderer(mTheme->getRenderer("FileDialog"));
-	fileDialog->setTitle("Save Board");
+	fileDialog->setTitle(mLoc->Get("BOARD_SAVE_DIALOG_TITLE"));
 	fileDialog->setFileMustExist(false); // 保存用なので存在しないファイル名も許可
-	fileDialog->setConfirmButtonText("Save");
+	fileDialog->setConfirmButtonText(mLoc->Get("BTN_SAVE"));
+	fileDialog->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+	fileDialog->setListViewColumnCaptions(mLoc->Get("BOARD_SAVE_DIALOG_COL_NAME"), mLoc->Get("BOARD_SAVE_DIALOG_COL_SIZE"), mLoc->Get("BOARD_SAVE_DIALOG_COL_MODIFIED"));
+	fileDialog->setFilenameLabelText(mLoc->Get("BOARD_SAVE_DIALOG_LBL_FILENAME"));
+	fileDialog->setAllowCreateFolder(true);
+	fileDialog->setCreateFolderButtonText(mLoc->Get("BOARD_SAVE_DIALOG_CREATE_FOLDER"));
 	fileDialog->setPath("Assets/Boards"); // デフォルトパス
 	fileDialog->setFilename("Level_" + GetDateTime() + ".txt"); // デフォルトファイル名
 	// 既存ファイルを選択した場合の上書き確認
@@ -1216,6 +1229,85 @@ void Game::OutputLogs()
 		outFile << ConvertLogToStr(mLogs, 0);
 		outFile.close();
 	}
+}
+
+void Game::CallSaveLog()
+{
+	// 保存するログデータを取得
+	std::string logData = ConvertLogToStr(mLogs);
+
+	bool isDialogActive = true;
+
+	// ファイルダイアログの作成（CallSaveと同様の設定）
+	auto fileDialog = tgui::FileDialog::create();
+	fileDialog->setRenderer(mTheme->getRenderer("FileDialog"));
+	fileDialog->setTitle(mLoc->Get("LOG_SAVE_DIALOG_TITLE")); // 辞書にキーを追加してください
+	fileDialog->setFileMustExist(false);
+	fileDialog->setConfirmButtonText(mLoc->Get("BTN_SAVE"));
+	fileDialog->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+	fileDialog->setListViewColumnCaptions(mLoc->Get("BOARD_SAVE_DIALOG_COL_NAME"), mLoc->Get("BOARD_SAVE_DIALOG_COL_SIZE"), mLoc->Get("BOARD_SAVE_DIALOG_COL_MODIFIED"));
+	fileDialog->setFilenameLabelText(mLoc->Get("BOARD_SAVE_DIALOG_LBL_FILENAME"));
+	fileDialog->setAllowCreateFolder(true);
+	fileDialog->setCreateFolderButtonText(mLoc->Get("BOARD_SAVE_DIALOG_CREATE_FOLDER"));
+	fileDialog->setPath("Assets/Logs"); // ログ用のデフォルトパス
+	fileDialog->setFilename("Log_" + GetDateTime() + ".txt");
+
+	// シグナル設定
+	fileDialog->onFileSelect([&](const tgui::String& paths) {
+		std::string path = paths.toStdString();
+
+		// ファイル書き出し
+		std::ofstream outputFile(path);
+		if (outputFile.is_open())
+		{
+			outputFile << logData; // 取得したログ文字列を書き込む
+			outputFile.close();
+			std::cout << "Log saved to " << path << std::endl;
+		}
+		else
+		{
+			std::cerr << "Error: Unable to open file '" << path << "' for writing." << std::endl;
+		}
+		isDialogActive = false;
+		});
+
+	fileDialog->onCancel([&]() { isDialogActive = false; });
+	fileDialog->onClose([&]() { isDialogActive = false; });
+
+	fileDialog->setSize(600, 400);
+	fileDialog->setPosition((mWindowSize.x - 600) / 2, (mWindowSize.y - 400) / 2);
+
+	mGui->add(fileDialog);
+
+	// ブロッキングループ
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+
+	while (isDialogActive)
+	{
+		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		ticksCount = mClock.getElapsedTime();
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				isDialogActive = false;
+				mGameState = GameState::EQuit;
+			}
+			mGui->handleEvent(event);
+		}
+
+		mWindow->clear();
+		for (auto& sprite : mSprites) sprite->Draw(mWindow);
+		for (const auto& ui : mUIStack) ui->Draw(mWindow);
+		mGui->draw();
+		mWindow->display();
+	}
+
+	mGui->remove(fileDialog);
+	mWindow->setActive(true);
 }
 
 void Game::AddSnapshot(const std::string& name, const std::string& comment)
@@ -1599,7 +1691,7 @@ void Game::DisplayResult()
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
 	child->setClientSize({ 960, 540 });
 	child->setPosition(420, 80);
-	child->setTitle("Notice");
+	child->setTitle(mLoc->Get("RESULT_WINDOW_TITLE"));
 	child->onClose([&isChildWindowOpened]() {
 		isChildWindowOpened = false;
 		});
@@ -1612,19 +1704,19 @@ void Game::DisplayResult()
 	listBox->setItemHeight(32);
 	listBox->setPosition(0, 0);
 	listBox->setTextSize(20);
-	listBox->addItem("Result");
-	listBox->addItem("Steps : " + std::to_string(mStep));
+	listBox->addItem(mLoc->Get("RESULT_WINDOW_LBL_TEXT"));
+	listBox->addItem(mLoc->Get("RESULT_WINDOW_LBL_STEPS") + " " + std::to_string(mStep));
 	long time = static_cast<long>(GetSecTime());
 	std::stringstream m{}, s{};
 	m << std::setw(2) << std::setfill('0') << time / 60;
 	s << std::setw(2) << std::setfill('0') << time % 60;
-	listBox->addItem("Time : " + m.str() + ":" + s.str());
+	listBox->addItem(mLoc->Get("RESULT_WINDOW_LBL_TIME") + " " + m.str() + ":" + s.str());
 	listBox->addItem("");
 	listBox->addItem("");
 	child->add(listBox);
 
 	// 入力終了用ボタン
-	auto exitButton = tgui::Button::create("Close");
+	auto exitButton = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
 	exitButton->setSize(120, 30);
 	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - 10, static_cast<int>(listBox->getSize().y) + 5);
@@ -1635,7 +1727,7 @@ void Game::DisplayResult()
 	child->add(exitButton);
 
 	// プレイ履歴を再生するモードに移るボタン
-	auto playLogButton = tgui::Button::create("Play Log");
+	auto playLogButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_PLAY_LOG"));
 	playLogButton->setRenderer(mTheme->getRenderer("Button"));
 	playLogButton->setSize(120, 30);
 	playLogButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 2.0f) - 30, static_cast<int>(listBox->getSize().y) + 5);
@@ -1647,7 +1739,7 @@ void Game::DisplayResult()
 	child->add(playLogButton);
 
 	// ステージ選択画面を呼び出すボタン
-	auto boardSelectButton = tgui::Button::create("Board Select");
+	auto boardSelectButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_BOARD_SELECT"));
 	boardSelectButton->setRenderer(mTheme->getRenderer("Button"));
 	boardSelectButton->setSize(120, 30);
 	boardSelectButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 3.0f) - 50, static_cast<int>(listBox->getSize().y) + 5);
@@ -1824,7 +1916,7 @@ void Game::CancelAllUIHolds()
 void Game::DisplayHelpWindow()
 {
 	// テキストデータの読み込み
-	std::string filename = "Assets/help.txt";
+	std::string filename = mLoc->Get("PATH_HELP");
 	std::ifstream file(filename);
 	if (!file.is_open())
 	{
@@ -1846,7 +1938,7 @@ void Game::DisplayHelpWindow()
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
 	child->setClientSize({ 960, 540 });
 	child->setPosition(420, 80);
-	child->setTitle("How to play");
+	child->setTitle(mLoc->Get("HELP_WINDOW_TITLE"));
 	child->onClose([&isChildWindowOpened]() {
 		isChildWindowOpened = false;
 		});
@@ -1859,6 +1951,7 @@ void Game::DisplayHelpWindow()
 	listBox->setItemHeight(32);
 	listBox->setPosition(0, 0);
 	listBox->setTextSize(20);
+	listBox->setAutoScroll(false);
 	for (const auto& row : helpTexts)
 	{
 		listBox->addItem(row);
@@ -1866,7 +1959,7 @@ void Game::DisplayHelpWindow()
 	child->add(listBox);
 
 	// 入力終了用ボタン
-	auto exitButton = tgui::Button::create("Close");
+	auto exitButton = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
 	exitButton->setSize(120, 30);
 	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - 10, static_cast<int>(listBox->getSize().y) + 5);
@@ -2068,7 +2161,7 @@ void Game::SelectBoards()
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
 	child->setClientSize({ 960, 540 });
 	child->setPosition(420, 80);
-	child->setTitle("Board manager");
+	child->setTitle(mLoc->Get("BOARD_SELECT_WINDOW_TITLE"));
 	child->onClose([&isChildWindowOpened]() {
 		isChildWindowOpened = false;
 		});
@@ -2119,7 +2212,7 @@ void Game::SelectBoards()
 		});
 
 	// 入力終了用ボタン
-	auto applyButton = tgui::Button::create("Apply");
+	auto applyButton = tgui::Button::create(mLoc->Get("BTN_APPLY"));
 	applyButton->setRenderer(mTheme->getRenderer("Button"));
 	applyButton->setSize(120, 30);
 	applyButton->setPosition(static_cast<int>(child->getSize().x - applyButton->getSize().x * 2.0f) - 30, static_cast<int>(listBox->getSize().y) + 5);
@@ -2134,7 +2227,7 @@ void Game::SelectBoards()
 		});
 	child->add(applyButton);
 
-	auto exitButton = tgui::Button::create("Cancel");
+	auto exitButton = tgui::Button::create(mLoc->Get("BTN_CANCEL"));
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
 	exitButton->setSize(120, 30);
 	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - 10, static_cast<int>(listBox->getSize().y) + 5);
@@ -2667,4 +2760,13 @@ std::vector<std::string> EditorScreen::GetTrimmedBoardData() const
 	}
 
 	return trimmedData;
+}
+
+void Game::NotifyLanguageChanged()
+{
+	// 全てのUIスクリーンに対して言語変更イベントを発火させる
+	for (auto ui : mUIStack)
+	{
+		ui->OnLanguageChanged();
+	}
 }

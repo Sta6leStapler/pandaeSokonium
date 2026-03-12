@@ -14,29 +14,32 @@ EditorSetupDialog::EditorSetupDialog(Game* game, sf::RenderWindow* window)
     // 2. このUIスクリーンをGameのスタックにプッシュ
     mGame->PushUI(this);
 
+	// フォントを設定
+	mGui->setFont(mGame->GetFontTGUI());
+
 	// 起動モード選択ダイアログを表示
 	auto msgBox = tgui::MessageBox::create();
 	msgBox->setRenderer(mTheme->getRenderer("MessageBox"));
 	msgBox->moveToFront();
-	msgBox->setTitle("Editor Mode");
-	msgBox->setText("Choose initial state for the editor:");
-	msgBox->addButton("New (Empty)");
-	msgBox->addButton("Current Initial");
-	msgBox->addButton("Current State");
-	msgBox->addButton("Cancel");
+	msgBox->setTitle(mGame->GetLoc()->Get("EDITOR_SETUP_LBL_TITLE"));
+	msgBox->setText(mGame->GetLoc()->Get("EDITOR_SETUP_LBL_TEXT"));
+	msgBox->addButton(mGame->GetLoc()->Get("EDITOR_SETUP_BTN_NEW"));
+	msgBox->addButton(mGame->GetLoc()->Get("EDITOR_SETUP_BTN_CURRENT_INITIAL"));
+	msgBox->addButton(mGame->GetLoc()->Get("EDITOR_SETUP_BTN_CURRENT_STATE"));
+	msgBox->addButton(mGame->GetLoc()->Get("BTN_CANCEL"));
 	msgBox->setPosition((mGame->GetWindowSize().x - msgBox->getFullSize().x) / 2.0f, (mGame->GetWindowSize().y - msgBox->getFullSize().y) / 2.0f);
 
 	msgBox->onButtonPress([this, msgBox](const tgui::String& button) {
-		if (button == "Cancel")
+		if (button == mGame->GetLoc()->Get("BTN_CANCEL"))
 		{
 			Close();
 			return;
 		}
 
 		// 選択に応じてロードモードを決定
-		if (button == "New (Empty)") mMode = 0;
-		else if (button == "Current Initial") mMode = 1;
-		else if (button == "Current State") mMode = 2;
+		if (button == mGame->GetLoc()->Get("EDITOR_SETUP_BTN_NEW")) mMode = 0;
+		else if (button == mGame->GetLoc()->Get("EDITOR_SETUP_BTN_CURRENT_INITIAL")) mMode = 1;
+		else if (button == mGame->GetLoc()->Get("EDITOR_SETUP_BTN_CURRENT_STATE")) mMode = 2;
 
 		// Gameクラスからエディット画面を起動
 		mGame->DisplayEditorScreen(mMode);

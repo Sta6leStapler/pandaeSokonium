@@ -26,6 +26,7 @@ public:
 	void Update(float deltaTime) override;
 	void Draw(sf::RenderWindow* window) override;
 	void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) override;
+	void OnLanguageChanged() override;
 
 	// 状態をクロージングにする
 	void Close() { mState = UIState::EClosing; }
@@ -58,6 +59,21 @@ private:
 	float mIconImageScale;
 
 	tgui::Panel::Ptr mBlocker;
+
+	// ボタンをメンバ変数に変更して保持する
+	std::vector<tgui::Button::Ptr> mSystemButtons;
+	tgui::BitmapButton::Ptr mUndoButton;
+	tgui::BitmapButton::Ptr mRedoButton;
+	tgui::BitmapButton::Ptr mResetButton;
+	tgui::BitmapButton::Ptr mRedoAllButton;
+	tgui::Button::Ptr mLoadSnapshotButton;
+	tgui::Button::Ptr mAddSnapshotButton;
+	tgui::Button::Ptr mLoadBoardButton;
+	tgui::Button::Ptr mGenBoardButton;
+	tgui::BitmapButton::Ptr mSaveBoardButton;
+	tgui::BitmapButton::Ptr mSaveLogButton;
+	tgui::Button::Ptr mEditModeButton;
+	tgui::Button::Ptr mHelpButton;
 
 	// Undo/Redoボタンの制御
 	bool mIsUndoHeld;   // Undoボタンが押され続けているか

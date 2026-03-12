@@ -1,6 +1,7 @@
 #include "THUD.h"
 
 #include "Game.h"
+#include "LocalizationManager.h"
 #include "HUDHelper.h"
 
 #include <iostream>
@@ -43,17 +44,17 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	sf::Image tmpImage = mGame->LoadTexture("Assets/Undo.png")->copyToImage();
 	tgui::Texture tmpTGuiTex{};
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
-	auto undoButton = tgui::BitmapButton::create("Undo");
-	undoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
+	mUndoButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_UNDO"));
+	mUndoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
 	// ボタンの位置
-	undoButton->setPosition(
+	mUndoButton->setPosition(
 		rollbackButtonInitialPos.x - rollbackLargeButtonMargin.x - mRollBackLargeButtonSize.x,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
-	undoButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
-	undoButton->setImage(tmpTGuiTex);
-	undoButton->setImageScaling(mIconImageScale);
-	undoButton->setTextSize(16);
-	undoButton->onMousePress([this]() {
+	mUndoButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
+	mUndoButton->setImage(tmpTGuiTex);
+	mUndoButton->setImageScaling(mIconImageScale);
+	mUndoButton->setTextSize(16);
+	mUndoButton->onMousePress([this]() {
 		std::cout << "Undo action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mIsUndoHeld = true;
@@ -61,30 +62,30 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 		// 最初の長押し判定までの時間を設定
 		mUndoRepeatTimer = mGame->GetHoldThresHold();
 		});
-	undoButton->onMouseRelease([this]() {
+	mUndoButton->onMouseRelease([this]() {
 		std::cout << "Released undo Button!" << std::endl;
 		mIsUndoHeld = false;
 		});
 	// ボタンの領域外にマウスが出ても停止する
-	undoButton->onMouseLeave([this]() {
+	mUndoButton->onMouseLeave([this]() {
 		mIsUndoHeld = false;
 		});
-	mGui->add(undoButton);
+	mGui->add(mUndoButton);
 
 	// Redoボタン
 	tmpImage = mGame->LoadTexture("Assets/Redo.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
-	auto redoButton = tgui::BitmapButton::create("Redo");
-	redoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
+	mRedoButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_REDO"));
+	mRedoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
 	// ボタンの位置
-	redoButton->setPosition(
+	mRedoButton->setPosition(
 		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0f - rollbackLargeButtonMargin.x * 3.0f,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
-	redoButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
-	redoButton->setImage(tmpTGuiTex);
-	redoButton->setImageScaling(mIconImageScale);
-	redoButton->setTextSize(16);
-	redoButton->onMousePress([this]() {
+	mRedoButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
+	mRedoButton->setImage(tmpTGuiTex);
+	mRedoButton->setImageScaling(mIconImageScale);
+	mRedoButton->setTextSize(16);
+	mRedoButton->onMousePress([this]() {
 		std::cout << "Redo action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mIsRedoHeld = true;
@@ -92,87 +93,87 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 		// 最初の長押し判定までの時間を設定
 		mRedoRepeatTimer = mGame->GetHoldThresHold();
 		});
-	redoButton->onMouseRelease([this]() {
+	mRedoButton->onMouseRelease([this]() {
 		mIsRedoHeld = false;
 		});
-	redoButton->onMouseLeave([this]() {
+	mRedoButton->onMouseLeave([this]() {
 		mIsRedoHeld = false;
 		});
-	mGui->add(redoButton);
+	mGui->add(mRedoButton);
 
 	// Resetボタン
 	tmpImage = mGame->LoadTexture("Assets/Reset.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
-	auto resetButton = tgui::BitmapButton::create("Reset");
-	resetButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ボタンのサイズ
+	mResetButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_RESET"));
+	mResetButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ボタンのサイズ
 	// ボタンの位置
-	resetButton->setPosition(
+	mResetButton->setPosition(
 		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0 - mRollBackSmallButtonSize.x - rollbackLargeButtonMargin.x * 4.0f - rollbackSmallButtonMargin.x,
 		rollbackButtonInitialPos.y + rollbackSmallButtonMargin.y);
-	resetButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
-	resetButton->setImage(tmpTGuiTex);
-	resetButton->setImageScaling(mIconImageScale);
-	resetButton->setTextSize(16);
-	resetButton->onPress([=]() {
+	mResetButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
+	mResetButton->setImage(tmpTGuiTex);
+	mResetButton->setImageScaling(mIconImageScale);
+	mResetButton->setTextSize(16);
+	mResetButton->onPress([=]() {
 		std::cout << "Reset action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallReset();
 		});
-	mGui->add(resetButton);
+	mGui->add(mResetButton);
 
 	// Redo Allボタン
 	tmpImage = mGame->LoadTexture("Assets/RedoAll.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
-	auto redoAllButton = tgui::BitmapButton::create("Redo All");
-	redoAllButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ボタンのサイズ
+	mRedoAllButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_REDO_ALL"));
+	mRedoAllButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ボタンのサイズ
 	// ボタンの位置
-	redoAllButton->setPosition(
+	mRedoAllButton->setPosition(
 		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0 - mRollBackSmallButtonSize.x * 2.0f - rollbackLargeButtonMargin.x * 4.0f - rollbackSmallButtonMargin.x * 3.0f,
 		rollbackButtonInitialPos.y + rollbackSmallButtonMargin.y);
-	redoAllButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
-	redoAllButton->setImage(tmpTGuiTex);
-	redoAllButton->setImageScaling(mIconImageScale);
-	redoAllButton->setTextSize(16);
-	redoAllButton->onPress([=]() {
+	mRedoAllButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
+	mRedoAllButton->setImage(tmpTGuiTex);
+	mRedoAllButton->setImageScaling(mIconImageScale);
+	mRedoAllButton->setTextSize(16);
+	mRedoAllButton->onPress([=]() {
 		std::cout << "Redo all action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallRedoAll();
 		});
-	mGui->add(redoAllButton);
+	mGui->add(mRedoAllButton);
 
 	// Load Snapshotボタン
-	auto loadSnapshotButton = tgui::Button::create("Load Snapshot");
-	loadSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
+	mLoadSnapshotButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_QUICK_LOAD"));
+	mLoadSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
 	// ボタンの位置
-	loadSnapshotButton->setPosition(
+	mLoadSnapshotButton->setPosition(
 		mGame->GetBoardViewArea().first.x + rollbackLargeButtonMargin.x,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
-	loadSnapshotButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
-	loadSnapshotButton->setTextSize(16);
-	loadSnapshotButton->onPress([=]() {
+	mLoadSnapshotButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mLoadSnapshotButton->setTextSize(16);
+	mLoadSnapshotButton->onPress([=]() {
 		std::cout << "Load Snapshot action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		// スナップショットマネージャーを呼び出す
 		mGame->DisplaySnapshot();
 		});
-	mGui->add(loadSnapshotButton);
+	mGui->add(mLoadSnapshotButton);
 
 	// Add Snapshotボタン
-	auto addSnapshotButton = tgui::Button::create("Add Snapshot");
-	addSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
+	mAddSnapshotButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_QUICK_SAVE"));
+	mAddSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ボタンのサイズ
 	// ボタンの位置
-	addSnapshotButton->setPosition(
+	mAddSnapshotButton->setPosition(
 		mGame->GetBoardViewArea().first.x + mRollBackLargeButtonSize.x + rollbackLargeButtonMargin.x * 3.0f,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
-	addSnapshotButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
-	addSnapshotButton->setTextSize(16);
-	addSnapshotButton->onPress([=]() {
+	mAddSnapshotButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mAddSnapshotButton->setTextSize(16);
+	mAddSnapshotButton->onPress([=]() {
 		std::cout << "Add Snapshot action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		// スナップショットをリストに追加する処理を呼び出す
 		mGame->AddSnapshotDialog();
 		});
-	mGui->add(addSnapshotButton);
+	mGui->add(mAddSnapshotButton);
 
 	// Undo/Redo操作関連のボタンの配置ここまで
 	
@@ -181,90 +182,90 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	sf::Vector2i listBoxMargin{ static_cast<int>((mGame->GetWindowSize().x - (mGame->GetBoardViewArea().second.x - mGame->GetBoardViewArea().first.x) - (mGameSystemButtonSize.x * 4 + mButtonMergin.x * 3)) / 2.0f), static_cast<int>((mGame->GetWindowSize().x - (mGame->GetBoardViewArea().second.x - mGame->GetBoardViewArea().first.x) - (mGameSystemButtonSize.x * 4 + mButtonMergin.x * 3)) / 4.0f) };
 
 	// Load Boardボタン
-	auto loadBoardButton = tgui::Button::create("Load Board");
-	loadBoardButton->setPosition(listBoxMargin.x, mButtonInitialPos.y); // ボタンの位置
-	loadBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	loadBoardButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
-	loadBoardButton->setTextSize(16);
-	loadBoardButton->onPress([=]() {
+	mLoadBoardButton = tgui::Button::create(mGame->GetLoc()->Get("TITLE_SELECT_BOARD"));
+	mLoadBoardButton->setPosition(listBoxMargin.x, mButtonInitialPos.y); // ボタンの位置
+	mLoadBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
+	mLoadBoardButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mLoadBoardButton->setTextSize(16);
+	mLoadBoardButton->onPress([=]() {
 		std::cout << "Load board action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->SelectBoards();
 		});
-	mGui->add(loadBoardButton);
+	mGui->add(mLoadBoardButton);
 
 	// Generate Boardボタン
-	auto genBoardButton = tgui::Button::create("Generate Board");
-	genBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x), mButtonInitialPos.y); // ボタンの位置
-	genBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	genBoardButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
-	genBoardButton->setTextSize(16);
-	genBoardButton->onPress([=]() {
+	mGenBoardButton = tgui::Button::create(mGame->GetLoc()->Get("TITLE_BOARD_GENERATION"));
+	mGenBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x), mButtonInitialPos.y); // ボタンの位置
+	mGenBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
+	mGenBoardButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mGenBoardButton->setTextSize(16);
+	mGenBoardButton->onPress([=]() {
 		std::cout << "Generate board action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallReload();
 		});
-	mGui->add(genBoardButton);
+	mGui->add(mGenBoardButton);
 	
 	// Save Boardボタン
 	tmpImage = mGame->LoadTexture("Assets/SaveBoard.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
-	auto saveBoardButton = tgui::BitmapButton::create("Save Board");
-	saveBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y); // ボタンの位置
-	saveBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	saveBoardButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
-	saveBoardButton->setImage(tmpTGuiTex);
-	saveBoardButton->setImageScaling(mIconImageScale);
-	saveBoardButton->setTextSize(16);
-	saveBoardButton->onPress([=]() {
+	mSaveBoardButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_SAVE"));
+	mSaveBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y); // ボタンの位置
+	mSaveBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
+	mSaveBoardButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
+	mSaveBoardButton->setImage(tmpTGuiTex);
+	mSaveBoardButton->setImageScaling(mIconImageScale);
+	mSaveBoardButton->setTextSize(16);
+	mSaveBoardButton->onPress([=]() {
 		std::cout << "Save board action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallSave();
 		});
-	mGui->add(saveBoardButton);
+	mGui->add(mSaveBoardButton);
 
 	// Save Logボタン
 	tmpImage = mGame->LoadTexture("Assets/SaveLog.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
-	auto saveLogButton = tgui::BitmapButton::create("Save Log");
-	saveLogButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 3, mButtonInitialPos.y); // ボタンの位置
-	saveLogButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	saveLogButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
-	saveLogButton->setImage(tmpTGuiTex);
-	saveLogButton->setImageScaling(mIconImageScale);
-	saveLogButton->setTextSize(16);
-	saveLogButton->onPress([=]() {
+	mSaveLogButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_LOG"));
+	mSaveLogButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 3, mButtonInitialPos.y); // ボタンの位置
+	mSaveLogButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
+	mSaveLogButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
+	mSaveLogButton->setImage(tmpTGuiTex);
+	mSaveLogButton->setImageScaling(mIconImageScale);
+	mSaveLogButton->setTextSize(16);
+	mSaveLogButton->onPress([=]() {
 		std::cout << "Save log action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
-		mGame->OutputLogs();
+		mGame->CallSaveLog();
 		});
-	mGui->add(saveLogButton);
+	mGui->add(mSaveLogButton);
 
 	// Edit Modeボタン
-	auto editModeButton = tgui::Button::create("Edit Mode");
-	editModeButton->setPosition(listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
-	editModeButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	editModeButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
-	editModeButton->setTextSize(16);
-	editModeButton->onPress([=]() {
+	mEditModeButton = tgui::Button::create(mGame->GetLoc()->Get("TITLE_EDITOR"));
+	mEditModeButton->setPosition(listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
+	mEditModeButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
+	mEditModeButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mEditModeButton->setTextSize(16);
+	mEditModeButton->onPress([=]() {
 		std::cout << "Edit Mode action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallEditorSetup();
 		});
-	mGui->add(editModeButton);
+	mGui->add(mEditModeButton);
 
 	// Helpボタン
-	auto helpButton = tgui::Button::create("Help");
-	helpButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 1, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
-	helpButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
-	helpButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
-	helpButton->setTextSize(16);
-	helpButton->onPress([=]() {
+	mHelpButton = tgui::Button::create(mGame->GetLoc()->Get("TITLE_HELP"));
+	mHelpButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 1, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ボタンの位置
+	mHelpButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ボタンのサイズ
+	mHelpButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mHelpButton->setTextSize(16);
+	mHelpButton->onPress([=]() {
 		std::cout << "Help action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->DisplayHelpWindow();
 		});
-	mGui->add(helpButton);
+	mGui->add(mHelpButton);
 
 	// ゲームシステム関連のボタンの配置ここまで
 	
@@ -272,12 +273,12 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	mListBoxSize = sf::Vector2i{ static_cast<int>(mGame->GetWindowSize().x - (mGame->GetBoardViewArea().second.x - mGame->GetBoardViewArea().first.x) - listBoxMargin.x * 2), static_cast<int>(mGame->GetWindowSize().y) - (mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y) * 2) - 20};
 	mListBoxPos = sf::Vector2i{ listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y) * 2 };
 
-	mTextInfo[TextIndex::EMoveCount] = "Moves : " + std::to_string(mGame->GetStep());
-	mTextInfo[TextIndex::ETime] = "Time : 00:00";
-	mTextInfo[TextIndex::EBoardState] = "Status : ";
-	mTextInfo[TextIndex::EMovableBaggages] = "Movable bagggages : ";
-	mTextInfo[TextIndex::EGoaledBaggages] = "Goaled baggages : ";
-	mTextInfo[TextIndex::EDeadlockedBaggages] = "Deadlocked baggages : ";
+	mTextInfo[TextIndex::EMoveCount] = mGame->GetLoc()->Get("LBL_MOVES") + std::to_string(mGame->GetStep());
+	mTextInfo[TextIndex::ETime] = mGame->GetLoc()->Get("LBL_TIME") + "00:00";
+	mTextInfo[TextIndex::EBoardState] = mGame->GetLoc()->Get("LBL_STATUS");
+	mTextInfo[TextIndex::EMovableBaggages] = mGame->GetLoc()->Get("LBL_BOARD_STATE");
+	mTextInfo[TextIndex::EGoaledBaggages] = mGame->GetLoc()->Get("LBL_GOALED_BAGGAGES");
+	mTextInfo[TextIndex::EDeadlockedBaggages] = mGame->GetLoc()->Get("LBL_DEADLOCKED_BAGGAGES");
 
 	mListBox = tgui::ListBox::create();
 	mListBox->setRenderer(mGame->GetTheme().getRenderer("ListBox"));
@@ -300,41 +301,41 @@ THUD::~THUD()
 void THUD::Update(float deltaTime)
 {
 	// テキスト表示する各種情報を更新
-	mTextInfo[TextIndex::EMoveCount] = "Moves : " + std::to_string(mGame->GetStep());
+	mTextInfo[TextIndex::EMoveCount] = mGame->GetLoc()->Get("LBL_MOVES") + std::to_string(mGame->GetStep());
 	long time = static_cast<long>(mGame->GetSecTime());
 	std::stringstream m, s;
 	m << std::setw(2) << std::setfill('0') << time / 60;
 	s << std::setw(2) << std::setfill('0') << time % 60;
-	mTextInfo[TextIndex::ETime] = "Time : " + m.str() + ":" + s.str();
+	mTextInfo[TextIndex::ETime] = mGame->GetLoc()->Get("LBL_TIME") + m.str() + ":" + s.str();
 	std::unordered_map<int, sf::Vector2i> deadlockedBaggages{ mGame->GetHUDHelper()->GetDeadlockedBaggages() },
 		goaledBaggages{ mGame->GetHUDHelper()->GetGoaledBaggages() };
 	std::vector<sf::Vector2i> movableBaggages{ mGame->GetHUDHelper()->GetCandidates() };
 	if (!deadlockedBaggages.empty())
 	{
-		mTextInfo[TextIndex::EBoardState] = "Status : Deadlocked!";
+		mTextInfo[TextIndex::EBoardState] = mGame->GetLoc()->Get("LBL_STATUS") + mGame->GetLoc()->Get("LBL_DEADLOCKED_MESSAGE");
 	}
 	else
 	{
-		mTextInfo[TextIndex::EBoardState] = "Status : ";
+		mTextInfo[TextIndex::EBoardState] = mGame->GetLoc()->Get("LBL_STATUS");
 	}
 	std::string tmpStr{};
 	for (const auto& baggage : goaledBaggages)
 	{
 		tmpStr += "( " + std::to_string(baggage.second.x) + ", " + std::to_string(baggage.second.y) + ") ";
 	}
-	mTextInfo[TextIndex::EGoaledBaggages] = "Goaled baggages : " + tmpStr;
+	mTextInfo[TextIndex::EGoaledBaggages] = mGame->GetLoc()->Get("LBL_GOALED_BAGGAGES") + tmpStr;
 	tmpStr = "";
 	for (const auto& baggage : movableBaggages)
 	{
 		tmpStr += "( " + std::to_string(baggage.x) + ", " + std::to_string(baggage.y) + ") ";
 	}
-	mTextInfo[TextIndex::EMovableBaggages] = "Movable bagggages : " + tmpStr;
+	mTextInfo[TextIndex::EMovableBaggages] = mGame->GetLoc()->Get("LBL_MOVABLE_BAGGAGES") + tmpStr;
 	tmpStr = "";
 	for (const auto& baggage : deadlockedBaggages)
 	{
 		tmpStr += "( " + std::to_string(baggage.second.x) + ", " + std::to_string(baggage.second.y) + ") ";
 	}
-	mTextInfo[TextIndex::EDeadlockedBaggages] = "Deadlocked baggages : " + tmpStr;
+	mTextInfo[TextIndex::EDeadlockedBaggages] = mGame->GetLoc()->Get("LBL_DEADLOCKED_BAGGAGES") + tmpStr;
 	tmpStr = "";
 
 	for (const auto& text : mTextInfo)
@@ -396,4 +397,26 @@ void THUD::CancelButtonHolds()
 	// タイマーもリセットしておく
 	mUndoRepeatTimer = 0.0f;
 	mRedoRepeatTimer = 0.0f;
+}
+
+void THUD::OnLanguageChanged()
+{
+	// ボタンテキストの更新
+	mUndoButton->setText(mGame->GetLoc()->Get("BTN_UNDO"));
+	mRedoButton->setText(mGame->GetLoc()->Get("BTN_REDO"));
+	mResetButton->setText(mGame->GetLoc()->Get("BTN_RESET"));
+	mRedoAllButton->setText(mGame->GetLoc()->Get("BTN_REDO_ALL"));
+	mLoadSnapshotButton->setText(mGame->GetLoc()->Get("TITLE_QUICK_LOAD"));
+	mAddSnapshotButton->setText(mGame->GetLoc()->Get("TITLE_QUICK_SAVE"));
+	mLoadBoardButton->setText(mGame->GetLoc()->Get("TITLE_SELECT_BOARD"));
+	mGenBoardButton->setText(mGame->GetLoc()->Get("TITLE_BOARD_GENERATION"));
+	mSaveBoardButton->setText(mGame->GetLoc()->Get("BTN_SAVE"));
+	mSaveLogButton->setText(mGame->GetLoc()->Get("BTN_LOG"));
+	mEditModeButton->setText(mGame->GetLoc()->Get("TITLE_EDITOR"));
+	mHelpButton->setText(mGame->GetLoc()->Get("BTN_HELP"));
+
+	// ListBox内の静的なラベル（Movesなど）の更新
+	// Update()内で毎フレーム changeItemById されているため、
+	// 次のフレームで自動的に辞書から最新の文字が引かれます。
+
 }
