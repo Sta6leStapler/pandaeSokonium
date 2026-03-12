@@ -1592,6 +1592,8 @@ void Game::DisplayResult()
 
 	bool isChildWindowOpened = true;
 	bool isPlayLog = false;
+	bool isSelectStage = false; // ステージ選択へ行くかどうかのフラグ
+
 	// 表示用のウィンドウを作成
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
@@ -1643,6 +1645,18 @@ void Game::DisplayResult()
 		isPlayLog = true;
 		});
 	child->add(playLogButton);
+
+	// ステージ選択画面を呼び出すボタン
+	auto boardSelectButton = tgui::Button::create("Board Select");
+	boardSelectButton->setRenderer(mTheme->getRenderer("Button"));
+	boardSelectButton->setSize(120, 30);
+	boardSelectButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 3.0f) - 50, static_cast<int>(listBox->getSize().y) + 5);
+	boardSelectButton->onPress([&]() {
+		std::cout << "Call board select window triggered!" << std::endl;
+		isChildWindowOpened = false;	// ステージ選択ウィンドウを出す前にリザルト画面を消すため
+		isSelectStage = true;
+		});
+	child->add(boardSelectButton);
 
 	// ゲームループを停止
 	mWindow->setActive(false);
@@ -1701,6 +1715,10 @@ void Game::DisplayResult()
 	if (isPlayLog)
 	{
 		DisplayPlayLogs(mCurrentKey);
+	}
+	else if (isSelectStage)
+	{
+		SelectBoards();
 	}
 
 	// 1手戻す
