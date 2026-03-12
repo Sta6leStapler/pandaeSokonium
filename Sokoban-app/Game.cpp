@@ -3,6 +3,7 @@
 #include "IActor.h"
 #include "IComponent.h"
 #include "SpriteComponent.h"
+#include "MoveAnimationComponent.h"
 
 #include "GameBoard.h"
 #include "BackGround.h"
@@ -292,113 +293,117 @@ void Game::ProcessInput()
 		// ゲームプレイ状態ならば、キーボードやボタンの入力処理を受け付ける
 		if (mGameState == GameState::EGamePlay)
 		{
-			// ゲーム全体に関する各種入力処理
-			// 単押し処理
-			if (event.type == sf::Event::KeyPressed)
+			// アニメーション中でなければ入力を受け付ける
+			if (!IsAnyMovementAnimating())
 			{
-				// このキーが押されてから経過した時間を確認
-				float duration = mKeyHeldDuration.count(event.key.code) ? mKeyHeldDuration.at(event.key.code) : 0.0f;
-
-				// 押された最初のフレーム（押下時間が非常に短い）かを判定
-				if (duration < GetTapThresHold())
+				// ゲーム全体に関する各種入力処理
+				// 単押し処理
+				if (event.type == sf::Event::KeyPressed)
 				{
-					// Escキーでポーズメニューを開く
-					if (event.key.code == sf::Keyboard::Escape && mGameState == GameState::EGamePlay)
-					{
-						// ボタンの長押しを解除
-						CancelAllUIHolds();
-						new PauseMenu(this);
-						mGameState = GameState::EPaused;
-					}
+					// このキーが押されてから経過した時間を確認
+					float duration = mKeyHeldDuration.count(event.key.code) ? mKeyHeldDuration.at(event.key.code) : 0.0f;
 
-					// z でundo処理
-					if (event.key.code == sf::Keyboard::Z)
+					// 押された最初のフレーム（押下時間が非常に短い）かを判定
+					if (duration < GetTapThresHold())
 					{
-						// ボタンの長押しを解除
-						CancelAllUIHolds();
+						// Escキーでポーズメニューを開く
+						if (event.key.code == sf::Keyboard::Escape && mGameState == GameState::EGamePlay)
+						{
+							// ボタンの長押しを解除
+							CancelAllUIHolds();
+							new PauseMenu(this);
+							mGameState = GameState::EPaused;
+						}
+
+						// z でundo処理
+						if (event.key.code == sf::Keyboard::Z)
+						{
+							// ボタンの長押しを解除
+							CancelAllUIHolds();
+							CallUndo();
+						}
+
+						// y でredo処理
+						if (event.key.code == sf::Keyboard::Y)
+						{
+							// ボタンの長押しを解除
+							CancelAllUIHolds();
+							CallRedo();
+						}
+
+						// PGUPで最新の状態にする
+						if (event.key.code == sf::Keyboard::PageUp)
+						{
+							// ボタンの長押しを解除
+							CancelAllUIHolds();
+							CallRedoAll();
+						}
+
+						// PGDNで初期状態にする
+						if (event.key.code == sf::Keyboard::PageDown)
+						{
+							// ボタンの長押しを解除
+							CancelAllUIHolds();
+							CallReset();
+						}
+
+						// Ctrl + rで全てリセット
+						if (event.key.control && event.key.code == sf::Keyboard::R)
+						{
+							// ボタンの長押しを解除
+							CancelAllUIHolds();
+							CallRestart();
+						}
+
+						// Ctrl + s で現在の盤面をセーブ
+						if (event.key.control && event.key.code == sf::Keyboard::S)
+						{
+							// ボタンの長押しを解除
+							CancelAllUIHolds();
+							CallSave();
+						}
+
+						// H でヘルプ画面の表示
+						if (event.key.code == sf::Keyboard::H)
+						{
+							// ボタンの長押しを解除
+							CancelAllUIHolds();
+							DisplayHelpWindow();
+						}
+
+						// F5 で盤面のリロード（自動生成の盤面なら新たな盤面の生成）
+						if (event.key.code == sf::Keyboard::F5)
+						{
+							// ボタンの長押しを解除
+							CancelAllUIHolds();
+							CallReload();
+						}
+					}
+				}
+
+				// 長押しの処理
+				// イベントとは関係なく、現在のキー押下状態とタイマーから判断
+				switch (event.key.code)
+				{
+				case sf::Keyboard::Z:
+					// Undo処理
+					// 長押し状態にあり、かつリピートタイマーが0以下か？
+					if (mKeyHeldDuration.at(sf::Keyboard::Z) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Z) <= 0.0f)
+					{
 						CallUndo();
 					}
-
-					// y でredo処理
-					if (event.key.code == sf::Keyboard::Y)
+					break;
+				case sf::Keyboard::Y:
+					// Redo処理
+					// 長押し状態にあり、かつリピートタイマーが0以下か？
+					if (mKeyHeldDuration.at(sf::Keyboard::Y) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Y) <= 0.0f)
 					{
-						// ボタンの長押しを解除
-						CancelAllUIHolds();
 						CallRedo();
 					}
-
-					// PGUPで最新の状態にする
-					if (event.key.code == sf::Keyboard::PageUp)
-					{
-						// ボタンの長押しを解除
-						CancelAllUIHolds();
-						CallRedoAll();
-					}
-
-					// PGDNで初期状態にする
-					if (event.key.code == sf::Keyboard::PageDown)
-					{
-						// ボタンの長押しを解除
-						CancelAllUIHolds();
-						CallReset();
-					}
-
-					// Ctrl + rで全てリセット
-					if (event.key.control && event.key.code == sf::Keyboard::R)
-					{
-						// ボタンの長押しを解除
-						CancelAllUIHolds();
-						CallRestart();
-					}
-
-					// Ctrl + s で現在の盤面をセーブ
-					if (event.key.control && event.key.code == sf::Keyboard::S)
-					{
-						// ボタンの長押しを解除
-						CancelAllUIHolds();
-						CallSave();
-					}
-
-					// H でヘルプ画面の表示
-					if (event.key.code == sf::Keyboard::H)
-					{
-						// ボタンの長押しを解除
-						CancelAllUIHolds();
-						DisplayHelpWindow();
-					}
-
-					// F5 で盤面のリロード（自動生成の盤面なら新たな盤面の生成）
-					if (event.key.code == sf::Keyboard::F5)
-					{
-						// ボタンの長押しを解除
-						CancelAllUIHolds();
-						CallReload();
-					}
+					break;
+				default:
+					break;
 				}
-			}
-
-			// 長押しの処理
-			// イベントとは関係なく、現在のキー押下状態とタイマーから判断
-			switch (event.key.code)
-			{
-			case sf::Keyboard::Z:
-				// Undo処理
-				// 長押し状態にあり、かつリピートタイマーが0以下か？
-				if (mKeyHeldDuration.at(sf::Keyboard::Z) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Z) <= 0.0f)
-				{
-					CallUndo();
-				}
-				break;
-			case sf::Keyboard::Y:
-				// Redo処理
-				// 長押し状態にあり、かつリピートタイマーが0以下か？
-				if (mKeyHeldDuration.at(sf::Keyboard::Y) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Y) <= 0.0f)
-				{
-					CallRedo();
-				}
-				break;
-			default:
-				break;
 			}
 
 			// 全てのActorの入力処理を行う
@@ -545,7 +550,7 @@ void Game::GenerateOutput()
 	mWindow->display();
 
 	// ゲームクリア状態ならリザルト画面を出力
-	if (mIsComplete)
+	if (mIsComplete && !IsAnyMovementAnimating())
 	{
 		DisplayResult();
 	}
@@ -624,6 +629,26 @@ void Game::RemoveActor(IActor* actor)
 		std::iter_swap(iter, mActiveActors.end() - 1);
 		mActiveActors.pop_back();
 	}
+}
+
+bool Game::IsAnyMovementAnimating() const
+{
+	// プレイヤーのアニメーション確認
+	if (mPlayer && mPlayer->GetMoveAnimation()->IsAnimating())
+	{
+		return true;
+	}
+
+	// 全ての荷物のアニメーション確認
+	for (auto baggage : mBaggages)
+	{
+		if (baggage->GetMoveAnimation()->IsAnimating())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 // スプライトの追加と削除

@@ -72,6 +72,8 @@ public:
 	// アクターの追加と削除
 	void AddActor(class IActor* actor);
 	void RemoveActor(class IActor* actor);
+	// 全てのアクターが静止しているか確認
+	bool IsAnyMovementAnimating() const;
 
 	// スプライトの追加と削除
 	void AddSprite(class SpriteComponent* sprite);
@@ -355,7 +357,7 @@ private:
 	// 長押しと判定するまでの時間（秒）
 	static constexpr float HOLD_THRESHOLD = 0.5f;
 	// 長押し中の連続入力の間隔（秒）
-	static constexpr float AUTO_REPEAT_INTERVAL = 0.1f;
+	static constexpr float AUTO_REPEAT_INTERVAL = 0.04f;
 
 	// 現在のターン数
 	unsigned int mStep;

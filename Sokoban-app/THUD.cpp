@@ -55,6 +55,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	undoButton->setTextSize(16);
 	undoButton->onMousePress([this]() {
 		std::cout << "Undo action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mIsUndoHeld = true;
 		mGame->CallUndo(); // 押した瞬間にまず1回実行
 		// 最初の長押し判定までの時間を設定
@@ -85,6 +86,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	redoButton->setTextSize(16);
 	redoButton->onMousePress([this]() {
 		std::cout << "Redo action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mIsRedoHeld = true;
 		mGame->CallRedo(); // 押した瞬間にまず1回実行
 		// 最初の長押し判定までの時間を設定
@@ -113,6 +115,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	resetButton->setTextSize(16);
 	resetButton->onPress([=]() {
 		std::cout << "Reset action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallReset();
 		});
 	mGui->add(resetButton);
@@ -132,6 +135,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	redoAllButton->setTextSize(16);
 	redoAllButton->onPress([=]() {
 		std::cout << "Redo all action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallRedoAll();
 		});
 	mGui->add(redoAllButton);
@@ -147,6 +151,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	loadSnapshotButton->setTextSize(16);
 	loadSnapshotButton->onPress([=]() {
 		std::cout << "Load Snapshot action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		// スナップショットマネージャーを呼び出す
 		mGame->DisplaySnapshot();
 		});
@@ -163,6 +168,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	addSnapshotButton->setTextSize(16);
 	addSnapshotButton->onPress([=]() {
 		std::cout << "Add Snapshot action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		// スナップショットをリストに追加する処理を呼び出す
 		mGame->AddSnapshotDialog();
 		});
@@ -182,6 +188,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	loadBoardButton->setTextSize(16);
 	loadBoardButton->onPress([=]() {
 		std::cout << "Load board action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->SelectBoards();
 		});
 	mGui->add(loadBoardButton);
@@ -194,6 +201,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	genBoardButton->setTextSize(16);
 	genBoardButton->onPress([=]() {
 		std::cout << "Generate board action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallReload();
 		});
 	mGui->add(genBoardButton);
@@ -210,6 +218,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	saveBoardButton->setTextSize(16);
 	saveBoardButton->onPress([=]() {
 		std::cout << "Save board action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallSave();
 		});
 	mGui->add(saveBoardButton);
@@ -226,6 +235,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	saveLogButton->setTextSize(16);
 	saveLogButton->onPress([=]() {
 		std::cout << "Save log action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->OutputLogs();
 		});
 	mGui->add(saveLogButton);
@@ -238,6 +248,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	editModeButton->setTextSize(16);
 	editModeButton->onPress([=]() {
 		std::cout << "Edit Mode action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->CallEditorSetup();
 		});
 	mGui->add(editModeButton);
@@ -250,6 +261,7 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	helpButton->setTextSize(16);
 	helpButton->onPress([=]() {
 		std::cout << "Help action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
 		mGame->DisplayHelpWindow();
 		});
 	mGui->add(helpButton);
@@ -332,6 +344,13 @@ void THUD::Update(float deltaTime)
 	// テキストの更新はここまで
 
 	// --- UIボタンの長押しリピート処理 ---
+	// 長押し処理：アニメーション中は何もしない
+	if (mGame->IsAnyMovementAnimating()) {
+		CancelButtonHolds(); // アニメーションが始まったら長押し状態を強制解除する
+		return;
+	}
+
+	// Undoボタンの長押し処理
 	if (mIsUndoHeld)
 	{
 		mUndoRepeatTimer -= deltaTime;
@@ -343,6 +362,7 @@ void THUD::Update(float deltaTime)
 		}
 	}
 
+	// Redoボタンの長押し処理
 	if (mIsRedoHeld)
 	{
 		mRedoRepeatTimer -= deltaTime;

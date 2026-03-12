@@ -139,6 +139,7 @@
     <ClCompile Include="BoardParamManual.cpp" />
     <ClCompile Include="EditorScreen.cpp" />
     <ClCompile Include="EditorSetupDialog.cpp" />
+    <ClCompile Include="MoveAnimationComponent.cpp" />
     <ClCompile Include="SnapshotDialog.cpp" />
     <ClCompile Include="BackGround.cpp" />
     <ClCompile Include="Baggage.cpp" />
@@ -162,6 +163,7 @@
     <ClInclude Include="BoardParamManual.h" />
     <ClInclude Include="EditorScreen.h" />
     <ClInclude Include="EditorSetupDialog.h" />
+    <ClInclude Include="MoveAnimationComponent.h" />
     <ClInclude Include="ParamStruct.h" />
     <ClInclude Include="SnapshotDialog.h" />
     <ClInclude Include="BackGround.h" />

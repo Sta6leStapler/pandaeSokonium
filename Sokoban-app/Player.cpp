@@ -2,6 +2,7 @@
 
 #include "Baggage.h"
 #include "SpriteComponent.h"
+#include "MoveAnimationComponent.h"
 
 #include <fstream>
 
@@ -23,9 +24,15 @@ Player::Player(Game* game)
 	, mCurrentHighlightState(HighlightState::Idle)
 	, mMovementPath(std::vector<sf::Vector2i>{})
 	, mPathMoveTimer(0.0f)
+	, mQueuedDirection(Direction::ESouth)
+	, mQueuedRotation(0.0f)
+	, mHasQueuedInput(false)
 	, mDetection(false)
 {
 	mGame->AddActor(this);
+
+	// MoveAnimationComponent を生成（updateOrder は適宜調整）
+	mMoveAnimation = new MoveAnimationComponent(this, 10);
 
 	// 盤面データをGameクラスから取得する
 	std::vector<std::string> lines = game->GetBoardData()[mBoardName];
@@ -131,7 +138,7 @@ void Player::Update(float deltaTime)
 		if (mCurrentHighlightState == HighlightState::MovingOnPath)
 		{
 			mPathMoveTimer -= deltaTime;
-			if (mPathMoveTimer <= 0.0f)
+			if (mMoveAnimation->CanAcceptNextInput(0.9f) && mPathMoveTimer <= 0.0f)
 			{
 				sf::Vector2i currentPos = mBoardCoordinate;
 				sf::Vector2i nextPos = mMovementPath.front();
@@ -162,8 +169,11 @@ void Player::Update(float deltaTime)
 
 				if (baggageToPush == nullptr) // ケースA: 移動先に荷物がない
 				{
-					// プレイヤーだけ移動
-					SetBoardCoordinate(nextPos);
+					// アニメーション開始（ワープの代わりにStartを呼ぶ）
+					mMoveAnimation->Start(this->mPosition, mGame->TileToScreenCoords(nextPos), PATH_MOVE_INTERVAL);
+
+					// プレイヤーの論理座標のみ更新（SetBoardCoordinateは内部でmPositionを書き換えるため、mBoardCoordinateへの代入のみにする）
+					mBoardCoordinate = nextPos;
 
 					// ログを追加 (プレイヤーのみ)
 					mGame->RemoveRedo();
@@ -191,10 +201,18 @@ void Player::Update(float deltaTime)
 
 						if (!isAnotherBaggage)
 						{
-							// 押せる場合：プレイヤーと荷物を両方移動
+							// 押せる場合：プレイヤーと荷物を両方「アニメーション」移動
 							sf::Vector2i baggageLastPos = baggageToPush->GetBoardCoordinate();
-							baggageToPush->SetBoardCoordinate(baggageDest);
-							SetBoardCoordinate(nextPos);
+
+							// 1. 荷物のアニメーション開始
+							sf::Vector2f bStart = mGame->TileToScreenCoords(baggageLastPos);
+							sf::Vector2f bEnd = mGame->TileToScreenCoords(baggageDest);
+							baggageToPush->GetMoveAnimation()->Start(bStart, bEnd, PATH_MOVE_INTERVAL);
+							baggageToPush->SetLogicalCoordinate(baggageDest); // 論理座標のみ更新
+
+							// 2. プレイヤーのアニメーション開始
+							mMoveAnimation->Start(this->mPosition, mGame->TileToScreenCoords(nextPos), PATH_MOVE_INTERVAL);
+							mBoardCoordinate = nextPos; // 論理座標のみ更新
 
 							// ログを追加 (プレイヤーと荷物)
 							mGame->RemoveRedo();
@@ -224,7 +242,18 @@ void Player::Update(float deltaTime)
 		// プレイヤーや荷物を抜いた盤面の情報
 		std::vector<std::string> boardState = mGame->GetBoardState();
 
-		if (mDetection)
+		// 先行入力の適用ロジック
+		// アニメーションが90%完了している時に、溜まっていた入力を「現在の意志」として反映する
+		if (mHasQueuedInput && mMoveAnimation->CanAcceptNextInput(0.9f))
+		{
+			mDirection = mQueuedDirection; // ここで初めて見た目の向きを変える
+			mRotation = mQueuedRotation;
+			mDetection = true;             // 移動判定を有効化
+			mHasQueuedInput = false;       // キューを空にする
+		}
+
+		// アニメーションが90%完了している時のみ、新しい移動を受け付ける
+		if (mDetection && mMoveAnimation->CanAcceptNextInput(0.9f))
 		{
 			// 移動先の座標
 			sf::Vector2i destination = sf::Vector2i(mBoardCoordinate.x + static_cast<int>(std::cos(mRotation)), mBoardCoordinate.y + static_cast<int>(std::sin(mRotation)));
@@ -258,12 +287,12 @@ void Player::Update(float deltaTime)
 					// 移動前の座標
 					sf::Vector2i lastPos = mBoardCoordinate;
 
-					// 移動処理
+					// アニメーション開始（固定の秒数ではなく、リピート間隔に合わせる）
+					float interval = PATH_MOVE_INTERVAL;//mGame->GetAutoRepeatInterval();
+					mMoveAnimation->Start(this->mPosition, mGame->TileToScreenCoords(destination), interval);
+
+					// 論理座標の更新
 					mBoardCoordinate = destination;
-					mPosition = sf::Vector2f(
-						mPosition.x + static_cast<float>(mTextures[mDirection]->getSize().x) * mScale.x * std::cos(mRotation),
-						mPosition.y + static_cast<float>(mTextures[mDirection]->getSize().y) * mScale.y * std::sin(mRotation)
-					);
 
 					// ゲームクラスからログを書き込む関数を呼び出す
 					mGame->RemoveRedo();
@@ -287,25 +316,28 @@ void Player::Update(float deltaTime)
 					// 荷物が2個並んでおらず、壁に突き当たらなければ荷物ごと移動
 					if (iter == boxesPos.end() && boardState[destination.y + static_cast<int>(std::sin(mRotation))][destination.x + static_cast<int>(std::cos(mRotation))] != '#')
 					{
-						// 移動前の座標
 						sf::Vector2i lastPos = mBoardCoordinate;
+						float interval = PATH_MOVE_INTERVAL;//mGame->GetAutoRepeatInterval();
 
-						// 移動処理
+						// プレイヤーのアニメーション開始
+						mMoveAnimation->Start(this->mPosition, mGame->TileToScreenCoords(destination), interval);
 						mBoardCoordinate = destination;
-						mPosition = sf::Vector2f(
-							mPosition.x + static_cast<float>(mTextures[mDirection]->getSize().x) * mScale.x * std::cos(mRotation),
-							mPosition.y + static_cast<float>(mTextures[mDirection]->getSize().y) * mScale.y * std::sin(mRotation)
-						);
 
 						sf::Vector2i baggageLastPos, baggageDestination;
-
 						for (auto& item : mGame->GetBaggages())
 						{
 							if (item->GetBoardCoordinate() == destination)
 							{
-								baggageLastPos = sf::Vector2i(item->GetBoardCoordinate().x, item->GetBoardCoordinate().y);
-								baggageDestination = sf::Vector2i(item->GetBoardCoordinate().x + static_cast<int>(std::cos(mRotation)), item->GetBoardCoordinate().y + static_cast<int>(std::sin(mRotation)));
-								item->SetBoardCoordinate(baggageDestination);
+								baggageLastPos = item->GetBoardCoordinate();
+								baggageDestination = sf::Vector2i(baggageLastPos.x + static_cast<int>(std::cos(mRotation)), baggageLastPos.y + static_cast<int>(std::sin(mRotation)));
+
+								// 荷物のアニメーション開始
+								sf::Vector2f bStart = mGame->TileToScreenCoords(baggageLastPos);
+								sf::Vector2f bEnd = mGame->TileToScreenCoords(baggageDestination);
+								item->GetMoveAnimation()->Start(bStart, bEnd, interval);
+
+								// 荷物の論理座標の更新（瞬間移動させないよう直接代入）
+								item->SetLogicalCoordinate(baggageDestination);
 								break;
 							}
 						}
@@ -352,27 +384,27 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 				{
 					if (event->key.code == sf::Keyboard::Key::Right)
 					{
-						mDirection = Direction::EEast;
-						mRotation = 0.0f;
-						mDetection = true;
+						mQueuedDirection = Direction::EEast;
+						mQueuedRotation = 0.0f;
+						mHasQueuedInput = true;
 					}
 					else if (event->key.code == sf::Keyboard::Key::Up)
 					{
-						mDirection = Direction::ENorth;
-						mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
-						mDetection = true;
+						mQueuedDirection = Direction::ENorth;
+						mQueuedRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
+						mHasQueuedInput = true;
 					}
 					else if (event->key.code == sf::Keyboard::Key::Left)
 					{
-						mDirection = Direction::EWest;
-						mRotation = static_cast<float>(std::acos(-1));
-						mDetection = true;
+						mQueuedDirection = Direction::EWest;
+						mQueuedRotation = static_cast<float>(std::acos(-1));
+						mHasQueuedInput = true;
 					}
 					else if (event->key.code == sf::Keyboard::Key::Down)
 					{
-						mDirection = Direction::ESouth;
-						mRotation = static_cast<float>(std::acos(-1) / 2.0);
-						mDetection = true;
+						mQueuedDirection = Direction::ESouth;
+						mQueuedRotation = static_cast<float>(std::acos(-1) / 2.0);
+						mHasQueuedInput = true;
 					}
 				}
 			}
@@ -386,43 +418,43 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 				// 長押し状態にあり、かつリピートタイマーが0以下か？
 				if (key_held_duration.at(sf::Keyboard::Right) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Right) <= 0.0f)
 				{
-					mDirection = Direction::EEast;
-					mRotation = 0.0f;
-					mDetection = true;
+					mQueuedDirection = Direction::EEast;
+					mQueuedRotation = 0.0f;
+					mHasQueuedInput = true;
 				}
 				break;
 			case sf::Keyboard::Up:
 				// 長押し状態にあり、かつリピートタイマーが0以下か？
 				if (key_held_duration.at(sf::Keyboard::Up) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Up) <= 0.0f)
 				{
-					mDirection = Direction::ENorth;
-					mRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
-					mDetection = true;
+					mQueuedDirection = Direction::ENorth;
+					mQueuedRotation = static_cast<float>(3.0 * std::acos(-1) / 2.0);
+					mHasQueuedInput = true;
 				}
 				break;
 			case sf::Keyboard::Left:
 				// 長押し状態にあり、かつリピートタイマーが0以下か？
 				if (key_held_duration.at(sf::Keyboard::Left) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Left) <= 0.0f)
 				{
-					mDirection = Direction::EWest;
-					mRotation = static_cast<float>(std::acos(-1));
-					mDetection = true;
+					mQueuedDirection = Direction::EWest;
+					mQueuedRotation = static_cast<float>(std::acos(-1));
+					mHasQueuedInput = true;
 				}
 				break;
 			case sf::Keyboard::Down:
 				// 長押し状態にあり、かつリピートタイマーが0以下か？
 				if (key_held_duration.at(sf::Keyboard::Down) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Down) <= 0.0f)
 				{
-					mDirection = Direction::ESouth;
-					mRotation = static_cast<float>(std::acos(-1) / 2.0);
-					mDetection = true;
+					mQueuedDirection = Direction::ESouth;
+					mQueuedRotation = static_cast<float>(std::acos(-1) / 2.0);
+					mHasQueuedInput = true;
 				}
 				break;
 			default:
 				break;
 			}
 
-			if (mDetection)
+			if (mHasQueuedInput)
 			{
 				// もしハイライト表示中なら、移動の前にハイライトを消す
 				if (mCurrentHighlightState == HighlightState::Highlighting)
@@ -489,6 +521,9 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 			// マウスクリックの処理を追加
 			if (event && event->type == sf::Event::MouseButtonPressed)
 			{
+				// 移動のアニメーション中（IsAnimating）ならマウス操作を完全に無視する
+				if (mMoveAnimation->IsAnimating()) return;
+
 				if (event->mouseButton.button == sf::Mouse::Left)
 				{
 					sf::Vector2f mousePos(static_cast<float>(event->mouseButton.x), static_cast<float>(event->mouseButton.y));
@@ -542,6 +577,7 @@ void Player::AddComponent(IComponent* component)
 			break;
 		}
 	}
+	mComponents.insert(iter, component);
 }
 
 void Player::RemoveComponent(IComponent* component)
