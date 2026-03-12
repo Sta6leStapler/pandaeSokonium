@@ -43,6 +43,7 @@ public:
 	IActor::ActorState GetState() override { return mState; }
 	void SetState(const ActorState state) override { this->mState = state; }
 	sf::Vector2f GetPosition() override { return mPosition; }
+	void SetPosition(const sf::Vector2f& pos) override { this->mPosition = pos; }
 	sf::Vector2f GetScale() override { return mScale; }
 	float GetRotation() override { return mRotation; }
 

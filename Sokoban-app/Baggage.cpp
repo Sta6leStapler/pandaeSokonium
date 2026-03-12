@@ -2,6 +2,7 @@
 
 #include "Game.h"
 #include "SpriteComponent.h"
+#include "MoveAnimationComponent.h"
 #include "HUDHelper.h"
 
 #include <iostream>
@@ -25,6 +26,9 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 	, mDetection(false)
 {
 	mGame->AddActor(this);
+
+	// MoveAnimationComponent を生成して追加
+	mMoveAnimation = new MoveAnimationComponent(this, 10);
 
 	// 盤面データをGameクラスから取得する
 	std::vector<std::string> lines = game->GetBoardData()[mBoardName];
@@ -156,6 +160,13 @@ void Baggage::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::
 			// マウスクリックの処理を追加
 			if (event && event->type == sf::Event::MouseButtonPressed)
 			{
+				// アニメーション中のマウスガード
+				// 荷物自身が移動中、またはプレイヤーが移動中の場合は、クリック処理を完全に無視する
+				if (mMoveAnimation->IsAnimating() || mGame->GetPlayer()->GetMoveAnimation()->IsAnimating())
+				{
+					return;
+				}
+
 				if (event->mouseButton.button == sf::Mouse::Left)
 				{
 					sf::Vector2f mousePos(static_cast<float>(event->mouseButton.x), static_cast<float>(event->mouseButton.y));

@@ -31,6 +31,7 @@ public:
 	virtual ActorState GetState() = 0;
 	virtual void SetState(const ActorState state) = 0;
 	virtual sf::Vector2f GetPosition() = 0;
+	virtual void SetPosition(const sf::Vector2f& pos) = 0;
 	virtual sf::Vector2f GetScale() = 0;
 	virtual float GetRotation() = 0;
 };

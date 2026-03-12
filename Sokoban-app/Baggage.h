@@ -58,6 +58,7 @@ public:
 	IActor::ActorState GetState() override { return mState; }
 	void SetState(const ActorState state) override { this->mState = state; }
 	sf::Vector2f GetPosition() override { return mPosition; }
+	void SetPosition(const sf::Vector2f& pos) override { this->mPosition = pos; }
 	sf::Vector2f GetScale() override { return mScale; }
 	float GetRotation() override { return mRotation; }
 
@@ -70,6 +71,8 @@ public:
 	sf::Vector2i GetDestination() const { return mDestination;  }
 	sf::Texture* GetBaggageTexture() const { return mTextures.at(mBState); }
 	sf::Texture* GetBaggageTexture(const BState bstate) const { return mTextures.at(bstate); }
+	class MoveAnimationComponent* GetMoveAnimation() const { return mMoveAnimation; }
+	void SetLogicalCoordinate(const sf::Vector2i& boardCoordinate) { this->mBoardCoordinate = boardCoordinate; };
 
 	// ‰×•¨‚Ì“à•”ó‘Ô‚ğXV‚·‚éŠÖ”
 	void SetIdleState() { mCurrentHighlightState = HighlightState::Idle; }
@@ -95,6 +98,7 @@ private:
 
 	std::vector<class IComponent*> mComponents;
 	class SpriteComponent* mSpriteComponent;
+	class MoveAnimationComponent* mMoveAnimation;
 
 	std::string mBoardName;
 

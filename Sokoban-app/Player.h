@@ -51,6 +51,7 @@ public:
 	IActor::ActorState GetState() override { return mState; }
 	void SetState(const ActorState state) override { this->mState = state; }
 	sf::Vector2f GetPosition() override { return mPosition; }
+	void SetPosition(const sf::Vector2f& pos) override { this->mPosition = pos; }
 	sf::Vector2f GetScale() override { return mScale; }
 	float GetRotation() override { return mRotation; }
 
@@ -75,6 +76,8 @@ public:
 	sf::Vector2i GetBoardCoordinate() const { return this->mBoardCoordinate; }
 	void SetBoardCoordinate(const sf::Vector2i boardCoordinate);
 
+	class MoveAnimationComponent* GetMoveAnimation() const { return mMoveAnimation; }
+
 	sf::Texture* GetTextureForDirection(const Direction direction) const { return mTextures.at(direction); }
 
 private:
@@ -94,6 +97,7 @@ private:
 
 	std::vector<IComponent*> mComponents;
 	class SpriteComponent* mSpriteComponent;
+	class MoveAnimationComponent* mMoveAnimation;
 
 	std::string mBoardName;
 
@@ -119,7 +123,12 @@ private:
 
 	// 経路移動の各ステップ間のタイマー
 	float mPathMoveTimer;
-	const float PATH_MOVE_INTERVAL = 0.03f; // 1マス移動するのにかかる時間(秒)
+	const float PATH_MOVE_INTERVAL = 0.04f; // 1マス移動するのにかかる時間(秒)
+
+	// 先行入力の管理
+	Direction mQueuedDirection;	// 次の向き
+	float mQueuedRotation;		// 次の回転角
+	bool mHasQueuedInput;		// 先行入力の有無
 
 	// 移動入力の検知
 	bool mDetection;
