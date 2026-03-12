@@ -21,6 +21,7 @@ public:
     void Draw(sf::RenderWindow* window) override;
     void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) override;
     UIState GetState() override { return mState; }
+    void OnLanguageChanged() override {}
 
     void Close();
 

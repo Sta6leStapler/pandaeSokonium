@@ -10,6 +10,7 @@
 #include "Baggage.h"
 #include "GameBoard.h"
 #include "ParamStruct.h"
+#include "LocalizationManager.h"
 
 #include "TGUI/TGUI.hpp"
 #include "TGUI/Backend/SFML-Graphics.hpp"
@@ -129,6 +130,9 @@ public:
 	// ログの出力
 	void OutputLogs();
 
+	// ファイルダイアログを開いてログを保存する関数
+	void CallSaveLog();
+
 	// スナップショット関連の関数
 	// 現在のゲーム状態をスナップショットとして保存
 	void AddSnapshot(const std::string& name, const std::string& comment);
@@ -216,6 +220,9 @@ public:
 	void ResetParameters();
 	void ClearParameters();
 
+	// UIに言語変更のイベントを通知する関数
+	void NotifyLanguageChanged();
+
 	// ゲッターとセッター
 	// ゲーム制御関連
 	void SetState(const GameState& gameState) { mGameState = gameState; }
@@ -234,7 +241,8 @@ public:
 	float GetAutoRepeatInterval() const { return AUTO_REPEAT_INTERVAL; }
 	sf::Font GetFontSFML() const { return mFontSFML; }
 	tgui::Font GetFontTGUI() const { return *mFontTGUI; }
-	tgui::Theme GetTheme() const { return *mTheme; };
+	tgui::Theme GetTheme() const { return *mTheme; }
+	class LocalizationManager* GetLoc() const { return mLoc; }
 
 	// テクスチャ関連
 	sf::Texture* GetTexture(const std::string& fileName) const { return mTextures.at(fileName); }
@@ -371,4 +379,7 @@ private:
 	// 現在の盤面のスナップショットをリストで保持
 	// 盤面が切り替わった場合は破棄
 	std::vector<GameSnapshot> mSnapshots;
+
+	// UIの文字列を管理
+	class LocalizationManager* mLoc;
 };

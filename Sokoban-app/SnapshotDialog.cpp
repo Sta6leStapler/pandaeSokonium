@@ -16,11 +16,14 @@ SnapshotDialog::SnapshotDialog(Game* game, sf::RenderWindow* window)
     // 2. このUIスクリーンをGameのスタックにプッシュ
     mGame->PushUI(this);
 
+    // フォントを設定
+    mGui->setFont(mGame->GetFontTGUI());
+
     // 3. モーダル（他の操作をブロックする）の子ウィンドウを作成
     mChildWindow = tgui::ChildWindow::create();
     mChildWindow->setRenderer(mTheme->getRenderer("ChildWindow"));
     mChildWindow->setClientSize({ 400, 300 }); // 幅400, 高さ300
-    mChildWindow->setTitle("Add Snapshot");
+    mChildWindow->setTitle(mGame->GetLoc()->Get("TITLE_QUICK_SAVE"));
     // ウィンドウを中央に配置
     mChildWindow->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
     mGui->add(mChildWindow);
@@ -29,7 +32,7 @@ SnapshotDialog::SnapshotDialog(Game* game, sf::RenderWindow* window)
     // 子ウィンドウのサイズ
     sf::Vector2f childWindowSize{ mChildWindow->getSize().x, mChildWindow->getSize().y };
     // 名前ラベル
-    auto nameLabel = tgui::Label::create("Name:");
+    auto nameLabel = tgui::Label::create(mGame->GetLoc()->Get("QUICK_SAVE_LBL_NAME"));
     nameLabel->setRenderer(mTheme->getRenderer("Label"));
     nameLabel->setPosition(20, 20);
     nameLabel->setTextSize(16);
@@ -41,12 +44,12 @@ SnapshotDialog::SnapshotDialog(Game* game, sf::RenderWindow* window)
     mNameBox->setSize(childWindowSize.x - 40, 30); // ウィンドウ幅 - 40px
     mNameBox->setPosition(20, 50);
     mNameBox->setTextSize(16);
-    mNameBox->setDefaultText("Snapshot (" + mGame->GetDateTime() + ")"); // デフォルト名を設定
+    mNameBox->setDefaultText(mGame->GetLoc()->Get("QUICK_SAVE_LBL_DEFAULT_NAME") + mGame->GetDateTime()); // デフォルト名を設定
     //mNameBox->setFocused(true); // デフォルトではこのテキストボックスにフォーカス (うまく動作しない？)
     mChildWindow->add(mNameBox);
 
     // コメントラベル
-    auto commentLabel = tgui::Label::create("Comment:");
+    auto commentLabel = tgui::Label::create(mGame->GetLoc()->Get("QUICK_SAVE_LBL_COMMENT"));
     commentLabel->setRenderer(mTheme->getRenderer("Label"));
     commentLabel->setPosition(20, 90);
     commentLabel->setTextSize(16);
@@ -58,11 +61,11 @@ SnapshotDialog::SnapshotDialog(Game* game, sf::RenderWindow* window)
     mCommentBox->setSize(childWindowSize.x - 40, childWindowSize.y - 240); // 残りのスペースを埋める
     mCommentBox->setPosition(20, 120);
     mCommentBox->setTextSize(16);
-    mCommentBox->setDefaultText("Optional: Add comments here...");
+    mCommentBox->setDefaultText(mGame->GetLoc()->Get("QUICK_SAVE_LBL_DEFAULT_COMMENT"));
     mChildWindow->add(mCommentBox);
 
     // 保存ボタン
-    auto saveButton = tgui::Button::create("Save");
+    auto saveButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_SAVE"));
     saveButton->setRenderer(mTheme->getRenderer("Button"));
     saveButton->setSize("(&.width - 50) / 2", 30); // 幅をウィンドウの約半分に
     saveButton->setPosition(20, "&.height - 80"); // ウィンドウ下部に配置
@@ -70,7 +73,7 @@ SnapshotDialog::SnapshotDialog(Game* game, sf::RenderWindow* window)
     mChildWindow->add(saveButton);
 
     // キャンセルボタン
-    auto cancelButton = tgui::Button::create("Cancel");
+    auto cancelButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_CANCEL"));
     cancelButton->setRenderer(mTheme->getRenderer("Button"));
     cancelButton->setSize("(&.width - 50) / 2", 30);
     cancelButton->setPosition("&.width - width - 20", "&.height - 80"); // 右側に配置

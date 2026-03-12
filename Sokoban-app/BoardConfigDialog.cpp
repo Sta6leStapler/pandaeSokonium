@@ -14,14 +14,14 @@ BoardConfigDialog::BoardConfigDialog(Game* game, tgui::Gui& gui, tgui::Theme& th
 {
     // メタデータの定義
     mMeta = {
-        {"width", "Width", "Board width (x). Complexity grows quadratically with size.", 5, 48, true},
-        {"height", "Height", "Board height (y). Significantly impacts computation time.", 5, 48, true},
-        {"baggage", "Baggage (b)", "Number of boxes. Increases per-step processing cost.", 1, 50, true},
-        {"reset", "Resets (c)", "Number of placement trials. Affects level variety.", 0, 32, true},
-        {"transport", "Transport (n)", "Movement/conversion count. Determines generation depth.", 1, 256, true},
-        {"wall", "Wall Rate", "Initial wall density. High values may block paths.", 0.0, 0.5, false},
-        {"visited", "Visited Rate", "Pre-visited tile ratio. Influences path complexity.", 0.0, 1.0, false},
-        {"eval", "Generation Logic", "Selects the algorithm used to evaluate board quality. Changes the 'flavor' of the level.", 0, 6, true}
+        {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_WIDTH"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_WIDTH"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_WIDTH"), 5, 48, true},
+        {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_HEIGHT"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_HEIGHT"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_HEIGHT"), 5, 48, true},
+        {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_BAGGAGE"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_BAGGAGE"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_BAGGAGE"), 1, 50, true},
+        {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_RESET"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_RESET"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_RESET"), 0, 32, true},
+        {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_TRANSPORT"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_TRANSPORT"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_TRANSPORT"), 1, 256, true},
+        {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_WALL"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_WALL"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_WALL"), 0.0, 0.5, false},
+        {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_VISITED"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_VISITED"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_VISITED"), 0.0, 1.0, false},
+        {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_EVAL"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_EVAL"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_EVAL"), 0, 6, true}
     };
 
     setupUI();
@@ -30,7 +30,7 @@ BoardConfigDialog::BoardConfigDialog(Game* game, tgui::Gui& gui, tgui::Theme& th
 void BoardConfigDialog::setupUI()
 {
     // 子ウィンドウの作成
-    mWindow = tgui::ChildWindow::create("Generate Board Settings");
+    mWindow = tgui::ChildWindow::create(mGame->GetLoc()->Get("GENERATE_BOARD_WINDOW_TITLE"));
     mWindow->setRenderer(mTheme.getRenderer("ChildWindow"));
     mWindow->setSize(800, 560);
     // 画面中央に配置
@@ -122,7 +122,7 @@ void BoardConfigDialog::setupUI()
     updateComplexityEstimation();
 
     // 決定ボタン
-    auto applyBtn = tgui::Button::create("Apply & Generate");
+    auto applyBtn = tgui::Button::create(mGame->GetLoc()->Get("GENERATE_BOARD_WINDOW_BTN_APPLY_GENERATE"));
     applyBtn->setRenderer(mTheme.getRenderer("Button"));
     applyBtn->setSize(160, 30);
     applyBtn->setPosition("100% - 200", "100% - 50");
@@ -130,7 +130,7 @@ void BoardConfigDialog::setupUI()
     mWindow->add(applyBtn);
 
     // キャンセルボタン
-    auto cancelBtn = tgui::Button::create("Cancel");
+    auto cancelBtn = tgui::Button::create(mGame->GetLoc()->Get("BTN_CANCEL"));
     cancelBtn->setRenderer(mTheme.getRenderer("Button"));
     cancelBtn->setSize(100, 30);
     cancelBtn->setPosition("100% - 320", "100% - 50");
@@ -198,12 +198,12 @@ void BoardConfigDialog::updateComplexityEstimation()
 
     // スコアに応じた評価（数値は実行環境に合わせて要調整）
     // 現在は体感による適当な値を入れている
-    if (score < 1e6) { level = "Very Fast"; color = sf::Color::Cyan; }
-    else if (score < 1e8) { level = "Fast"; color = sf::Color::Green; }
-    else if (score < 1e11) { level = "Moderate"; color = sf::Color::Yellow; }
-    else { level = "Slow (Warning: High Load)"; color = sf::Color::Red; }
+    if (score < 1e6) { level = mGame->GetLoc()->Get("GENERATE_BOARD_LBL_VERY_FAST"); color = sf::Color::Cyan; }
+    else if (score < 1e8) { level = mGame->GetLoc()->Get("GENERATE_BOARD_LBL_FAST"); color = sf::Color::Green; }
+    else if (score < 1e11) { level = mGame->GetLoc()->Get("GENERATE_BOARD_LBL_MODERATE"); color = sf::Color::Yellow; }
+    else { level = mGame->GetLoc()->Get("GENERATE_BOARD_LBL_SLOW"); color = sf::Color::Red; }
 
-    mComplexityLabel->setText("Estimated Load: " + level);
+    mComplexityLabel->setText(mGame->GetLoc()->Get("GENERATE_BOARD_LBL_ESTIMATED_LOAD") + level);
     mComplexityLabel->getRenderer()->setTextColor(color);
 }
 

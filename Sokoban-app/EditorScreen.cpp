@@ -32,6 +32,9 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     // 2. このUIスクリーンをGameのスタックにプッシュ
     mGame->PushUI(this);
 
+    // フォントを設定
+    mGui->setFont(mGame->GetFontTGUI());
+
     // --- 1. 盤面データの初期化 ---
     // loadMode: 0=Empty, 1=Init, 2=Current
     if (loadMode == 0)
@@ -74,7 +77,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     // 1. エディタ用の子ウィンドウを作成
     mEditorWindow = tgui::ChildWindow::create();
     mEditorWindow->setRenderer(mTheme->getRenderer("ChildWindow"));
-    mEditorWindow->setTitle("Level Editor");
+    mEditorWindow->setTitle(mGame->GetLoc()->Get("EDITOR_LBL_TITLE"));
     mEditorWindow->setSize(mGame->GetWindowSize().x * 0.95f, mGame->GetWindowSize().y * 0.95f); // 画面いっぱいに
     mEditorWindow->setPosition((mGame->GetWindowSize().x - mEditorWindow->getSize().x) / 2.0f, (mGame->GetWindowSize().y - mEditorWindow->getSize().y) / 2.0f);
     //mEditorWindow->setKeepInParent(true);
@@ -153,7 +156,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     btnWall->onPress([this]() { mCurrentTile = SelectedTile::Wall; });
     mTilePalettePanel->add(btnWall);
     // 範囲選択用アクションボタン
-    mBtnFillWall = tgui::BitmapButton::create(" Fill");
+    mBtnFillWall = tgui::BitmapButton::create(" " + mGame->GetLoc()->Get("EDITOR_BTN_FILL"));
     mBtnFillWall->setRenderer(mTheme->getRenderer("BitmapButton"));
     mBtnFillWall->setImage(tmpTGuiTex);
     mBtnFillWall->setImageScaling(mIconImageScale);
@@ -183,7 +186,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     btnFloor->onPress([this]() { mCurrentTile = SelectedTile::Floor; });
     mTilePalettePanel->add(btnFloor);
     // 範囲選択用アクションボタン
-    mBtnFillFloor = tgui::BitmapButton::create(" Fill");
+    mBtnFillFloor = tgui::BitmapButton::create(" " + mGame->GetLoc()->Get("EDITOR_BTN_FILL"));
     mBtnFillFloor->setRenderer(mTheme->getRenderer("BitmapButton"));
     mBtnFillFloor->setImage(tmpTGuiTex);
     mBtnFillFloor->setImageScaling(mIconImageScale);
@@ -213,7 +216,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     btnGoal->onPress([this]() { mCurrentTile = SelectedTile::Goal; });
     mTilePalettePanel->add(btnGoal);
     // 範囲選択用アクションボタン
-    mBtnFillGoal = tgui::BitmapButton::create(" Fill");
+    mBtnFillGoal = tgui::BitmapButton::create(" " + mGame->GetLoc()->Get("EDITOR_BTN_FILL"));
     mBtnFillGoal->setRenderer(mTheme->getRenderer("BitmapButton"));
     mBtnFillGoal->setImage(tmpTGuiTex);
     mBtnFillGoal->setImageScaling(mIconImageScale);
@@ -272,14 +275,14 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mEraseRadioButton->onCheck([this]() { this->mCurrentTile = SelectedTile::Erase; });
     highlightedTileGroup->add(mEraseRadioButton);
     // ボタン
-    auto btnErase = tgui::Button::create("Erase");
+    auto btnErase = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_ERASE"));
     btnErase->setRenderer(mTheme->getRenderer("Button"));
     btnErase->setPosition(mTileButtonOffset + mTileButtonInterval * 5 + tgui::Layout2d(mTileButtonSize.y, 0));
     btnErase->setSize(mTileButtonSize - tgui::Layout2d(mTileButtonSize.y, 0));
     btnErase->onPress([this]() { mCurrentTile = SelectedTile::Erase; });
     mTilePalettePanel->add(btnErase);
     // 範囲選択用アクションボタン
-    mBtnDeleteArea = tgui::Button::create("Delete Area");
+    mBtnDeleteArea = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_DELETE_AREA"));
     mBtnDeleteArea->setRenderer(mTheme->getRenderer("Button"));
     mBtnDeleteArea->setPosition(btnErase->getPosition() + tgui::Layout2d(mTileButtonSize.x + 20, 0) - tgui::Layout2d(mTileButtonSize.y, 0));
     mBtnDeleteArea->setSize(mTileButtonSize);
@@ -296,7 +299,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mRadioDraw = tgui::RadioButton::create();
     mRadioDraw->setRenderer(mTheme->getRenderer("RadioButton"));
     mRadioDraw->setTextSize(16);
-    mRadioDraw->setText("Draw Mode");
+    mRadioDraw->setText(mGame->GetLoc()->Get("EDITOR_LBL_DRAW_MODE"));
     radioButtonOffset = tgui::Layout2d((mTileButtonSize - mRadioDraw->getFullSize()) / 2);
     mRadioDraw->setPosition(mTileButtonOffset + mTileButtonInterval * 6 + radioButtonOffset);
     mRadioDraw->setChecked(true);
@@ -305,7 +308,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mRadioSelect = tgui::RadioButton::create();
     mRadioSelect->setRenderer(mTheme->getRenderer("RadioButton"));
     mRadioSelect->setTextSize(16);
-    mRadioSelect->setText("Select Mode");
+    mRadioSelect->setText(mGame->GetLoc()->Get("EDITOR_LBL_SELECT_MODE"));
     radioButtonOffset = tgui::Layout2d((mTileButtonSize - mRadioSelect->getFullSize()) / 2);
     mRadioSelect->setPosition(mTileButtonOffset + mTileButtonInterval * 6 + tgui::Layout2d(mTileButtonSize.x + 20, 0) + radioButtonOffset);
     mModeGroup->add(mRadioSelect);
@@ -347,7 +350,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mEditorWindow->add(mSystemPalettePanel);
 
     // レベル適用ボタン
-    mApplyButton = tgui::Button::create("Apply Level");
+    mApplyButton = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_APPLY_LEVEL"));
     mApplyButton->setRenderer(mTheme->getRenderer("Button"));
     mApplyButton->setSize(mSystemButtonSize);
     mApplyButton->setPosition(mSystemButtonOffset + mSystemButtonInterval * 0);
@@ -357,7 +360,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mSystemPalettePanel->add(mApplyButton);
 
     // レベルセーブボタン
-    mSaveButton = tgui::Button::create("Save Level");
+    mSaveButton = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_SAVE_LEVEL"));
     mSaveButton->setRenderer(mTheme->getRenderer("Button"));
     mSaveButton->setSize(mSystemButtonSize);
     mSaveButton->setPosition(mSystemButtonOffset + mSystemButtonInterval * 1);
@@ -368,7 +371,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mSystemPalettePanel->add(mSaveButton);
 
     // エディタ終了ボタン
-    mExitButton = tgui::Button::create("Exit Editor");
+    mExitButton = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_EXIT_EDITOR"));
     mExitButton->setRenderer(mTheme->getRenderer("Button"));
     mExitButton->setSize(mSystemButtonSize);
     mExitButton->setPosition(mSystemButtonOffset + mSystemButtonInterval * 2);
@@ -384,11 +387,11 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mInfoPanel->getRenderer()->setBorderColor(sf::Color(100, 100, 100));
     mEditorWindow->add(mInfoPanel);
 
-    mInfoLabel = tgui::Label::create("Baggage: 0 / Goal: 0");
+    mInfoLabel = tgui::Label::create(mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_BAGGAGE") + "0 / " + mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_GOAL") + "0");
     mInfoLabel->setPosition(10, 10);
     mInfoPanel->add(mInfoLabel);
 
-    mInfoBaggageGoaledLabel = tgui::Label::create("Status: OK");
+    mInfoBaggageGoaledLabel = tgui::Label::create(mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_STATUS") + mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_OK_STATE"));
     mInfoBaggageGoaledLabel->setPosition(10, 40);
     mInfoPanel->add(mInfoBaggageGoaledLabel);
 
@@ -419,16 +422,16 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     helpArea->setTextSize(14);
     helpArea->setReadOnly(true); // 編集不可
     helpArea->setText(
-        "Key Bindings:\n"
-        "WASD / Arrows: Move Cursor\n"
-        "Space / Enter: Place Tile\n"
-        "Tab: Switch Tile Type\n"
-        "Delete: Erase Tile\n"
-        "Ctrl+S: Quick Save\n\n"
-        "Mouse:\n"
-        "Left Click: Place\n"
-        "Right Click: Erase\n"
-        "Drag: Select Area"
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_KEY_BIND") + "\n" +
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_WASD") + "\n" +
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_SPACE") + "\n" +
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_TAB") + "\n" +
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_DELETE") + "\n" +
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_CTRL_S") + "\n\n" +
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_MOUSE") + "\n" +
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_MOUSE_LEFT") + "\n" +
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_MOUSE_RIGHT") + "\n" +
+        mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_MOUSE_DRAG")
     );
     mEditorWindow->add(helpArea);
 
@@ -966,6 +969,7 @@ void EditorScreen::PlaceTile(const sf::Vector2i& gridPos, bool isContinuous)
     }
 }
 
+// 右上の情報パネルの更新
 void EditorScreen::UpdateInfoPanel()
 {
     // (フェーズ1)
@@ -983,23 +987,7 @@ void EditorScreen::UpdateInfoPanel()
         }
     }
 
-    mInfoLabel->setText("Baggage: " + std::to_string(baggageCount) + " / Goal: " + std::to_string(goalCount));
-
-    // バリデーション
-    std::string status = "Status: ";
-    if (baggageCount != goalCount) status += "Baggage/Goal count mismatch! ";
-    if (playerCount != 1) status += "Player count must be exactly 1! ";
-
-    if (status == "Status: ")
-    {
-        status += "OK";
-        mSaveButton->setEnabled(true);
-    }
-    else
-    {
-        mSaveButton->setEnabled(false);
-    }
-    mInfoBaggageGoaledLabel->setText(status);
+    mInfoLabel->setText(mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_BAGGAGE") + std::to_string(baggageCount) + " / " + mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_GOAL") + std::to_string(goalCount));
 }
 
 void EditorScreen::ResizeCanvasIfNeeded()
@@ -1242,7 +1230,7 @@ bool EditorScreen::CheckReachability()
     // 条件1: 完全に壁で囲まれているか
     if (!isEnclosed)
     {
-        statusMsg += "[Error] Map is not enclosed by walls.\n";
+        statusMsg += mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_NOT_ENCLOSED_STATE") + "\n";
         isValid = false;
     }
 
@@ -1264,15 +1252,9 @@ bool EditorScreen::CheckReachability()
 
     if (unreachableNonGoaled > 0)
     {
-        statusMsg += "[Error] " + std::to_string(unreachableNonGoaled) + " baggage(s) unreachable.\n";
+        statusMsg += mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_ERROR") + std::to_string(unreachableNonGoaled) + " " + mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_UNREACHABLE_STATE") + "\n";
         isValid = false;
     }
-
-    // 情報ラベルに詳細を表示
-    if (isValid) statusMsg = "Status: OK";
-    mInfoBaggageGoaledLabel->setText(statusMsg);
-    if (!isValid) mInfoBaggageGoaledLabel->getRenderer()->setTextColor(sf::Color::Red);
-    else mInfoBaggageGoaledLabel->getRenderer()->setTextColor(sf::Color::Green);
 
     return isValid;
 }
@@ -1290,28 +1272,54 @@ void EditorScreen::UpdateValidationState()
             if (c == '@' || c == '+') playerCount++;
         }
     }
-    mInfoLabel->setText("Baggage: " + std::to_string(baggageCount) + " / Goal: " + std::to_string(goalCount));
+    std::string errorMsg = "";
+    mIsValidLevel = true;
 
-    bool countsValid = (baggageCount == goalCount) && (baggageCount > 0) && (playerCount == 1);
-
-    if (!countsValid)
+    // 2. 基本ルールのチェック
+    if (baggageCount != goalCount)
     {
-        std::string err = "[Error] ";
-        if (baggageCount != goalCount) err += "Count mismatch. ";
-        if (playerCount != 1) err += "Need 1 player. ";
-        mInfoBaggageGoaledLabel->setText(err);
-        mInfoBaggageGoaledLabel->getRenderer()->setTextColor(sf::Color::Red);
+        errorMsg += mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_COUNT_MISMATCH_STATE") + "\n";
         mIsValidLevel = false;
+    }
+    if (playerCount != 1)
+    {
+        errorMsg += mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_NON_PLAYER_STATE") + "\n";
+        mIsValidLevel = false;
+    }
+    if (baggageCount == 0)
+    {
+        errorMsg += mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_NON_BAGGAGE_STATE") + "\n";
+        mIsValidLevel = false;
+    }
+
+    // 3. 基本ルールが通っている場合のみ、高度な到達判定を行う
+    if (mIsValidLevel)
+    {
+        // ※CheckReachabilityの中でisEnclosed判定も行っているため呼び出す
+        if (!CheckReachability())
+        {
+            // CheckReachability内で発生したエラーメッセージを取得する仕組みが必要
+            // 現状はCheckReachabilityの戻り値だけで判定
+            errorMsg += mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_NOT_ENCLOSED_STATE") + "\n";
+            mIsValidLevel = false;
+        }
+    }
+
+    // 全ての判定をクリア(isValid == true)した場合のみボタンを有効化
+    mSaveButton->setEnabled(mIsValidLevel);
+    mApplyButton->setEnabled(mIsValidLevel);
+
+    // 4. 最終的な表示更新
+    if (mIsValidLevel)
+    {
+        mInfoBaggageGoaledLabel->setText(mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_STATUS") + mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_OK_STATE"));
+        mInfoBaggageGoaledLabel->getRenderer()->setTextColor(sf::Color::Green);
     }
     else
     {
-        // 数が合っていれば、高度なチェックを実行
-        mIsValidLevel = CheckReachability();
+        mInfoBaggageGoaledLabel->setText(mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_STATUS") + "\n" + errorMsg);
+        mInfoBaggageGoaledLabel->getRenderer()->setTextColor(sf::Color::Red);
     }
-
-    // ボタンの有効化/無効化
-    mSaveButton->setEnabled(mIsValidLevel);
-    mApplyButton->setEnabled(mIsValidLevel);
 }
 
 void EditorScreen::PerformSave(bool closeAfterSave)
@@ -1339,7 +1347,7 @@ void EditorScreen::PerformSave(bool closeAfterSave)
         // CallSave内でキャンセルされたかを判別したい場合はCallSaveの戻り値をboolにする必要がありますが
         // ここでは「保存フローが終わった」ことの通知とします。
         mIsDialogOpen = true;
-        auto msg = tgui::MessageBox::create("Info", "Save sequence finished.", { "OK" });
+        auto msg = tgui::MessageBox::create(mGame->GetLoc()->Get("EDITOR_DIALOG_LBL_INFO"), mGame->GetLoc()->Get("EDITOR_DIALOG_LBL_TEXT"), { mGame->GetLoc()->Get("BTN_OK") });
         msg->setRenderer(mTheme->getRenderer("MessageBox"));
         msg->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
         msg->onButtonPress([this, msg]() {
@@ -1375,14 +1383,14 @@ void EditorScreen::CheckUnsavedChangesAndClose()
 
     // 確認ダイアログ表示
     mIsDialogOpen = true;
-    auto msgBox = tgui::MessageBox::create("Unsaved Changes",
-        "You have unsaved changes.\nWhat would you like to do?",
-        { "Save & Exit", "Discard", "Cancel" });
+    auto msgBox = tgui::MessageBox::create(mGame->GetLoc()->Get("EDITOR_EXIT_DIALOG_TITLE"),
+        mGame->GetLoc()->Get("EDITOR_EXIT_DIALOG_TEXT"),
+        { mGame->GetLoc()->Get("EDITOR_EXIT_DIALOG_BTN_SAVE_EXIT"), mGame->GetLoc()->Get("EDITOR_EXIT_DIALOG_BTN_DISCARD"), mGame->GetLoc()->Get("BTN_CANCEL") });
     msgBox->setRenderer(mTheme->getRenderer("MessageBox"));
     msgBox->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
 
     msgBox->onButtonPress([this, msgBox](const tgui::String& button) {
-        if (button == "Save & Exit")
+        if (button == mGame->GetLoc()->Get("EDITOR_EXIT_DIALOG_BTN_SAVE_EXIT"))
         {
             if (mIsValidLevel)
             {
@@ -1404,7 +1412,7 @@ void EditorScreen::CheckUnsavedChangesAndClose()
                     });
             }
         }
-        else if (button == "Discard")
+        else if (button == mGame->GetLoc()->Get("EDITOR_EXIT_DIALOG_BTN_DISCARD"))
         {
             Close(); // 破棄して終了
         }

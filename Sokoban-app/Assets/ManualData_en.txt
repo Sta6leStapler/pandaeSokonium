@@ -1,0 +1,37 @@
+[width]
+■ Width
+The horizontal size of the board. Since the computational complexity is proportional to the square of the board area, increasing this value will sharply increase the generation time.
+
+[height]
+■ Height
+The vertical size of the board. Similar to Width, the generation load increases as the area grows.
+
+[baggage]
+■ Baggage (b)
+The total number of baggages to be placed. As the count increases, the processing cost for determining movable tiles at each step increases.
+
+[reset]
+■ Resets (c)
+The number of attempts to reposition the baggages and the player. Higher values reduce wasted space but tend to result in simpler board layouts.
+
+[transport]
+■ Transport (n)
+The number of times baggages are transported before a placement reset occurs. If this value is too high, goals tend to be placed near the edges of the board.
+
+[wall]
+■ Wall Rate
+The ratio of random walls placed at the start of generation. If set too high, generation may fail because there is not enough space to transport baggages.
+
+[visited]
+■ Visited Rate
+The ratio of tiles pre-marked as "passages" before generation begins. This influences path complexity and branching patterns.
+
+[eval]
+■ Generation Logic (Evaluation Algorithm)
+Switches the evaluation function used to determine the "quality" of the generated board via an index. A lower value indicates a better-rated board.
+0: Calculates the sum of 2x2 open spaces, baggages surrounded by unvisited tiles on three sides, baggages in corners of unvisited areas, baggages adjacent to outer perimeter walls, and baggages in outer perimeter corners.
+1: Uses the same evaluation items as Index 0, but replaces 2x2 open spaces with 2x3 open spaces.
+2: Calculates the sum based on both 2x2 and 2x3 open spaces, along with all other baggage placement criteria.
+3: An enhanced version of the Index 0 function. It adjusts the impact of open spaces based on the ratio of tiles without baggage relative to the board area. It also changes the weight of transporting baggages into restricted areas based on the "transport progress" (the ratio of baggage count 'b' to the number of baggage switches 'c1').
+4: Applies the same area and progress-based adjustments used in Index 3 to the Index 1 evaluation function.
+5: Applies the same area and progress-based adjustments used in Index 3 to the Index 2 evaluation function.
