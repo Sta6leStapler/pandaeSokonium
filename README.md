@@ -19,7 +19,7 @@
 
 ゲームの各種機能や詳しい操作方法については、以下のデモ動画をご覧ください。
 
-[pandaeSokonium 機能紹介・操作デモ動画](https://www.youtube.com/watch?v=qlMLbWudqcI)
+[pandaeSokonium 機能紹介・操作デモ動画](https://youtu.be/fpuK2OCWPu8)
 
 ---
 
