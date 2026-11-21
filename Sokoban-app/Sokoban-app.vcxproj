@@ -135,31 +135,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AppPaths.cpp" />
     <ClCompile Include="BoardConfigDialog.cpp" />
-    <ClCompile Include="BoardParamManual.cpp" />
-    <ClCompile Include="EditorScreen.cpp" />
-    <ClCompile Include="EditorSetupDialog.cpp" />
-    <ClCompile Include="LocalizationManager.cpp" />
+    <ClCompile Include="BoardParamManual.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
+    <ClCompile Include="EditorScreen.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
+    <ClCompile Include="EditorSetupDialog.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
+    <ClCompile Include="LocalizationManager.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
     <ClCompile Include="MoveAnimationComponent.cpp" />
-    <ClCompile Include="SnapshotDialog.cpp" />
+    <ClCompile Include="SnapshotDialog.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
     <ClCompile Include="BackGround.cpp" />
-    <ClCompile Include="Baggage.cpp" />
+    <ClCompile Include="Baggage.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
     <ClCompile Include="Button.cpp" />
     <ClCompile Include="Font.cpp" />
-    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Game.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
     <ClCompile Include="GameBoard.cpp" />
     <ClCompile Include="HUDHelper.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MySolution.cpp" />
     <ClCompile Include="Pathfinder.cpp" />
-    <ClCompile Include="PauseMenu.cpp" />
-    <ClCompile Include="Player.cpp" />
-    <ClCompile Include="SnapshotScreen.cpp" />
+    <ClCompile Include="PauseMenu.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
+    <ClCompile Include="Player.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
+    <ClCompile Include="SnapshotScreen.cpp"><AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
     <ClCompile Include="SpriteComponent.cpp" />
     <ClCompile Include="State.cpp" />
     <ClCompile Include="THUD.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AppPaths.h" />
     <ClInclude Include="BoardConfigDialog.h" />
     <ClInclude Include="BoardParamManual.h" />
     <ClInclude Include="EditorScreen.h" />
@@ -190,6 +192,16 @@
     <ClInclude Include="Commands\UndoCommand.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="CopyPortableResources" AfterTargets="Build">
+    <ItemGroup>
+      <PortableAsset Include="$(ProjectDir)Assets\**\*" Exclude="$(ProjectDir)Assets\Logs\**\*" />
+      <PortableRuntime Include="$(ProjectDir)*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PortableAsset)"
+          DestinationFiles="@(PortableAsset->'$(OutDir)Assets\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PortableRuntime)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>

@@ -84,6 +84,46 @@ tgui.lib
 - サウンド
 - プレイログの可視化ビューワーの実装（UI 枠組みは実装済み）
 
+## リソースと保存先（ポータブル方式）
+
+- リソースは実行ファイルと同じディレクトリの `Assets` から読み込みます。
+  起動時の作業ディレクトリには依存しません。
+- Visual Studioのビルド後に、リソースと実行時DLLを出力ディレクトリへコピーします。
+  配布する場合は実行ファイル・DLL・`Assets` を一緒に配置してください。
+- 新しい盤面の保存ダイアログは `UserData/Boards`、ログは `UserData/Logs` を
+  初期保存先にします。`UserData` は実行ファイルと同じディレクトリに自動作成します。
+  ダイアログで別の場所を選ぶこともできます。
+- 盤面一覧には `Assets/Boards` の `[同梱]` と `UserData/Boards` の `[保存]` を
+  両方表示します。同名でも別の盤面として選択できます。別の場所に保存した盤面を
+  一覧に出す場合は `UserData/Boards` へコピーしてください。
+- 既存の盤面・ログをユーザーデータ領域へ移動・自動コピーしたり、削除したりしません。既存の `Save` や
+  `Assets/Logs` のデータもそのまま残ります。現在のスナップショットは従来どおり
+  メモリ上の保持で、今回ファイル保存機能は追加していません。
+- 実行ファイル付近に書き込み権限が必要です。読み取り専用の場所から実行する場合は、
+  アプリ一式を書き込めるフォルダーへ移してください。保存先の作成やリソースの
+  初期読み込みに失敗すると、原因をコンソールに出力して起動を中止します。
+  実行中の保存失敗は画面に通知し、エディターの変更を保存済み扱いにしません。
+- 自動出力ログは、同じ秒のログが既にあれば番号を付け、既存ログを上書きしません。
+- macOSの `.app` 配置では `Contents/Resources/Assets` を読み、
+  `.app` と同じディレクトリの `UserData` に保存する構成です。
+  Mac/Linuxのビルド・パッケージ設定と実機検証は別途必要です。
+
+### パス管理のテスト
+
+Visual Studioの「x64 Native Tools Command Prompt」でプロジェクトルートから実行します。
+テスト実行ファイルは任意の作業用ディレクトリに作成してください。
+
+```bat
+cl /nologo /std:c++17 /EHsc /utf-8 Sokoban-app\AppPaths.cpp Sokoban-app\tests\AppPathsTests.cpp /Fe:AppPathsTests.exe
+AppPathsTests.exe
+```
+
+作業ディレクトリ非依存、日本語パス、同名盤面の識別、ログ名の衝突、
+既存盤面の保持、読み書き失敗、`.app` の配置を検証します。
+今回変更した既存C++ファイルはBOM付きUTF-8に変換し、Visual Studioが各ファイルの
+文字コードを識別できるようにしています。変更したソースの文字列には
+`/execution-charset:utf-8` を指定します。未変更の既存ソースは従来の文字コードを維持しています。
+
 [1]:https://deepwiki.com/Sta6leStapler/pandaeSokonium/1-overview
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Sta6leStapler/pandaeSokonium)

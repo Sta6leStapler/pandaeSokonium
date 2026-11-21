@@ -1,10 +1,10 @@
-#include "PauseMenu.h"
+ï»¿#include "PauseMenu.h"
 #include "Game.h"
 #include "LocalizationManager.h"
 
 PauseMenu::PauseMenu(Game* game, sf::RenderWindow* window)
 	: mGame(game)
-	, mGui(std::make_unique<tgui::Gui>(*window)) // Game‚©‚çƒEƒBƒ“ƒhƒE‚ğæ“¾
+	, mGui(std::make_unique<tgui::Gui>(*window)) // Gameã‹ã‚‰ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’å–å¾—
 	, mState(EActive)
 {
 	mGame->PushUI(this);
@@ -19,7 +19,7 @@ PauseMenu::PauseMenu(Game* game, sf::RenderWindow* window)
 	mWindow->onClose([this]() { Close(); });
 	mGui->add(mWindow);
 
-	OnLanguageChanged(); // ‰ŠúƒeƒLƒXƒgİ’è
+	OnLanguageChanged(); // åˆæœŸãƒ†ã‚­ã‚¹ãƒˆè¨­å®š
 }
 
 PauseMenu::~PauseMenu() {
@@ -28,11 +28,11 @@ PauseMenu::~PauseMenu() {
 
 void PauseMenu::OnLanguageChanged()
 {
-	mWindow->removeAllWidgets(); // ˆê’UƒNƒŠƒA‚µ‚ÄÄ\’zi‚Ü‚½‚Í•Û‚µ‚½ƒƒ“ƒo‚ğXVj
+	mWindow->removeAllWidgets(); // ä¸€æ—¦ã‚¯ãƒªã‚¢ã—ã¦å†æ§‹ç¯‰ï¼ˆã¾ãŸã¯ä¿æŒã—ãŸãƒ¡ãƒ³ãƒã‚’æ›´æ–°ï¼‰
 	mWindow->setTitle(mGame->GetLoc()->Get("MENU_PAUSED"));
 
 	float yPos = 20;
-	// ÄŠJƒ{ƒ^ƒ“
+	// å†é–‹ãƒœã‚¿ãƒ³
 	auto resumeBtn = tgui::Button::create(mGame->GetLoc()->Get("BTN_RESUME"));
 	resumeBtn->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	resumeBtn->setSize(200, 40);
@@ -41,23 +41,24 @@ void PauseMenu::OnLanguageChanged()
 	mWindow->add(resumeBtn);
 
 	yPos += 60;
-	// Œ¾ŒêØ‚è‘Ö‚¦ƒRƒ“ƒ{ƒ{ƒbƒNƒX
+	// è¨€èªåˆ‡ã‚Šæ›¿ãˆã‚³ãƒ³ãƒœãƒœãƒƒã‚¯ã‚¹
 	auto langCombo = tgui::ComboBox::create();
 	langCombo->setRenderer(mGame->GetTheme().getRenderer("ComboBox"));
 	langCombo->setSize(200, 30);
 	langCombo->setPosition((mWindow->getSize().x - langCombo->getSize().x) / 2.0f, yPos);
 	langCombo->setDefaultText(mGame->GetLoc()->Get("LBL_LANGUAGE"));
-	langCombo->addItem(u8"“ú–{Œê", "jp");
+	langCombo->addItem(u8"æ—¥æœ¬èª", "jp");
 	langCombo->addItem("English", "en");
 
 	langCombo->onItemSelect([this](const tgui::String& item, const tgui::String& id) {
-		mGame->GetLoc()->LoadLanguage("Assets/Languages/" + id.toStdString() + ".txt");
-		mGame->NotifyLanguageChanged(); // ‘SUI‚Ö’Ê’m
+		if (!mGame->GetLoc()->LoadLanguage(mGame->GetPaths().Asset("Assets/Languages/" + id.toStdString() + ".txt")))
+			return;
+		mGame->NotifyLanguageChanged(); // å…¨UIã¸é€šçŸ¥
 		});
 	mWindow->add(langCombo);
 
 	yPos += 100;
-	// I—¹ƒ{ƒ^ƒ“
+	// çµ‚äº†ãƒœã‚¿ãƒ³
 	auto quitBtn = tgui::Button::create(mGame->GetLoc()->Get("BTN_QUIT"));
 	quitBtn->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	quitBtn->setSize(200, 40);

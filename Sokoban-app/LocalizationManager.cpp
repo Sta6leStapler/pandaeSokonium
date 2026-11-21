@@ -1,19 +1,19 @@
-#include "LocalizationManager.h"
+ï»¿#include "LocalizationManager.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
 
-bool LocalizationManager::LoadLanguage(const std::string& filename) {
+bool LocalizationManager::LoadLanguage(const std::filesystem::path& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Could not open language file: " << filename << std::endl;
         return false;
     }
 
-    mDictionary.clear();
+    std::map<std::string, std::string> dictionary;
     std::string line;
     while (std::getline(file, line)) {
-        // ‹ós‚âƒRƒƒ“ƒgi#‚Ån‚Ü‚ésj‚ğƒXƒLƒbƒv
+        // ç©ºè¡Œã‚„ã‚³ãƒ¡ãƒ³ãƒˆï¼ˆ#ã§å§‹ã¾ã‚‹è¡Œï¼‰ã‚’ã‚¹ã‚­ãƒƒãƒ—
         if (line.empty() || line[0] == '#') continue;
 
         size_t delimiterPos = line.find('=');
@@ -21,10 +21,15 @@ bool LocalizationManager::LoadLanguage(const std::string& filename) {
             std::string key = trim(line.substr(0, delimiterPos));
             std::string value = trim(line.substr(delimiterPos + 1));
 
-            // TGUI“™‚Å“ú–{Œê‚ğˆµ‚¤‚½‚ßA‚»‚Ì‚Ü‚Ümap‚ÉŠi”[
-            mDictionary[key] = value;
+            // TGUIç­‰ã§æ—¥æœ¬èªã‚’æ‰±ã†ãŸã‚ã€ãã®ã¾ã¾mapã«æ ¼ç´
+            dictionary[key] = value;
         }
     }
+    if (file.bad()) {
+        std::cerr << "Failed while reading language file: " << filename << std::endl;
+        return false;
+    }
+    mDictionary = std::move(dictionary);
     return true;
 }
 
@@ -33,7 +38,7 @@ std::string LocalizationManager::Get(const std::string& key) const {
     if (it != mDictionary.end()) {
         return it->second;
     }
-    // ƒL[‚ªŒ©‚Â‚©‚ç‚È‚¢ê‡‚ÍAƒfƒoƒbƒO‚µ‚â‚·‚¢‚æ‚¤‚ÉƒL[–¼‚ğ‚»‚Ì‚Ü‚Ü•Ô‚·
+    // ã‚­ãƒ¼ãŒè¦‹ã¤ã‹ã‚‰ãªã„å ´åˆã¯ã€ãƒ‡ãƒãƒƒã‚°ã—ã‚„ã™ã„ã‚ˆã†ã«ã‚­ãƒ¼åã‚’ãã®ã¾ã¾è¿”ã™
     return key;
 }
 

@@ -1,4 +1,4 @@
-#include "Baggage.h"
+ï»¿#include "Baggage.h"
 
 #include "Game.h"
 #include "SpriteComponent.h"
@@ -27,13 +27,13 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 {
 	mGame->AddActor(this);
 
-	// MoveAnimationComponent ‚ğ¶¬‚µ‚Ä’Ç‰Á
+	// MoveAnimationComponent ã‚’ç”Ÿæˆã—ã¦è¿½åŠ 
 	mMoveAnimation = new MoveAnimationComponent(this, 10);
 
-	// ”Õ–Êƒf[ƒ^‚ğGameƒNƒ‰ƒX‚©‚çæ“¾‚·‚é
+	// ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å–å¾—ã™ã‚‹
 	std::vector<std::string> lines = game->GetBoardData()[mBoardName];
 
-	// ”Õ–Ê‚Ì‰¡•‚ğ“¾‚é
+	// ç›¤é¢ã®æ¨ªå¹…ã‚’å¾—ã‚‹
 	int maxX = 0;
 	for (const auto& item : lines)
 	{
@@ -43,45 +43,41 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 		}
 	}
 
-	// ƒEƒBƒ“ƒhƒEƒTƒCƒY
-	// 2024_09_05 •`‰æ”ÍˆÍ‚ÉC³
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚º
+	// 2024_09_05 æç”»ç¯„å›²ã«ä¿®æ­£
 	BoundingBox viewArea = mGame->GetBoardViewArea();
 
-	// ƒvƒŒƒCƒ„[‚Ìƒ^ƒCƒ‹‚ğ—pˆÓ
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğì¬
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¿ã‚¤ãƒ«ã‚’ç”¨æ„
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’ä½œæˆ
 	mSpriteComponent = new SpriteComponent(this, 100, 100);
-	// ‰ŠúˆÊ’u‚ªƒS[ƒ‹ã‚É‚ ‚é‚©‚Ç‚¤‚©
+	// åˆæœŸä½ç½®ãŒã‚´ãƒ¼ãƒ«ä¸Šã«ã‚ã‚‹ã‹ã©ã†ã‹
 	mBState = BState::OnFloor;
 	if (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x] == '.')
 	{
 		mBState = BState::OnGoal;
 	}
 
-	// ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚Ş
+	// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚€
 	std::string filename = "Assets/Box.png";
-	sf::Image image;
-	image.loadFromFile(filename);
 	mTextures.emplace(BState::OnFloor, game->LoadTexture(filename));
 	filename = "Assets/ShinyBox.png";
-	image.loadFromFile(filename);
 	mTextures.emplace(BState::OnGoal, game->LoadTexture(filename));
 	filename = "Assets/DeadlockedBox.png";
-	image.loadFromFile(filename);
 	mTextures.emplace(BState::Deadlock, game->LoadTexture(filename));
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ÉƒeƒNƒXƒ`ƒƒ‚ğƒZƒbƒg
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚»ãƒƒãƒˆ
 	mSpriteComponent->SetTexture(mTextures[mBState]);
 
-	// ƒXƒP[ƒŠƒ“ƒO‚ÆˆÊ’u‚Ì‰Šú‰»‚ğs‚¤
-	// •\¦ƒGƒŠƒA‚ÌƒTƒCƒY@/ ”Õ–Ê‚ÌƒTƒCƒY ‚ğ‹‚ß‚é
-	// •\¦ƒGƒŠƒA‚Ì•û‚ª¬‚³‚¯‚ê‚Îƒ^ƒCƒ‹‚Ík¬‚·‚×‚«‚ÅA‹t‚È‚çŠg‘å‚·‚é‚×‚«
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ä½ç½®ã®åˆæœŸåŒ–ã‚’è¡Œã†
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®ã‚µã‚¤ã‚ºã€€/ ç›¤é¢ã®ã‚µã‚¤ã‚º ã‚’æ±‚ã‚ã‚‹
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®æ–¹ãŒå°ã•ã‘ã‚Œã°ã‚¿ã‚¤ãƒ«ã¯ç¸®å°ã™ã¹ãã§ã€é€†ãªã‚‰æ‹¡å¤§ã™ã‚‹ã¹ã
 	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[mBState]->getSize().x * mGame->GetBoardSize().x),
 		(viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[mBState]->getSize().y * mGame->GetBoardSize().y));
 
 	mScale = sf::Vector2f(minScale, minScale);
 
-	// —]”’‚Ì•ª’†‰›‘µ‚¦‚·‚é
-	// *ƒƒ‚ UI“™‚Å‚¸‚ê‚éê‡‚ÍƒIƒtƒZƒbƒg‚ğ‰Á‚¦‚Ä‚¨‚­
+	// ä½™ç™½ã®åˆ†ä¸­å¤®æƒãˆã™ã‚‹
+	// *ãƒ¡ãƒ¢ UIç­‰ã§ãšã‚Œã‚‹å ´åˆã¯ã‚ªãƒ•ã‚»ãƒƒãƒˆã‚’åŠ ãˆã¦ãŠã
 	mPosition = sf::Vector2f
 	{
 		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(mTextures[mBState]->getSize().x * mGame->GetBoardSize().x) * mScale.x) / 2.0f + static_cast<float>(mTextures[mBState]->getSize().x * mBoardCoordinate.x) * mScale.x,
@@ -92,7 +88,7 @@ Baggage::Baggage(Game* game, sf::Vector2i bCoordinate)
 Baggage::~Baggage()
 {
 	mGame->RemoveActor(this);
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğíœ‚·‚é
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’å‰Šé™¤ã™ã‚‹
 	while (!mComponents.empty())
 	{
 		delete mComponents.back();
@@ -105,8 +101,8 @@ void Baggage::Update(float deltaTime)
 	{
 		UpdateComponents(deltaTime);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌXVˆ—‚ª‚ ‚ê‚Î‘‚­
-		// ‚±‚ÌƒAƒNƒ^[‚ÌˆÊ’u‚É‰‚¶‚ÄƒeƒNƒXƒ`ƒƒ‚ğ•Ï‚¦‚é
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æ›´æ–°å‡¦ç†ãŒã‚ã‚Œã°æ›¸ã
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ã®ä½ç½®ã«å¿œã˜ã¦ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’å¤‰ãˆã‚‹
 		if (mGame->GetBoardState()[mBoardCoordinate.y][mBoardCoordinate.x] == '.')
 		{
 			mBState = BState::OnGoal;
@@ -137,18 +133,18 @@ void Baggage::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::
 {
 	if (mState == IActor::ActorState::EActive)
 	{
-		// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌComponent‚Ì“ü—Íˆ—‚ğs‚¤
-		// ‚Ç‚ÌComponent‚à“Á‚É“Æ©‚Ìˆ—‚ğÀ‘•‚µ‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+		// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®Componentã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
+		// ã©ã®Componentã‚‚ç‰¹ã«ç‹¬è‡ªã®å‡¦ç†ã‚’å®Ÿè£…ã—ã¦ã„ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 		ProcessInputComponents(event, key_held_duration, auto_repeat_timer);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌU‚é•‘‚¢‚ª‚ ‚ê‚Î‘‚­
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æŒ¯ã‚‹èˆã„ãŒã‚ã‚Œã°æ›¸ã
 		if (mCurrentHighlightState == HighlightState::Idle ||
 			mCurrentHighlightState == HighlightState::Highlighting ||
 			mCurrentHighlightState == HighlightState::DisplayDirection)
 		{
 			if (mDetection)
 			{
-				// ‚à‚µƒnƒCƒ‰ƒCƒg•\¦’†‚È‚çAˆÚ“®‚Ì‘O‚ÉƒnƒCƒ‰ƒCƒg‚ğÁ‚·
+				// ã‚‚ã—ãƒã‚¤ãƒ©ã‚¤ãƒˆè¡¨ç¤ºä¸­ãªã‚‰ã€ç§»å‹•ã®å‰ã«ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’æ¶ˆã™
 				if (mCurrentHighlightState == HighlightState::Highlighting ||
 					mCurrentHighlightState == HighlightState::DisplayDirection)
 				{
@@ -157,11 +153,11 @@ void Baggage::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::
 				}
 			}
 
-			// ƒ}ƒEƒXƒNƒŠƒbƒN‚Ìˆ—‚ğ’Ç‰Á
+			// ãƒã‚¦ã‚¹ã‚¯ãƒªãƒƒã‚¯ã®å‡¦ç†ã‚’è¿½åŠ 
 			if (event && event->type == sf::Event::MouseButtonPressed)
 			{
-				// ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Ìƒ}ƒEƒXƒK[ƒh
-				// ‰×•¨©g‚ªˆÚ“®’†A‚Ü‚½‚ÍƒvƒŒƒCƒ„[‚ªˆÚ“®’†‚Ìê‡‚ÍAƒNƒŠƒbƒNˆ—‚ğŠ®‘S‚É–³‹‚·‚é
+				// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã®ãƒã‚¦ã‚¹ã‚¬ãƒ¼ãƒ‰
+				// è·ç‰©è‡ªèº«ãŒç§»å‹•ä¸­ã€ã¾ãŸã¯ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ä¸­ã®å ´åˆã¯ã€ã‚¯ãƒªãƒƒã‚¯å‡¦ç†ã‚’å®Œå…¨ã«ç„¡è¦–ã™ã‚‹
 				if (mMoveAnimation->IsAnimating() || mGame->GetPlayer()->GetMoveAnimation()->IsAnimating())
 				{
 					return;
@@ -174,7 +170,7 @@ void Baggage::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::
 
 					if (clickedTile != sf::Vector2i{ -1, -1 })
 					{
-						// ‰×•¨‚ÌŒ»İ‚Ìó‘Ô‚Åˆ—‚ğ•ªŠò
+						// è·ç‰©ã®ç¾åœ¨ã®çŠ¶æ…‹ã§å‡¦ç†ã‚’åˆ†å²
 						switch (mCurrentHighlightState)
 						{
 						case HighlightState::Idle:
@@ -187,7 +183,7 @@ void Baggage::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::
 							HandleInputDirection(clickedTile, mousePos);
 							break;
 						case HighlightState::MovingOnPath:
-							// Œo˜HˆÚ“®’†‚Í“ü—Í‚ğ–³‹
+							// çµŒè·¯ç§»å‹•ä¸­ã¯å…¥åŠ›ã‚’ç„¡è¦–
 							break;
 						default:
 							break;
@@ -245,18 +241,18 @@ void Baggage::SetBoardCoordinate(const sf::Vector2i boardCoordinate)
 
 void Baggage::HandleInputIdle(const sf::Vector2i& clickedTile)
 {
-	if (clickedTile == mBoardCoordinate) // ‰×•¨©g‚ªƒNƒŠƒbƒN‚³‚ê‚½
+	if (clickedTile == mBoardCoordinate) // è·ç‰©è‡ªèº«ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸ
 	{
-		// 1. ˆÚ“®‰Â”\‚Èƒ}ƒX‚ğ‚·‚×‚ÄŒvZ
+		// 1. ç§»å‹•å¯èƒ½ãªãƒã‚¹ã‚’ã™ã¹ã¦è¨ˆç®—
 		auto transportable = Pathfinder::FindAllTransportable(mBoardCoordinate, mGame->GetBoardState(), mGame->GetPlayer()->GetBoardCoordinate(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
 		
-		// ˆÚ“®‰Â”\‚Èƒ}ƒX‚ª‚ ‚ê‚ÎAƒnƒCƒ‰ƒCƒgˆ—‚ğs‚¢AƒnƒCƒ‰ƒCƒgó‘Ô‚ÉˆÚs‚·‚é
+		// ç§»å‹•å¯èƒ½ãªãƒã‚¹ãŒã‚ã‚Œã°ã€ãƒã‚¤ãƒ©ã‚¤ãƒˆå‡¦ç†ã‚’è¡Œã„ã€ãƒã‚¤ãƒ©ã‚¤ãƒˆçŠ¶æ…‹ã«ç§»è¡Œã™ã‚‹
 		if (!transportable.empty())
 		{
-			// 2. GameƒNƒ‰ƒX‚ÉƒnƒCƒ‰ƒCƒg•`‰æ‚ğˆË—Š
+			// 2. Gameã‚¯ãƒ©ã‚¹ã«ãƒã‚¤ãƒ©ã‚¤ãƒˆæç”»ã‚’ä¾é ¼
 			mGame->SetPushHighlights(transportable, this);
 
-			// 3. ó‘Ô‚ğXV
+			// 3. çŠ¶æ…‹ã‚’æ›´æ–°
 			mCurrentHighlightState = HighlightState::Highlighting;
 		}
 	}
@@ -264,33 +260,33 @@ void Baggage::HandleInputIdle(const sf::Vector2i& clickedTile)
 
 void Baggage::HandleInputHighlighting(const sf::Vector2i& clickedTile)
 {
-	// GameƒNƒ‰ƒX‚©‚çƒnƒCƒ‰ƒCƒg’†‚Ìƒ}ƒXƒŠƒXƒg‚ğæ“¾
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰ãƒã‚¤ãƒ©ã‚¤ãƒˆä¸­ã®ãƒã‚¹ãƒªã‚¹ãƒˆã‚’å–å¾—
 	const auto& highlightedTiles = mGame->GetPushHighlightedTiles();
 
 	auto iter = std::find(highlightedTiles.begin(), highlightedTiles.end(), clickedTile);
-	// ƒnƒCƒ‰ƒCƒg‚³‚ê‚Ä‚¢‚éƒ}ƒX‚ªƒNƒŠƒbƒN‚³‚ê‚½‚©ƒ`ƒFƒbƒN
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆã•ã‚Œã¦ã„ã‚‹ãƒã‚¹ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸã‹ãƒã‚§ãƒƒã‚¯
 	if (iter == highlightedTiles.end()) 
 	{
-		// ƒnƒCƒ‰ƒCƒg‚³‚ê‚Ä‚¢‚È‚¢ƒ}ƒX‚ªƒNƒŠƒbƒN‚³‚ê‚½ê‡
-		mGame->ClearPushHighlights(); // ƒnƒCƒ‰ƒCƒg‚ğÁ‹ˆË—Š
+		// ãƒã‚¤ãƒ©ã‚¤ãƒˆã•ã‚Œã¦ã„ãªã„ãƒã‚¹ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸå ´åˆ
+		mGame->ClearPushHighlights(); // ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’æ¶ˆå»ä¾é ¼
 		mCurrentHighlightState = HighlightState::Idle;
 	}
 	else if (iter != highlightedTiles.end())
 	{
 		mGame->ClearPushHighlights();
 
-		// ƒnƒCƒ‰ƒCƒg‚³‚ê‚Ä‚¢‚éƒ}ƒX‚ªƒNƒŠƒbƒN‚³‚ê‚½ê‡
-		// ‚à‚µˆÚ“®æ‚ÌŒó•â‚ª•¡”‚ ‚éê‡‚Í•ûŒü‚ğw’è‚·‚éó‘Ô‚É‘JˆÚ‚³‚¹‚é
-		// ˆÚ“®æ‚ÌŒó•â‚ğ’Tõ
+		// ãƒã‚¤ãƒ©ã‚¤ãƒˆã•ã‚Œã¦ã„ã‚‹ãƒã‚¹ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸå ´åˆ
+		// ã‚‚ã—ç§»å‹•å…ˆã®å€™è£œãŒè¤‡æ•°ã‚ã‚‹å ´åˆã¯æ–¹å‘ã‚’æŒ‡å®šã™ã‚‹çŠ¶æ…‹ã«é·ç§»ã•ã›ã‚‹
+		// ç§»å‹•å…ˆã®å€™è£œã‚’æ¢ç´¢
 		mDestination = sf::Vector2i{ -1, -1 };
 		mTransportingPathes.clear();
 		mTransportingPathes = Pathfinder::FindAllDirectionTransportPath(mBoardCoordinate, *iter, mGame->GetPlayer()->GetBoardCoordinate(), mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
 		if (mTransportingPathes.size() > 1)
 		{
 			std::cout << "Baggage : Find " << mTransportingPathes.size() << "'s path!" << std::endl;
-			// ‰^”Àæ‚ÌÀ•W‚ğ“o˜^
+			// é‹æ¬å…ˆã®åº§æ¨™ã‚’ç™»éŒ²
 			mDestination = *iter;
-			// GameƒNƒ‰ƒX‚É‰^”À‰Â”\‚È•ûŒü‚Ì•\¦‚ğˆË—Š
+			// Gameã‚¯ãƒ©ã‚¹ã«é‹æ¬å¯èƒ½ãªæ–¹å‘ã®è¡¨ç¤ºã‚’ä¾é ¼
 			std::vector<int> indexes{};
 			for (const auto& path : mTransportingPathes)
 			{
@@ -298,12 +294,12 @@ void Baggage::HandleInputHighlighting(const sf::Vector2i& clickedTile)
 			}
 			mGame->SetPushDirections(indexes, this);
 
-			// ó‘Ô‚ğXV
+			// çŠ¶æ…‹ã‚’æ›´æ–°
 			mCurrentHighlightState = HighlightState::DisplayDirection;
 		}
 		else
 		{
-			// Œo˜H‚ğŒvZ‚µAˆÚ“®Œo˜H‚ğƒvƒŒƒCƒ„[‚É‘—‚é
+			// çµŒè·¯ã‚’è¨ˆç®—ã—ã€ç§»å‹•çµŒè·¯ã‚’ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã«é€ã‚‹
 			std::vector<sf::Vector2i> path = Pathfinder::FindTransportPath(mBoardCoordinate, *iter, mGame->GetPlayer()->GetBoardCoordinate(), mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
 			mGame->GetPlayer()->InputMovePath(path);
 		}
@@ -312,10 +308,10 @@ void Baggage::HandleInputHighlighting(const sf::Vector2i& clickedTile)
 
 void Baggage::HandleInputDirection(const sf::Vector2i& clickedTile, const sf::Vector2f& mousePos)
 {
-	// ƒNƒŠƒbƒN‚³‚ê‚½À•W‚ªˆÚ“®æ‚ÌÀ•W‚©H
+	// ã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸåº§æ¨™ãŒç§»å‹•å…ˆã®åº§æ¨™ã‹ï¼Ÿ
 	if (clickedTile == mDestination)
 	{
-		// ƒ}ƒX‚Ìã‰º¶‰E“x‚Ì•”•ª‚ªƒNƒŠƒbƒN‚³‚ê‚½‚©”»’è
+		// ãƒã‚¹ã®ä¸Šä¸‹å·¦å³åº¦ã®éƒ¨åˆ†ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸã‹åˆ¤å®š
 		Direction tmpDir = Direction::EEast;
 		sf::Vector2f topLeft = mGame->TileToScreenCoords(clickedTile);
 		sf::Vector2f topRight = topLeft + sf::Vector2f{ mGame->GetTileSize().x, 0.0f };
@@ -329,58 +325,58 @@ void Baggage::HandleInputDirection(const sf::Vector2i& clickedTile, const sf::Ve
 			bottomLeft.x << ", " << bottomLeft.y << "), (" <<
 			bottomRight.x << ", " << bottomRight.y << ")" << std::endl;
 
-		// ‘ÎŠpü1 (¶ã -> ‰E‰º) ‚É‘Î‚·‚éˆÊ’u‚ğŒvZ
+		// å¯¾è§’ç·š1 (å·¦ä¸Š -> å³ä¸‹) ã«å¯¾ã™ã‚‹ä½ç½®ã‚’è¨ˆç®—
 		float val1 = (bottomRight.x - topLeft.x) * (mousePos.y - topLeft.y) - (bottomRight.y - topLeft.y) * (mousePos.x - topLeft.x);
-		// ‘ÎŠpü2 (¶‰º -> ‰Eã) ‚É‘Î‚·‚éˆÊ’u‚ğŒvZ
+		// å¯¾è§’ç·š2 (å·¦ä¸‹ -> å³ä¸Š) ã«å¯¾ã™ã‚‹ä½ç½®ã‚’è¨ˆç®—
 		float val2 = (topRight.x - bottomLeft.x) * (mousePos.y - bottomLeft.y) - (topRight.y - bottomLeft.y) * (mousePos.x - bottomLeft.x);
 
 		if (val1 >= 0)
 		{
-			// val1‚ª³: ƒNƒŠƒbƒNˆÊ’u‚Í‘ÎŠpü(¶ã->‰E‰º)‚Ì‰º‘¤
+			// val1ãŒæ­£: ã‚¯ãƒªãƒƒã‚¯ä½ç½®ã¯å¯¾è§’ç·š(å·¦ä¸Š->å³ä¸‹)ã®ä¸‹å´
 			if (val2 >= 0)
 			{
-				// val2‚ª³: ƒNƒŠƒbƒNˆÊ’u‚Í‘ÎŠpü(¶‰º->‰Eã)‚Ìã‘¤
-				tmpDir = Direction::ESouth; // ‚æ‚Á‚Äu‰º‚ÌOŠpŒ`v
+				// val2ãŒæ­£: ã‚¯ãƒªãƒƒã‚¯ä½ç½®ã¯å¯¾è§’ç·š(å·¦ä¸‹->å³ä¸Š)ã®ä¸Šå´
+				tmpDir = Direction::ESouth; // ã‚ˆã£ã¦ã€Œä¸‹ã®ä¸‰è§’å½¢ã€
 				std::cout << "Baggage::HandleInputDirection -> Input ESouth!" << std::endl;
 			}
 			else
 			{
-				// val2‚ª•‰: ƒNƒŠƒbƒNˆÊ’u‚Í‘ÎŠpü(¶‰º->‰Eã)‚Ì‰º‘¤
-				tmpDir = Direction::EWest; // ‚æ‚Á‚Äu¶‚ÌOŠpŒ`v
+				// val2ãŒè² : ã‚¯ãƒªãƒƒã‚¯ä½ç½®ã¯å¯¾è§’ç·š(å·¦ä¸‹->å³ä¸Š)ã®ä¸‹å´
+				tmpDir = Direction::EWest; // ã‚ˆã£ã¦ã€Œå·¦ã®ä¸‰è§’å½¢ã€
 				std::cout << "Baggage::HandleInputDirection -> Input EWest!" << std::endl;
 			}
 		}
 		else
 		{
-			// val1‚ª•‰: ƒNƒŠƒbƒNˆÊ’u‚Í‘ÎŠpü(¶ã->‰E‰º)‚Ìã‘¤
+			// val1ãŒè² : ã‚¯ãƒªãƒƒã‚¯ä½ç½®ã¯å¯¾è§’ç·š(å·¦ä¸Š->å³ä¸‹)ã®ä¸Šå´
 			if (val2 >= 0)
 			{
-				// val2‚ª³: ƒNƒŠƒbƒNˆÊ’u‚Í‘ÎŠpü(¶‰º->‰Eã)‚Ìã‘¤
-				tmpDir = Direction::EEast; // ‚æ‚Á‚Äu‰E‚ÌOŠpŒ`v
+				// val2ãŒæ­£: ã‚¯ãƒªãƒƒã‚¯ä½ç½®ã¯å¯¾è§’ç·š(å·¦ä¸‹->å³ä¸Š)ã®ä¸Šå´
+				tmpDir = Direction::EEast; // ã‚ˆã£ã¦ã€Œå³ã®ä¸‰è§’å½¢ã€
 				std::cout << "Baggage::HandleInputDirection -> Input EEast!" << std::endl;
 			}
 			else
 			{
-				// val2‚ª•‰: ƒNƒŠƒbƒNˆÊ’u‚Í‘ÎŠpü(¶‰º->‰Eã)‚Ì‰º‘¤
-				tmpDir = Direction::ENorth; // ‚æ‚Á‚Äuã‚ÌOŠpŒ`v
+				// val2ãŒè² : ã‚¯ãƒªãƒƒã‚¯ä½ç½®ã¯å¯¾è§’ç·š(å·¦ä¸‹->å³ä¸Š)ã®ä¸‹å´
+				tmpDir = Direction::ENorth; // ã‚ˆã£ã¦ã€Œä¸Šã®ä¸‰è§’å½¢ã€
 				std::cout << "Baggage::HandleInputDirection -> Input ENorth!" << std::endl;
 			}
 		}
 
-		// ƒNƒŠƒbƒN‚³‚ê‚½•ûŒü‚©‚ç‰^”À‚Å‚«‚é‚È‚çA
-		// ‚»‚Ì•ûŒü‚©‚ç‰Ÿ‚µ‚Ş‚æ‚¤‚É‰^”À‚Ìx‚ğƒvƒŒƒCƒ„[‚É‘—‚é
+		// ã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸæ–¹å‘ã‹ã‚‰é‹æ¬ã§ãã‚‹ãªã‚‰ã€
+		// ãã®æ–¹å‘ã‹ã‚‰æŠ¼ã—è¾¼ã‚€ã‚ˆã†ã«é‹æ¬ã®æ”¯æŒã‚’ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã«é€ã‚‹
 		if (mTransportingPathes.count(tmpDir))
 		{
 			mGame->ClearPushHighlights();
 			mGame->ClearPushDirections();
-			// Œo˜H‚ÍŠù‚É•Û‚µ‚Ä‚ ‚é
+			// çµŒè·¯ã¯æ—¢ã«ä¿æŒã—ã¦ã‚ã‚‹
 			mGame->GetPlayer()->InputMovePath(mTransportingPathes[tmpDir]);
 		}
 	}
 	else
 	{
-		// ƒnƒCƒ‰ƒCƒg‚³‚ê‚Ä‚¢‚È‚¢ƒ}ƒX‚ªƒNƒŠƒbƒN‚³‚ê‚½ê‡
-		mGame->ClearPushDirections(); // ƒnƒCƒ‰ƒCƒg‚ğÁ‹ˆË—Š
+		// ãƒã‚¤ãƒ©ã‚¤ãƒˆã•ã‚Œã¦ã„ãªã„ãƒã‚¹ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸå ´åˆ
+		mGame->ClearPushDirections(); // ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’æ¶ˆå»ä¾é ¼
 		mCurrentHighlightState = HighlightState::Idle;
 	}
 }
