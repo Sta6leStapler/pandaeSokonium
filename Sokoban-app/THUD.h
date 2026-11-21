@@ -74,6 +74,7 @@ private:
 	tgui::BitmapButton::Ptr mSaveLogButton;
 	tgui::Button::Ptr mEditModeButton;
 	tgui::Button::Ptr mHelpButton;
+	tgui::Button::Ptr mSolutionButton;
 
 	// Undo/Redoボタンの制御
 	bool mIsUndoHeld;   // Undoボタンが押され続けているか

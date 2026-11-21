@@ -1,6 +1,7 @@
 #include "AppPaths.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <fstream>
 #include <iterator>
@@ -97,13 +98,21 @@ std::filesystem::path AppPaths::Asset(const std::string& name) const
 
 std::vector<AppPaths::BoardFile> AppPaths::GetBoardFiles() const
 {
+	auto isSupportedBoardExt = [](const std::filesystem::path& path) {
+		std::string ext = path.extension().u8string();
+		std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
+			return static_cast<char>(std::tolower(c));
+		});
+		return ext == ".txt" || ext == ".xsb" || ext == ".sok";
+	};
+
 	std::vector<BoardFile> files;
 	for (bool saved : { false, true })
 	{
 		const auto directory = saved ? mBoardsDirectory : Asset("Boards");
 		for (const auto& entry : std::filesystem::directory_iterator(directory))
 		{
-			if (entry.is_regular_file() && entry.path().extension() == ".txt")
+			if (entry.is_regular_file() && isSupportedBoardExt(entry.path()))
 				files.push_back({ entry.path(),
 					(saved ? "saved:" : "bundled:") + entry.path().filename().u8string(), saved });
 		}

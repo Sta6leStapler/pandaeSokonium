@@ -268,6 +268,19 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 		});
 	mGui->add(mHelpButton);
 
+	// Solution (rludRLUD) 入出力ボタン
+	mSolutionButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_SOLUTION"));
+	mSolutionButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y));
+	mSolutionButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);
+	mSolutionButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mSolutionButton->setTextSize(16);
+	mSolutionButton->onPress([=]() {
+		std::cout << "Solution dialog action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
+		mGame->OpenSolutionDialog();
+		});
+	mGui->add(mSolutionButton);
+
 	// ゲームシステム関連のボタンの配置ここまで
 	
 	// TODO 各種情報のテキストを表示する矩形
@@ -415,6 +428,7 @@ void THUD::OnLanguageChanged()
 	mSaveLogButton->setText(mGame->GetLoc()->Get("BTN_LOG"));
 	mEditModeButton->setText(mGame->GetLoc()->Get("TITLE_EDITOR"));
 	mHelpButton->setText(mGame->GetLoc()->Get("BTN_HELP"));
+	mSolutionButton->setText(mGame->GetLoc()->Get("BTN_SOLUTION"));
 
 	// ListBox内の静的なラベル（Movesなど）の更新
 	// Update()内で毎フレーム changeItemById されているため、

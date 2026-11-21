@@ -12,6 +12,7 @@
 #include "ParamStruct.h"
 #include "LocalizationManager.h"
 #include "AppPaths.h"
+#include "SolutionCodec.h"
 
 #include "TGUI/TGUI.hpp"
 #include "TGUI/Backend/SFML-Graphics.hpp"
@@ -133,6 +134,23 @@ public:
 
 	// ファイルダイアログを開いてログを保存する関数
 	void CallSaveLog();
+
+	// 解手順 (rludRLUD) 関連の関数
+	// 現在のプレイ手順をrludRLUD文字列として取得する
+	std::string GetCurrentLurdSolution(bool upToCurrentStep = true) const;
+	// ファイルダイアログを開いてrludRLUD解手順を保存する
+	bool SaveLurdSolutionDialog(const std::string& lurd = "");
+	// rludRLUD解手順を検証し、アニメーション再生または一括適用する
+	bool ApplyLurdSolution(const std::string& rawLurd, bool fromInitialState, bool animate, std::string& outError);
+	// 再生中の解手順アニメーションを停止する
+	void StopSolutionPlayback();
+	// 解手順アニメーションを再生中か確認する
+	bool IsSolutionPlaying() const { return mIsPlayingSolution; }
+	// 解手順の入出力ダイアログを表示する
+	void OpenSolutionDialog(const std::string& initialLurd = "");
+	// 現在の盤面に同梱されていた解手順一覧を取得する
+	const std::vector<std::string>& GetCurrentLevelSolutions() const { return mCurrentLevelSolutions; }
+	// 解手順 (rludRLUD) 関連の関数ここまで
 
 	// スナップショット関連の関数
 	// 現在のゲーム状態をスナップショットとして保存
@@ -289,6 +307,12 @@ private:
 	void ShowFileError(const std::string& message);
 	// 60FPSに合わせてCPUを占有せず次フレームまで待機する
 	void WaitForNextFrame(const sf::Time& previousTicks) const;
+	// 盤面文字列配列からプレビュー用テクスチャを生成する
+	sf::Texture GenerateBoardPreviewTexture(const std::vector<std::string>& lines) const;
+	// 解手順アニメーションを1フレーム分進める
+	void UpdateSolutionPlayback(float deltaTime);
+	// 検証済みの1手を盤面・アクター・ログへ反映する
+	void ExecuteSolutionStep(const SolutionCodec::SolutionStep& step, bool animate);
 
 	// ヘルパー関数は以下に定義
 	void SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr editBox, const bool& isInteger);
@@ -385,6 +409,17 @@ private:
 	// 現在の盤面のスナップショットをリストで保持
 	// 盤面が切り替わった場合は破棄
 	std::vector<GameSnapshot> mSnapshots;
+
+	// 盤面キーごとの同梱解手順（.sokに解が含まれる場合）
+	std::unordered_map<std::string, std::vector<std::string>> mBoardSolutions;
+	std::vector<std::string> mCurrentLevelSolutions;
+
+	// 解手順 (rludRLUD) アニメーション再生の制御状態
+	std::vector<SolutionCodec::SolutionStep> mSolutionPlaybackSteps;
+	std::size_t mSolutionPlaybackIndex;
+	bool mIsPlayingSolution;
+	float mSolutionPlaybackTimer;
+	static constexpr float SOLUTION_PLAYBACK_INTERVAL = 0.06f;
 
 	// UIの文字列を管理
 	class LocalizationManager* mLoc;

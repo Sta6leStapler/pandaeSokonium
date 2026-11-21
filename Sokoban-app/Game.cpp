@@ -18,8 +18,11 @@
 #include "EditorSetupDialog.h"
 #include "EditorScreen.h"
 #include "BoardConfigDialog.h"
+#include "LevelFormat.h"
 #include "LocalizationManager.h"
 #include "PlatformTime.h"
+
+#include "SFML/Window/Clipboard.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -46,6 +49,9 @@ Game::Game()
 	, mAutoRepeatTimer(std::map<sf::Keyboard::Key, float>{})
 	, mBaggageLimit(1)
 	, mStep(0)
+	, mSolutionPlaybackIndex(0)
+	, mIsPlayingSolution(false)
+	, mSolutionPlaybackTimer(0.0f)
 	, mLoc(nullptr)
 {
 	// 盤面をロードする度に更新するのは以下のメンバ変数
@@ -144,29 +150,17 @@ void Game::LoadData()
 	// 盤面データを読み取る
 	//*
 	const auto filename = mPaths.Asset("Assets/Boards/default.txt");
+	const auto defaultCollection = LevelFormat::LoadCollectionFromFile(filename);
+	const auto& defaultLevel = defaultCollection.mLevels.front();
 	std::string name = "bundled:default.txt";
 	mCurrentKey = name;
 	mFilenames.push_back(name);
-	std::ifstream file(filename);
-	if (!file.is_open())
-	{
-		throw std::runtime_error("Failed to open board: " + filename.u8string());
-	}
-
-	std::vector<std::string> lines;
-	std::string line;
-	while (std::getline(file, line))
-	{
-		if (!line.empty() && line.back() == '\r') line.pop_back();
-		lines.emplace_back(line);
-	}
-
-	if (file.bad() || lines.empty())
-		throw std::runtime_error("Failed to read board: " + filename.u8string());
+	std::vector<std::string> lines = defaultLevel.mBoard;
 
 	mBoardData.emplace(name, lines);
 	mInitBoardData.emplace(name, lines);
-	file.close();
+	mBoardSolutions[name] = defaultLevel.mSolutions;
+	mCurrentLevelSolutions = defaultLevel.mSolutions;
 	//*/
 
 	// 自動生成の場合
@@ -335,8 +329,16 @@ void Game::ProcessInput()
 		// ゲームプレイ状態ならば、キーボードやボタンの入力処理を受け付ける
 		if (mGameState == GameState::EGamePlay)
 		{
+			// 解手順アニメーション再生中はEscキーで停止可能
+			if (mIsPlayingSolution)
+			{
+				if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+				{
+					StopSolutionPlayback();
+				}
+			}
 			// アニメーション中でなければ入力を受け付ける
-			if (!IsAnyMovementAnimating())
+			else if (!IsAnyMovementAnimating())
 			{
 				// ゲーム全体に関する各種入力処理
 				// 単押し処理
@@ -448,16 +450,20 @@ void Game::ProcessInput()
 				}
 			}
 
-			// 全てのActorの入力処理を行う
-			mUpdatingActors = true;
-
-			for (auto& actor : mActiveActors)
+			// 解手順再生中はアクターへの手動入力を受け付けない
+			if (!mIsPlayingSolution)
 			{
-				actor->ProcessInput(&event, mKeyHeldDuration, mAutoRepeatTimer);
-			}
+				// 全てのActorの入力処理を行う
+				mUpdatingActors = true;
 
-			mUpdatingActors = false;
-			// アクターの入力処理はここまで
+				for (auto& actor : mActiveActors)
+				{
+					actor->ProcessInput(&event, mKeyHeldDuration, mAutoRepeatTimer);
+				}
+
+				mUpdatingActors = false;
+				// アクターの入力処理はここまで
+			}
 		}
 
 		// その他の状態ではUIの入力処理を行う
@@ -513,6 +519,9 @@ void Game::UpdateGame()
 			}
 		}
 	}
+
+	// 解手順アニメーション再生中なら1手ずつ進める
+	UpdateSolutionPlayback(deltaTime);
 
 	// 全てのアクターを更新
 	mUpdatingActors = true;
@@ -710,6 +719,11 @@ void Game::RemoveActor(IActor* actor)
 
 bool Game::IsAnyMovementAnimating() const
 {
+	if (mIsPlayingSolution)
+	{
+		return true;
+	}
+
 	// プレイヤーのアニメーション確認
 	if (mPlayer && mPlayer->GetMoveAnimation()->IsAnimating())
 	{
@@ -979,7 +993,13 @@ bool Game::CallSave(const std::vector<std::string>& boardData)
 	fileDialog->setAllowCreateFolder(true);
 	fileDialog->setCreateFolderButtonText(mLoc->Get("BOARD_SAVE_DIALOG_CREATE_FOLDER"));
 	fileDialog->setPath(mPaths.GetBoardsDirectory().u8string()); // デフォルトパス
-	fileDialog->setFilename("Level_" + GetDateTime() + ".txt"); // デフォルトファイル名
+	fileDialog->setFilename("Level_" + GetDateTime() + ".sok"); // デフォルトファイル名
+	fileDialog->setFileTypeFilters({
+		{ "Sokoban Levels (*.sok, *.xsb, *.txt)", { "*.sok", "*.xsb", "*.txt" } },
+		{ "SOK (*.sok)", { "*.sok" } },
+		{ "XSB (*.xsb)", { "*.xsb" } },
+		{ "Text (*.txt)", { "*.txt" } }
+	});
 	// 既存ファイルを選択した場合の上書き確認
 	// (TGUIのバージョンによっては setConfirmOverwrite(true) がデフォルトまたは存在しない場合がありますが、
 	//  多くのバージョンでサポートされています)
@@ -990,11 +1010,19 @@ bool Game::CallSave(const std::vector<std::string>& boardData)
 	fileDialog->onFileSelect([&](const tgui::String& selectedPath) {
 		try
 		{
-			std::string contents;
-			for (const auto& row : dataToSave)
-				contents += row + "\n";
 			const auto path = std::filesystem::u8path(selectedPath.toStdString());
-			AppPaths::WriteFile(path, contents);
+			LevelFormat::LevelData levelData;
+			levelData.mTitle = path.stem().u8string();
+			levelData.mBoard = dataToSave;
+			if (boardData.empty())
+			{
+				const std::string currentLurd = GetCurrentLurdSolution(true);
+				if (!currentLurd.empty())
+				{
+					levelData.mSolutions.push_back(currentLurd);
+				}
+			}
+			LevelFormat::SaveLevelToFile(path, levelData);
 			saved = true;
 			std::cout << "Saved to " << path << std::endl;
 		}
@@ -1062,6 +1090,7 @@ bool Game::CallSave(const std::vector<std::string>& boardData)
 
 void Game::CallReload()
 {
+	StopSolutionPlayback();
 	// プレイヤーと荷物と盤面を更新
 	// パラメータ設定際に、closeが押されなければ、続きの更新処理を行う
 	if (InputBoardData())
@@ -1069,6 +1098,7 @@ void Game::CallReload()
 		// ログをファイル出力してから全て消す
 		OutputLogs();
 		ClearParameters();
+		mCurrentLevelSolutions.clear();
 
 		// スナップショットもリセット
 		ClearSnapshots();
@@ -1174,6 +1204,7 @@ void Game::CallReload()
 
 void Game::CallRestart()
 {
+	StopSolutionPlayback();
 	// ログをファイル出力してからパラメータをリセット
 	OutputLogs();
 	ResetParameters();
@@ -1374,6 +1405,576 @@ void Game::CallSaveLog()
 	mGui->remove(fileDialog);
 	mWindow->setActive(true);
 	if (!saveError.empty()) ShowFileError(saveError);
+}
+
+// =========================================================================
+// 解手順 (rludRLUD) 関連の実装
+// =========================================================================
+
+std::string Game::GetCurrentLurdSolution(bool upToCurrentStep) const
+{
+	const std::size_t limit = upToCurrentStep
+		? std::min(static_cast<std::size_t>(mStep), mLogs.size())
+		: mLogs.size();
+
+	std::string lurd;
+	lurd.reserve(limit);
+	for (std::size_t i = 0; i < limit; ++i)
+	{
+		const auto& log = mLogs[i];
+		const int dx = log.pCoordinate.second.x - log.pCoordinate.first.x;
+		const int dy = log.pCoordinate.second.y - log.pCoordinate.first.y;
+		const char ch = SolutionCodec::EncodeMove(dx, dy, log.isBMoved);
+		if (ch != '\0')
+		{
+			lurd.push_back(ch);
+		}
+	}
+	return lurd;
+}
+
+bool Game::SaveLurdSolutionDialog(const std::string& lurd)
+{
+	const std::string textToSave = lurd.empty() ? GetCurrentLurdSolution(true) : lurd;
+	if (textToSave.empty())
+	{
+		return false;
+	}
+
+	bool isDialogActive = true;
+	bool saved = false;
+	std::string saveError;
+
+	auto fileDialog = tgui::FileDialog::create();
+	fileDialog->setRenderer(mTheme->getRenderer("FileDialog"));
+	fileDialog->setTitle(mLoc->Get("SOLUTION_SAVE_DIALOG_TITLE"));
+	fileDialog->setFileMustExist(false);
+	fileDialog->setConfirmButtonText(mLoc->Get("BTN_SAVE"));
+	fileDialog->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+	fileDialog->setListViewColumnCaptions(mLoc->Get("BOARD_SAVE_DIALOG_COL_NAME"), mLoc->Get("BOARD_SAVE_DIALOG_COL_SIZE"), mLoc->Get("BOARD_SAVE_DIALOG_COL_MODIFIED"));
+	fileDialog->setFilenameLabelText(mLoc->Get("BOARD_SAVE_DIALOG_LBL_FILENAME"));
+	fileDialog->setAllowCreateFolder(true);
+	fileDialog->setCreateFolderButtonText(mLoc->Get("BOARD_SAVE_DIALOG_CREATE_FOLDER"));
+	fileDialog->setPath(mPaths.GetLogsDirectory().u8string());
+	fileDialog->setFilename("Solution_" + GetDateTime() + ".txt");
+	fileDialog->setFileTypeFilters({
+		{ "Solution Text (*.txt, *.lurd)", { "*.txt", "*.lurd" } },
+		{ "All Files (*.*)", { "*" } }
+	});
+
+	fileDialog->onFileSelect([&](const tgui::String& selectedPath) {
+		try
+		{
+			const auto path = std::filesystem::u8path(selectedPath.toStdString());
+			AppPaths::WriteFile(path, textToSave + "\n");
+			saved = true;
+			std::cout << "LURD solution saved to " << path << std::endl;
+		}
+		catch (const std::exception& error)
+		{
+			saveError = error.what();
+		}
+		isDialogActive = false;
+		});
+
+	fileDialog->onCancel([&]() { isDialogActive = false; });
+	fileDialog->onClose([&]() { isDialogActive = false; });
+
+	fileDialog->setSize(600, 400);
+	fileDialog->setPosition((mWindowSize.x - 600) / 2, (mWindowSize.y - 400) / 2);
+	mGui->add(fileDialog);
+
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+	while (isDialogActive)
+	{
+		WaitForNextFrame(ticksCount);
+		ticksCount = mClock.getElapsedTime();
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				isDialogActive = false;
+				mGameState = GameState::EQuit;
+			}
+			mGui->handleEvent(event);
+		}
+
+		mWindow->clear();
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
+		mWindow->display();
+	}
+
+	mGui->remove(fileDialog);
+	mWindow->setActive(true);
+	if (!saveError.empty()) ShowFileError(saveError);
+	return saved;
+}
+
+void Game::StopSolutionPlayback()
+{
+	mIsPlayingSolution = false;
+	mSolutionPlaybackSteps.clear();
+	mSolutionPlaybackIndex = 0;
+	mSolutionPlaybackTimer = 0.0f;
+}
+
+void Game::ExecuteSolutionStep(const SolutionCodec::SolutionStep& step, bool animate)
+{
+	if (!mPlayer)
+	{
+		return;
+	}
+
+	const Player::Direction prevDir = mPlayer->GetDirection();
+	Player::Direction nextDir = prevDir;
+	const int dx = step.mToX - step.mFromX;
+	const int dy = step.mToY - step.mFromY;
+	if (dx > 0) nextDir = Player::EEast;
+	else if (dx < 0) nextDir = Player::EWest;
+	else if (dy > 0) nextDir = Player::ESouth;
+	else if (dy < 0) nextDir = Player::ENorth;
+
+	mPlayer->SetDirection(nextDir);
+
+	const sf::Vector2i pFrom{ step.mFromX, step.mFromY };
+	const sf::Vector2i pTo{ step.mToX, step.mToY };
+
+	if (step.mIsPush)
+	{
+		const sf::Vector2i bFrom{ step.mBaggageFromX, step.mBaggageFromY };
+		const sf::Vector2i bTo{ step.mBaggageToX, step.mBaggageToY };
+		Baggage* baggage = GetBaggageFromPos(bFrom);
+		if (baggage)
+		{
+			if (animate)
+			{
+				baggage->GetMoveAnimation()->Start(TileToScreenCoords(bFrom), TileToScreenCoords(bTo), SOLUTION_PLAYBACK_INTERVAL);
+				baggage->SetLogicalCoordinate(bTo);
+			}
+			else
+			{
+				baggage->SetBoardCoordinate(bTo);
+			}
+		}
+
+		if (animate)
+		{
+			mPlayer->GetMoveAnimation()->Start(mPlayer->GetPosition(), TileToScreenCoords(pTo), SOLUTION_PLAYBACK_INTERVAL);
+			mPlayer->SetLogicalCoordinate(pTo);
+		}
+		else
+		{
+			mPlayer->SetBoardCoordinate(pTo);
+		}
+
+		RemoveRedo();
+		AddStep();
+		AddLog(pFrom, pTo, bFrom, bTo, prevDir, nextDir);
+	}
+	else
+	{
+		if (animate)
+		{
+			mPlayer->GetMoveAnimation()->Start(mPlayer->GetPosition(), TileToScreenCoords(pTo), SOLUTION_PLAYBACK_INTERVAL);
+			mPlayer->SetLogicalCoordinate(pTo);
+		}
+		else
+		{
+			mPlayer->SetBoardCoordinate(pTo);
+		}
+
+		RemoveRedo();
+		AddStep();
+		AddLog(pFrom, pTo, prevDir, nextDir);
+	}
+
+	ClearMoveHighlights();
+	ClearPushHighlights();
+	ClearPushDirections();
+}
+
+void Game::UpdateSolutionPlayback(float deltaTime)
+{
+	if (!mIsPlayingSolution)
+	{
+		return;
+	}
+
+	// 直前の1手のアニメーション中は完了を待つ
+	if ((mPlayer && mPlayer->GetMoveAnimation()->IsAnimating()))
+	{
+		return;
+	}
+	for (auto* baggage : mBaggages)
+	{
+		if (baggage->GetMoveAnimation()->IsAnimating())
+		{
+			return;
+		}
+	}
+
+	mSolutionPlaybackTimer -= deltaTime;
+	if (mSolutionPlaybackTimer > 0.0f)
+	{
+		return;
+	}
+
+	if (mSolutionPlaybackIndex >= mSolutionPlaybackSteps.size())
+	{
+		StopSolutionPlayback();
+		return;
+	}
+
+	ExecuteSolutionStep(mSolutionPlaybackSteps[mSolutionPlaybackIndex], true);
+	++mSolutionPlaybackIndex;
+
+	if (mSolutionPlaybackIndex >= mSolutionPlaybackSteps.size())
+	{
+		StopSolutionPlayback();
+	}
+	else
+	{
+		mSolutionPlaybackTimer = SOLUTION_PLAYBACK_INTERVAL;
+	}
+}
+
+bool Game::ApplyLurdSolution(const std::string& rawLurd, bool fromInitialState, bool animate, std::string& outError)
+{
+	outError.clear();
+	StopSolutionPlayback();
+
+	const std::vector<std::string> baseBoard = fromInitialState
+		? mInitBoardData.at(mCurrentKey)
+		: GetBoardStateWithObjects();
+
+	// 標準の寛容モードで事前検証（違法手のみエラー）
+	const auto sim = SolutionCodec::SimulateLurd(baseBoard, rawLurd, false);
+	if (!sim.mIsValid)
+	{
+		outError = sim.mErrorMessage;
+		return false;
+	}
+
+	if (sim.mSteps.empty())
+	{
+		outError = mLoc->Get("SOLUTION_MSG_EMPTY");
+		return false;
+	}
+
+	// 初期状態から適用する場合はUndo経由で初期状態へ戻す
+	if (fromInitialState)
+	{
+		CallReset();
+	}
+
+	if (animate)
+	{
+		mSolutionPlaybackSteps = sim.mSteps;
+		mSolutionPlaybackIndex = 0;
+		mSolutionPlaybackTimer = 0.0f;
+		mIsPlayingSolution = true;
+	}
+	else
+	{
+		for (const auto& step : sim.mSteps)
+		{
+			ExecuteSolutionStep(step, false);
+		}
+	}
+
+	return true;
+}
+
+void Game::OpenSolutionDialog(const std::string& initialLurd)
+{
+	CancelAllUIHolds();
+	StopSolutionPlayback();
+
+	bool isDialogOpen = true;
+	bool shouldStartPlayback = false;
+	bool playbackFromInitial = true;
+	bool playbackAnimate = true;
+	std::string pendingLurd;
+
+	const std::string currentLurd = GetCurrentLurdSolution(true);
+
+	auto child = tgui::ChildWindow::create();
+	child->setRenderer(mTheme->getRenderer("ChildWindow"));
+	child->setClientSize({ 760, 520 });
+	child->setPosition((mWindowSize.x - 760) / 2.0f, (mWindowSize.y - 520) / 2.0f);
+	child->setTitle(mLoc->Get("SOLUTION_DIALOG_TITLE"));
+	child->onClose([&]() { isDialogOpen = false; });
+	mGui->add(child);
+
+	// 現在の手順セクション
+	auto currentLabel = tgui::Label::create(mLoc->Get("SOLUTION_LBL_CURRENT"));
+	currentLabel->setRenderer(mTheme->getRenderer("Label"));
+	currentLabel->setPosition(16, 12);
+	currentLabel->setTextSize(16);
+	child->add(currentLabel);
+
+	auto currentArea = tgui::TextArea::create();
+	currentArea->setRenderer(mTheme->getRenderer("TextArea"));
+	currentArea->setPosition(16, 38);
+	currentArea->setSize(728, 110);
+	currentArea->setTextSize(15);
+	currentArea->setReadOnly(true);
+	currentArea->setText(currentLurd);
+	child->add(currentArea);
+
+	auto statusLabel = tgui::Label::create("");
+	statusLabel->setRenderer(mTheme->getRenderer("Label"));
+	statusLabel->setPosition(16, 442);
+	statusLabel->setSize(728, 28);
+	statusLabel->setTextSize(14);
+	child->add(statusLabel);
+
+	auto copyBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_COPY"));
+	copyBtn->setRenderer(mTheme->getRenderer("Button"));
+	copyBtn->setPosition(16, 156);
+	copyBtn->setSize(130, 32);
+	copyBtn->onPress([&]() {
+		if (currentLurd.empty())
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_EMPTY"));
+			return;
+		}
+		sf::Clipboard::setString(currentLurd);
+		statusLabel->setText(mLoc->Get("SOLUTION_MSG_COPIED"));
+		});
+	child->add(copyBtn);
+
+	auto saveBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_SAVE"));
+	saveBtn->setRenderer(mTheme->getRenderer("Button"));
+	saveBtn->setPosition(156, 156);
+	saveBtn->setSize(130, 32);
+	saveBtn->onPress([&]() {
+		if (currentLurd.empty())
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_EMPTY"));
+			return;
+		}
+		child->setVisible(false);
+		if (SaveLurdSolutionDialog(currentLurd))
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_SAVED"));
+		}
+		child->setVisible(true);
+		});
+	child->add(saveBtn);
+
+	// 読み込み手順セクション
+	auto inputLabel = tgui::Label::create(mLoc->Get("SOLUTION_LBL_INPUT"));
+	inputLabel->setRenderer(mTheme->getRenderer("Label"));
+	inputLabel->setPosition(16, 204);
+	inputLabel->setTextSize(16);
+	child->add(inputLabel);
+
+	auto inputArea = tgui::TextArea::create();
+	inputArea->setRenderer(mTheme->getRenderer("TextArea"));
+	inputArea->setPosition(16, 230);
+	inputArea->setSize(728, 120);
+	inputArea->setTextSize(15);
+	inputArea->setText(initialLurd);
+	child->add(inputArea);
+
+	auto pasteBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_PASTE"));
+	pasteBtn->setRenderer(mTheme->getRenderer("Button"));
+	pasteBtn->setPosition(16, 358);
+	pasteBtn->setSize(130, 32);
+	pasteBtn->onPress([&]() {
+		inputArea->setText(sf::Clipboard::getString().toAnsiString());
+		});
+	child->add(pasteBtn);
+
+	auto loadFileBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_LOAD_FILE"));
+	loadFileBtn->setRenderer(mTheme->getRenderer("Button"));
+	loadFileBtn->setPosition(156, 358);
+	loadFileBtn->setSize(140, 32);
+	loadFileBtn->onPress([&]() {
+		bool fileDialogOpen = true;
+		std::string loadError;
+		auto fd = tgui::FileDialog::create();
+		fd->setRenderer(mTheme->getRenderer("FileDialog"));
+		fd->setTitle(mLoc->Get("SOLUTION_LOAD_DIALOG_TITLE"));
+		fd->setFileMustExist(true);
+		fd->setConfirmButtonText(mLoc->Get("BTN_OK"));
+		fd->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+		fd->setPath(mPaths.GetLogsDirectory().u8string());
+		fd->setFileTypeFilters({
+			{ "Solution Text (*.txt, *.lurd, *.sok)", { "*.txt", "*.lurd", "*.sok" } },
+			{ "All Files (*.*)", { "*" } }
+		});
+		fd->onFileSelect([&](const tgui::String& selectedPath) {
+			try
+			{
+				const auto path = std::filesystem::u8path(selectedPath.toStdString());
+				const auto bytes = AppPaths::ReadFile(path);
+				inputArea->setText(std::string(bytes.begin(), bytes.end()));
+			}
+			catch (const std::exception& error)
+			{
+				loadError = error.what();
+			}
+			fileDialogOpen = false;
+			});
+		fd->onCancel([&]() { fileDialogOpen = false; });
+		fd->onClose([&]() { fileDialogOpen = false; });
+		fd->setSize(600, 400);
+		fd->setPosition((mWindowSize.x - 600) / 2.0f, (mWindowSize.y - 400) / 2.0f);
+
+		child->setVisible(false);
+		mGui->add(fd);
+		sf::Time fdTicks = mClock.getElapsedTime();
+		while (fileDialogOpen)
+		{
+			WaitForNextFrame(fdTicks);
+			fdTicks = mClock.getElapsedTime();
+			sf::Event ev;
+			while (mWindow->pollEvent(ev))
+			{
+				if (ev.type == sf::Event::Closed)
+				{
+					fileDialogOpen = false;
+					isDialogOpen = false;
+					mGameState = GameState::EQuit;
+				}
+				mGui->handleEvent(ev);
+			}
+			mWindow->clear();
+			DrawSprites();
+			DrawUI();
+			mGui->draw();
+			mWindow->display();
+		}
+		mGui->remove(fd);
+		child->setVisible(true);
+		if (!loadError.empty())
+		{
+			statusLabel->setText(loadError);
+		}
+		});
+	child->add(loadFileBtn);
+
+	if (!mCurrentLevelSolutions.empty())
+	{
+		auto embeddedBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_USE_EMBEDDED"));
+		embeddedBtn->setRenderer(mTheme->getRenderer("Button"));
+		embeddedBtn->setPosition(306, 358);
+		embeddedBtn->setSize(160, 32);
+		embeddedBtn->onPress([&]() {
+			inputArea->setText(mCurrentLevelSolutions.front());
+			});
+		child->add(embeddedBtn);
+	}
+
+	// 適用開始位置の選択ラジオボタン
+	auto radioGroup = tgui::RadioButtonGroup::create();
+	auto radioInitial = tgui::RadioButton::create();
+	radioInitial->setRenderer(mTheme->getRenderer("RadioButton"));
+	radioInitial->setText(mLoc->Get("SOLUTION_RADIO_FROM_INITIAL"));
+	radioInitial->setPosition(16, 404);
+	radioInitial->setChecked(true);
+	radioGroup->add(radioInitial);
+
+	auto radioCurrent = tgui::RadioButton::create();
+	radioCurrent->setRenderer(mTheme->getRenderer("RadioButton"));
+	radioCurrent->setText(mLoc->Get("SOLUTION_RADIO_FROM_CURRENT"));
+	radioCurrent->setPosition(260, 404);
+	radioGroup->add(radioCurrent);
+	child->add(radioGroup);
+
+	// 実行・閉じるボタン
+	auto tryApply = [&](bool animate) {
+		const std::string raw = inputArea->getText().toStdString();
+		const bool fromInit = radioInitial->isChecked();
+		const std::vector<std::string> baseBoard = fromInit
+			? mInitBoardData.at(mCurrentKey)
+			: GetBoardStateWithObjects();
+		const auto sim = SolutionCodec::SimulateLurd(baseBoard, raw, false);
+		if (!sim.mIsValid)
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_INVALID") + sim.mErrorMessage);
+			return;
+		}
+		if (sim.mSteps.empty())
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_EMPTY"));
+			return;
+		}
+		pendingLurd = raw;
+		playbackFromInitial = fromInit;
+		playbackAnimate = animate;
+		shouldStartPlayback = true;
+		isDialogOpen = false;
+	};
+
+	auto playBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_PLAY"));
+	playBtn->setRenderer(mTheme->getRenderer("Button"));
+	playBtn->setPosition(344, 476);
+	playBtn->setSize(120, 32);
+	playBtn->onPress([&]() { tryApply(true); });
+	child->add(playBtn);
+
+	auto applyBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_APPLY_ALL"));
+	applyBtn->setRenderer(mTheme->getRenderer("Button"));
+	applyBtn->setPosition(474, 476);
+	applyBtn->setSize(130, 32);
+	applyBtn->onPress([&]() { tryApply(false); });
+	child->add(applyBtn);
+
+	auto closeBtn = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
+	closeBtn->setRenderer(mTheme->getRenderer("Button"));
+	closeBtn->setPosition(614, 476);
+	closeBtn->setSize(130, 32);
+	closeBtn->onPress([&]() { isDialogOpen = false; });
+	child->add(closeBtn);
+
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+	while (isDialogOpen)
+	{
+		WaitForNextFrame(ticksCount);
+		ticksCount = mClock.getElapsedTime();
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				isDialogOpen = false;
+				mGameState = GameState::EQuit;
+			}
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+			{
+				isDialogOpen = false;
+			}
+			mGui->handleEvent(event);
+		}
+
+		mWindow->clear();
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
+		mWindow->display();
+	}
+
+	mGui->remove(child);
+	mWindow->setActive(true);
+
+	if (shouldStartPlayback)
+	{
+		std::string err;
+		if (!ApplyLurdSolution(pendingLurd, playbackFromInitial, playbackAnimate, err))
+		{
+			ShowFileError(err);
+		}
+	}
 }
 
 void Game::AddSnapshot(const std::string& name, const std::string& comment)
@@ -1578,6 +2179,8 @@ void Game::DisplayEditorScreen(const int mode)
 
 void Game::ApplyEditedBoard(const std::vector<std::string>& newBoardData)
 {
+	StopSolutionPlayback();
+	mCurrentLevelSolutions.clear();
 	// 一時的な名前で盤面リストに追加
 	std::string tempName = "Applied_" + GetDateTime();
 	AddBoard(tempName, newBoardData);
@@ -1795,7 +2398,7 @@ void Game::DisplayResult()
 	auto playLogButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_PLAY_LOG"));
 	playLogButton->setRenderer(mTheme->getRenderer("Button"));
 	playLogButton->setSize(120, 30);
-	playLogButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 2.0f) - 30, static_cast<int>(listBox->getSize().y) + 5);
+	playLogButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 2.0f) - 25, static_cast<int>(listBox->getSize().y) + 5);
 	playLogButton->onPress([&]() {
 		std::cout << "Play Log action triggered!" << std::endl;
 		isChildWindowOpened = false;
@@ -1806,14 +2409,47 @@ void Game::DisplayResult()
 	// ステージ選択画面を呼び出すボタン
 	auto boardSelectButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_BOARD_SELECT"));
 	boardSelectButton->setRenderer(mTheme->getRenderer("Button"));
-	boardSelectButton->setSize(120, 30);
-	boardSelectButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 3.0f) - 50, static_cast<int>(listBox->getSize().y) + 5);
+	boardSelectButton->setSize(140, 30);
+	boardSelectButton->setPosition(static_cast<int>(child->getSize().x - 120 * 2 - 140) - 40, static_cast<int>(listBox->getSize().y) + 5);
 	boardSelectButton->onPress([&]() {
 		std::cout << "Call board select window triggered!" << std::endl;
 		isChildWindowOpened = false;	// ステージ選択ウィンドウを出す前にリザルト画面を消すため
 		isSelectStage = true;
 		});
 	child->add(boardSelectButton);
+
+	// 解手順 (rludRLUD) をクリップボードへコピーするボタン
+	const std::string clearLurd = GetCurrentLurdSolution(true);
+	auto copyLurdButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_COPY_LURD"));
+	copyLurdButton->setRenderer(mTheme->getRenderer("Button"));
+	copyLurdButton->setSize(130, 30);
+	copyLurdButton->setPosition(10, static_cast<int>(listBox->getSize().y) + 5);
+	copyLurdButton->onPress([&]() {
+		if (!clearLurd.empty())
+		{
+			sf::Clipboard::setString(clearLurd);
+			listBox->addItem(mLoc->Get("SOLUTION_MSG_COPIED"));
+		}
+		});
+	child->add(copyLurdButton);
+
+	// 解手順 (rludRLUD) をファイルへ保存するボタン
+	auto saveLurdButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_SAVE_LURD"));
+	saveLurdButton->setRenderer(mTheme->getRenderer("Button"));
+	saveLurdButton->setSize(130, 30);
+	saveLurdButton->setPosition(150, static_cast<int>(listBox->getSize().y) + 5);
+	saveLurdButton->onPress([&]() {
+		if (!clearLurd.empty())
+		{
+			child->setVisible(false);
+			if (SaveLurdSolutionDialog(clearLurd))
+			{
+				listBox->addItem(mLoc->Get("SOLUTION_MSG_SAVED"));
+			}
+			child->setVisible(true);
+		}
+		});
+	child->add(saveLurdButton);
 
 	// ゲームループを停止
 	mWindow->setActive(false);
@@ -2092,248 +2728,446 @@ void Game::DisplayHelpWindow()
 	mWindow->setActive(true);
 }
 
-void Game::SelectBoards()
+sf::Texture Game::GenerateBoardPreviewTexture(const std::vector<std::string>& lines) const
 {
-	// 盤面リストの読み込みを行う
-	struct Contents
+	sf::Vector2u tileSize = mTextures.at("Assets/Floor.png")->getSize();
+	sf::Vector2u totalSize{ 0, static_cast<unsigned int>(lines.size()) };
+	for (const auto& line : lines)
 	{
-		std::vector<std::string> mBoard;
-		sf::Texture mTexture;
-		std::string label;
-	};
-	std::map<std::string, Contents> fileContents{};
-
-	// 参照する盤面リストのディレクトリを指定
-	sf::Vector2i tileSize{ mTextures.at("Assets/Floor.png")->getSize() };
-
-	try
-	{
-		// ディレクトリ内のすべてのエントリをチェック
-		for (const auto& boardFile : mPaths.GetBoardFiles())
+		if (totalSize.x < static_cast<unsigned int>(line.length()))
 		{
-			// エントリがファイルであり、拡張子が.txtの場合
-			const std::filesystem::directory_entry entry(boardFile.path);
-			if (entry.is_regular_file() && entry.path().extension() == ".txt")
+			totalSize.x = static_cast<unsigned int>(line.length());
+		}
+	}
+	if (totalSize.x == 0 || totalSize.y == 0)
+	{
+		throw std::runtime_error("Cannot generate preview for empty board");
+	}
+
+	sf::RenderTexture renderTexture{};
+	if (!renderTexture.create(totalSize.x * tileSize.x, totalSize.y * tileSize.y))
+	{
+		throw std::runtime_error("Failed to create board preview texture");
+	}
+	renderTexture.clear(sf::Color::Transparent);
+
+	for (int y = 0; y < static_cast<int>(lines.size()); ++y)
+	{
+		for (int x = 0; x < static_cast<int>(lines[y].length()); ++x)
+		{
+			std::vector<sf::Texture*> currentTex{};
+			switch (lines[y][x])
 			{
-				std::ifstream file(entry.path());
-				if (file)
-				{
-					std::vector<std::string> lines;
-					std::string line;
-					sf::Vector2u totalSize{ 0, 0 };
+			case ' ':
+				currentTex.emplace_back(mTextures.at("Assets/Floor.png"));
+				break;
+			case '#':
+				currentTex.emplace_back(mTextures.at("Assets/Wall.png"));
+				break;
+			case '.':
+				currentTex.emplace_back(mTextures.at("Assets/Goal.png"));
+				break;
+			case '$':
+				currentTex.emplace_back(mTextures.at("Assets/Floor.png"));
+				currentTex.emplace_back(mTextures.at("Assets/Box.png"));
+				break;
+			case '*':
+				currentTex.emplace_back(mTextures.at("Assets/Goal.png"));
+				currentTex.emplace_back(mTextures.at("Assets/ShinyBox.png"));
+				break;
+			case '@':
+				currentTex.emplace_back(mTextures.at("Assets/Floor.png"));
+				currentTex.emplace_back(mTextures.at("Assets/playerN.png"));
+				break;
+			case '+':
+				currentTex.emplace_back(mTextures.at("Assets/Goal.png"));
+				currentTex.emplace_back(mTextures.at("Assets/playerN.png"));
+				break;
+			default:
+				break;
+			}
 
-					// ファイルを1行ずつ読み込む
-					while (std::getline(file, line))
-					{
-						if (!line.empty() && line.back() == '\r') line.pop_back();
-						lines.push_back(line);
-						if (totalSize.x < static_cast<unsigned int>(line.length()))
-						{
-							totalSize.x = static_cast<unsigned int>(line.length());
-						}
-					}
-					if (file.bad() || lines.empty() || totalSize.x == 0)
-						throw std::runtime_error("Failed to read board: " + entry.path().u8string());
-					totalSize.y = static_cast<unsigned int>(lines.size());
-
-					// 読みこんだ内容から、盤面のテクスチャを作成
-					sf::Texture tmpBoardTex{};
-
-					// RenderTextureを作成
-					sf::RenderTexture renderTexture{};
-					if (!renderTexture.create(totalSize.x * tileSize.x, totalSize.y * tileSize.y))
-					{
-						throw std::runtime_error("Failed to create board preview: " + entry.path().u8string());
-					}
-					renderTexture.clear(sf::Color::Transparent); // 背景を透明に
-
-					// スプライトをrender textureに貼り付けていき、タイル画像を配置
-					for (int y = 0; y < static_cast<int>(totalSize.y); ++y)
-					{
-						for (int x = 0; x < static_cast<int>(lines[y].length()); ++x)
-						{
-							std::vector<sf::Texture*> currentTex{};
-							switch (lines[y][x])
-							{
-							case ' ':
-								currentTex.emplace_back(mTextures["Assets/Floor.png"]);
-								break;
-							case '#':
-								currentTex.emplace_back(mTextures["Assets/Wall.png"]);
-								break;
-							case '.':
-								currentTex.emplace_back(mTextures["Assets/Goal.png"]);
-								break;
-							case '$':
-								currentTex.emplace_back(mTextures["Assets/Floor.png"]);
-								currentTex.emplace_back(mTextures["Assets/Box.png"]);
-								break;
-							case '*':
-								currentTex.emplace_back(mTextures["Assets/Goal.png"]);
-								currentTex.emplace_back(mTextures["Assets/ShinyBox.png"]);
-								break;
-							case '@':
-								currentTex.emplace_back(mTextures["Assets/Floor.png"]);
-								currentTex.emplace_back(mTextures["Assets/playerN.png"]);
-								break;
-							case '+':
-								currentTex.emplace_back(mTextures["Assets/Goal.png"]);
-								currentTex.emplace_back(mTextures["Assets/playerN.png"]);
-								break;
-							default:
-								break;
-							}
-
-							for (auto& tmpTex : currentTex)
-							{
-								sf::Sprite tmpSprite(*tmpTex);
-								tmpSprite.setPosition(static_cast<float>(x * tileSize.x), static_cast<float>(y * tileSize.y));
-								renderTexture.draw(tmpSprite);
-							}
-						}
-					}
-					// 貼り付けたスプライトをrender textureに適用
-					renderTexture.display();
-
-					// 完成したテクスチャを取得
-					const sf::Texture& combinedTexture = renderTexture.getTexture();
-
-					// Keep bundled and saved boards distinct, even with identical filenames.
-					fileContents[boardFile.key] = Contents{ lines, combinedTexture, mLoc->Get(boardFile.saved ? "BOARD_SOURCE_SAVED" : "BOARD_SOURCE_BUNDLED")
-						+ " " + entry.path().stem().u8string() };
-
-					// もしゲームクラスに存在しない盤面の場合、追加処理を行う
-					if (!mInitBoardData.count(boardFile.key))
-					{
-						mInitBoardData.emplace(boardFile.key, lines);
-						mBoardData.emplace(boardFile.key, lines);
-						mFilenames.emplace_back(boardFile.key);
-					}
-				}
-				else 
-				{
-					throw std::runtime_error("Failed to open board: " + entry.path().u8string());
-				}
+			for (auto* tmpTex : currentTex)
+			{
+				sf::Sprite tmpSprite(*tmpTex);
+				tmpSprite.setPosition(static_cast<float>(x * tileSize.x), static_cast<float>(y * tileSize.y));
+				renderTexture.draw(tmpSprite);
 			}
 		}
 	}
-	catch (const std::exception& e) 
+
+	renderTexture.display();
+	return renderTexture.getTexture();
+}
+
+void Game::SelectBoards()
+{
+	CancelAllUIHolds();
+
+	// 案A（2段階選択）: ファイルコレクション一覧 -> 収録レベル一覧 -> オンデマンドプレビュー
+	struct FileEntry
+	{
+		std::string mFileKey;
+		std::string mLabel;
+		LevelFormat::LevelCollection mCollection;
+	};
+	std::map<std::string, FileEntry> fileEntries{};
+	std::unordered_map<std::string, sf::Texture> previewCache{};
+
+	auto addCollectionEntry = [&](const std::string& fileKey, const std::string& baseLabel, const std::filesystem::path& path, bool reportError) -> bool {
+		try
+		{
+			LevelFormat::LevelCollection col = LevelFormat::LoadCollectionFromFile(path);
+			std::string displayLabel = baseLabel;
+			if (col.mLevels.size() > 1)
+			{
+				displayLabel += " (" + std::to_string(col.mLevels.size()) + ")";
+			}
+			fileEntries[fileKey] = FileEntry{ fileKey, displayLabel, std::move(col) };
+			return true;
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Skipped unreadable level file '" << path.u8string() << "': " << e.what() << std::endl;
+			if (reportError)
+			{
+				ShowFileError(e.what());
+			}
+			return false;
+		}
+	};
+
+	try
+	{
+		for (const auto& boardFile : mPaths.GetBoardFiles())
+		{
+			const std::string baseLabel = mLoc->Get(boardFile.saved ? "BOARD_SOURCE_SAVED" : "BOARD_SOURCE_BUNDLED")
+				+ " " + boardFile.path.filename().u8string();
+			addCollectionEntry(boardFile.key, baseLabel, boardFile.path, false);
+		}
+	}
+	catch (const std::exception& e)
 	{
 		ShowFileError(e.what());
 		return;
 	}
 
-	std::string selectedBoardName{};
+	std::string selectedFileKey{};
+	std::size_t selectedLevelIndex = 0;
+	bool hasValidSelection = false;
 	bool isChildWindowOpened = true;
+
 	// 表示用のウィンドウを作成
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
-	child->setClientSize({ 960, 540 });
-	child->setPosition(420, 80);
+	child->setClientSize({ 1020, 560 });
+	child->setPosition((mWindowSize.x - 1020) / 2.0f, (mWindowSize.y - 560) / 2.0f);
 	child->setTitle(mLoc->Get("BOARD_SELECT_WINDOW_TITLE"));
 	child->onClose([&isChildWindowOpened]() {
 		isChildWindowOpened = false;
 		});
 	mGui->add(child);
 
-	// ListBoxでテキストを表示
-	auto listBox = tgui::ListBox::create();
-	listBox->setRenderer(mTheme->getRenderer("ListBox"));
-	listBox->setSize(240, 500);
-	listBox->setItemHeight(24);
-	listBox->setPosition(0, 0);
-	listBox->setTextSize(20);
-	listBox->setAutoScroll(false);
-	for (const auto& item : fileContents)
-	{
-		listBox->addItem(item.second.label, item.first);
-	}
-	child->add(listBox);
+	// 左ペイン: ファイル一覧ラベルとListBox
+	auto filesLabel = tgui::Label::create(mLoc->Get("BOARD_SELECT_LBL_FILES"));
+	filesLabel->setRenderer(mTheme->getRenderer("Label"));
+	filesLabel->setPosition(10, 6);
+	filesLabel->setTextSize(15);
+	child->add(filesLabel);
 
-	// Pictureウィジェットを作成して画像表示用に追加
-	BoundingBox childPictureBB{ sf::Vector2i{ static_cast<int>(listBox->getPosition().x + listBox->getSize().x), static_cast<int>(listBox->getPosition().y) },
-		sf::Vector2i{ static_cast<int>(child->getSize().x), static_cast<int>(listBox->getPosition().y + listBox->getSize().y)}};
+	auto fileListBox = tgui::ListBox::create();
+	fileListBox->setRenderer(mTheme->getRenderer("ListBox"));
+	fileListBox->setSize(260, 476);
+	fileListBox->setItemHeight(24);
+	fileListBox->setPosition(10, 30);
+	fileListBox->setTextSize(16);
+	fileListBox->setAutoScroll(false);
+	for (const auto& item : fileEntries)
+	{
+		fileListBox->addItem(item.second.mLabel, item.first);
+	}
+	child->add(fileListBox);
+
+	// 中ペイン: 収録レベル一覧ラベルとListBox（複数レベル収録ファイル対応）
+	auto levelsLabel = tgui::Label::create(mLoc->Get("BOARD_SELECT_LBL_LEVELS"));
+	levelsLabel->setRenderer(mTheme->getRenderer("Label"));
+	levelsLabel->setPosition(280, 6);
+	levelsLabel->setTextSize(15);
+	child->add(levelsLabel);
+
+	auto levelListBox = tgui::ListBox::create();
+	levelListBox->setRenderer(mTheme->getRenderer("ListBox"));
+	levelListBox->setSize(220, 476);
+	levelListBox->setItemHeight(24);
+	levelListBox->setPosition(280, 30);
+	levelListBox->setTextSize(16);
+	levelListBox->setAutoScroll(false);
+	child->add(levelListBox);
+
+	// 右ペイン: 盤面プレビューと詳細情報ラベル
+	const BoundingBox previewArea{
+		sf::Vector2f{ 510.0f, 30.0f },
+		sf::Vector2f{ 1010.0f, 470.0f }
+	};
 	auto picture = tgui::Picture::create();
-	picture->setSize(childPictureBB.second.x - childPictureBB.first.x, childPictureBB.second.y - childPictureBB.first.y);
-	picture->setPosition(childPictureBB.first.x, childPictureBB.first.y);
+	picture->setSize(previewArea.second.x - previewArea.first.x, previewArea.second.y - previewArea.first.y);
+	picture->setPosition(previewArea.first.x, previewArea.first.y);
 	child->add(picture);
 
-	// ListBoxの要素が選択されたら、対応する盤面をウィンドウ右側に表示
-	listBox->onItemSelect([&](const tgui::String&, const tgui::String& selectedItem) {
-		std::cout << "Select board on listbox action triggered!" << std::endl;
-		selectedBoardName = "";
-		if (fileContents.count(selectedItem.toStdString()))
+	auto infoLabel = tgui::Label::create("");
+	infoLabel->setRenderer(mTheme->getRenderer("Label"));
+	infoLabel->setPosition(510, 478);
+	infoLabel->setSize(500, 28);
+	infoLabel->setTextSize(15);
+	child->add(infoLabel);
+
+	auto updatePreview = [&](const std::string& fileKey, std::size_t levelIdx) {
+		hasValidSelection = false;
+		auto it = fileEntries.find(fileKey);
+		if (it == fileEntries.end() || levelIdx >= it->second.mCollection.mLevels.size())
 		{
-			selectedBoardName = selectedItem.toStdString();
-			// pictureのサイズと位置をリセット
-			picture->setSize(childPictureBB.second.x - childPictureBB.first.x, childPictureBB.second.y - childPictureBB.first.y);
-			picture->setPosition(childPictureBB.first.x, childPictureBB.first.y);
-			// sf::Textureからtgui::textureへの変換
-			sf::Image tmpImage = fileContents[selectedItem.toStdString()].mTexture.copyToImage();
+			infoLabel->setText("");
+			return;
+		}
+
+		const auto& level = it->second.mCollection.mLevels[levelIdx];
+		const std::string cacheKey = fileKey + "#" + std::to_string(levelIdx);
+		try
+		{
+			if (!previewCache.count(cacheKey))
+			{
+				previewCache.emplace(cacheKey, GenerateBoardPreviewTexture(level.mBoard));
+			}
+			const sf::Texture& tex = previewCache.at(cacheKey);
+			sf::Image tmpImage = tex.copyToImage();
 			tgui::Texture tmpTGuiTex{};
 			tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 			picture->getRenderer()->setTexture(tmpTGuiTex);
-			// 画像のスケーリングとオフセットの設定
-			float scaleFactor = std::min(picture->getSize().x / static_cast<float>(tmpImage.getSize().x), picture->getSize().y / static_cast<float>(tmpImage.getSize().y));
-			picture->setSize(tgui::Layout2d{ static_cast<float>(tmpImage.getSize().x) * scaleFactor, static_cast<float>(tmpImage.getSize().y) * scaleFactor });
-			picture->setPosition({ childPictureBB.first.x + (child->getSize().x - childPictureBB.first.x - static_cast<float>(tmpImage.getSize().x) * scaleFactor) / 2.0f, childPictureBB.first.y + (childPictureBB.second.y - childPictureBB.first.y - static_cast<float>(tmpImage.getSize().y) * scaleFactor) / 2.0f });
+
+			const float areaW = previewArea.second.x - previewArea.first.x;
+			const float areaH = previewArea.second.y - previewArea.first.y;
+			const float scaleFactor = std::min(areaW / static_cast<float>(tmpImage.getSize().x),
+				areaH / static_cast<float>(tmpImage.getSize().y));
+			const float drawW = static_cast<float>(tmpImage.getSize().x) * scaleFactor;
+			const float drawH = static_cast<float>(tmpImage.getSize().y) * scaleFactor;
+			picture->setSize(drawW, drawH);
+			picture->setPosition(previewArea.first.x + (areaW - drawW) / 2.0f,
+				previewArea.first.y + (areaH - drawH) / 2.0f);
+
+			const std::size_t w = level.mBoard.empty() ? 0 : level.mBoard.front().size();
+			const std::size_t h = level.mBoard.size();
+			std::string info = level.mTitle + "  |  "
+				+ mLoc->Get("BOARD_SELECT_LBL_INFO_SIZE") + std::to_string(w) + "x" + std::to_string(h);
+			if (!level.mSolutions.empty())
+			{
+				info += "  |  " + mLoc->Get("BOARD_SELECT_LBL_HAS_SOLUTIONS") + std::to_string(level.mSolutions.size());
+			}
+			infoLabel->setText(info);
+
+			selectedFileKey = fileKey;
+			selectedLevelIndex = levelIdx;
+			hasValidSelection = true;
+		}
+		catch (const std::exception& error)
+		{
+			infoLabel->setText(error.what());
+		}
+	};
+
+	auto populateLevelsForFile = [&](const std::string& fileKey) {
+		levelListBox->removeAllItems();
+		hasValidSelection = false;
+		auto it = fileEntries.find(fileKey);
+		if (it == fileEntries.end())
+		{
+			return;
+		}
+		const auto& levels = it->second.mCollection.mLevels;
+		for (std::size_t i = 0; i < levels.size(); ++i)
+		{
+			const std::string itemLabel = (levels.size() > 1)
+				? ("#" + std::to_string(i + 1) + " " + levels[i].mTitle)
+				: levels[i].mTitle;
+			levelListBox->addItem(itemLabel, std::to_string(i));
+		}
+		if (!levels.empty())
+		{
+			levelListBox->setSelectedItemByIndex(0);
+			updatePreview(fileKey, 0);
+		}
+	};
+
+	// ファイル選択イベント（左ペイン）
+	fileListBox->onItemSelect([&](const tgui::String&, const tgui::String& fileId) {
+		const std::string key = fileId.toStdString();
+		if (!key.empty())
+		{
+			selectedFileKey = key;
+			populateLevelsForFile(key);
 		}
 		});
 
-	// 入力終了用ボタン
+	// 収録レベル選択イベント（中ペイン）
+	levelListBox->onItemSelect([&](const tgui::String&, const tgui::String& levelId) {
+		if (selectedFileKey.empty() || levelId.empty())
+		{
+			return;
+		}
+		try
+		{
+			const std::size_t idx = static_cast<std::size_t>(std::stoul(levelId.toStdString()));
+			updatePreview(selectedFileKey, idx);
+		}
+		catch (const std::exception&)
+		{
+		}
+		});
+
+	// 外部の .sok / .xsb / .txt ファイルを直接開くボタン
+	auto openExternalButton = tgui::Button::create(mLoc->Get("BTN_OPEN_EXTERNAL_FILE"));
+	openExternalButton->setRenderer(mTheme->getRenderer("Button"));
+	openExternalButton->setSize(180, 32);
+	openExternalButton->setPosition(10, 518);
+	openExternalButton->onPress([&]() {
+		bool fdOpen = true;
+		std::filesystem::path chosenPath;
+		auto fd = tgui::FileDialog::create();
+		fd->setRenderer(mTheme->getRenderer("FileDialog"));
+		fd->setTitle(mLoc->Get("BOARD_OPEN_DIALOG_TITLE"));
+		fd->setFileMustExist(true);
+		fd->setConfirmButtonText(mLoc->Get("BTN_OK"));
+		fd->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+		fd->setPath(mPaths.GetBoardsDirectory().u8string());
+		fd->setFileTypeFilters({
+			{ "Sokoban Levels (*.sok, *.xsb, *.txt)", { "*.sok", "*.xsb", "*.txt" } },
+			{ "SOK (*.sok)", { "*.sok" } },
+			{ "XSB (*.xsb)", { "*.xsb" } },
+			{ "Text (*.txt)", { "*.txt" } }
+		});
+		fd->onFileSelect([&](const tgui::String& selectedPath) {
+			chosenPath = std::filesystem::u8path(selectedPath.toStdString());
+			fdOpen = false;
+			});
+		fd->onCancel([&]() { fdOpen = false; });
+		fd->onClose([&]() { fdOpen = false; });
+		fd->setSize(620, 420);
+		fd->setPosition((mWindowSize.x - 620) / 2.0f, (mWindowSize.y - 420) / 2.0f);
+
+		child->setVisible(false);
+		mGui->add(fd);
+		sf::Time fdTicks = mClock.getElapsedTime();
+		while (fdOpen)
+		{
+			WaitForNextFrame(fdTicks);
+			fdTicks = mClock.getElapsedTime();
+			sf::Event ev;
+			while (mWindow->pollEvent(ev))
+			{
+				if (ev.type == sf::Event::Closed)
+				{
+					fdOpen = false;
+					isChildWindowOpened = false;
+					mGameState = GameState::EQuit;
+				}
+				mGui->handleEvent(ev);
+			}
+			mWindow->clear();
+			DrawSprites();
+			DrawUI();
+			mGui->draw();
+			mWindow->display();
+		}
+		mGui->remove(fd);
+		child->setVisible(true);
+
+		if (!chosenPath.empty())
+		{
+			const std::string extKey = "external:" + chosenPath.u8string();
+			const std::string baseLabel = "[File] " + chosenPath.filename().u8string();
+			if (addCollectionEntry(extKey, baseLabel, chosenPath, true))
+			{
+				if (!fileListBox->containsId(extKey))
+				{
+					fileListBox->addItem(fileEntries.at(extKey).mLabel, extKey);
+				}
+				fileListBox->setSelectedItemById(extKey);
+				selectedFileKey = extKey;
+				populateLevelsForFile(extKey);
+			}
+		}
+		});
+	child->add(openExternalButton);
+
+	// 適用ボタン
 	auto applyButton = tgui::Button::create(mLoc->Get("BTN_APPLY"));
 	applyButton->setRenderer(mTheme->getRenderer("Button"));
-	applyButton->setSize(120, 30);
-	applyButton->setPosition(static_cast<int>(child->getSize().x - applyButton->getSize().x * 2.0f) - 30, static_cast<int>(listBox->getSize().y) + 5);
+	applyButton->setSize(120, 32);
+	applyButton->setPosition(760, 518);
 	applyButton->onPress([&]() {
-		std::cout << "Apply board action triggered!" << std::endl;
-		if (std::find(mFilenames.begin(), mFilenames.end(), selectedBoardName) != mFilenames.end())
+		if (!hasValidSelection)
 		{
-			mInitBoardData[selectedBoardName] = fileContents.at(selectedBoardName).mBoard;
-			mCurrentKey = selectedBoardName;
-			ChangeBoard();
-			isChildWindowOpened = false;
+			return;
 		}
+		auto it = fileEntries.find(selectedFileKey);
+		if (it == fileEntries.end() || selectedLevelIndex >= it->second.mCollection.mLevels.size())
+		{
+			return;
+		}
+		const auto& level = it->second.mCollection.mLevels[selectedLevelIndex];
+		const std::string boardKey = (it->second.mCollection.mLevels.size() > 1)
+			? (selectedFileKey + "#" + std::to_string(selectedLevelIndex))
+			: selectedFileKey;
+
+		mInitBoardData[boardKey] = level.mBoard;
+		mBoardData[boardKey] = level.mBoard;
+		mBoardSolutions[boardKey] = level.mSolutions;
+		if (std::find(mFilenames.begin(), mFilenames.end(), boardKey) == mFilenames.end())
+		{
+			mFilenames.emplace_back(boardKey);
+		}
+		mCurrentKey = boardKey;
+		ChangeBoard();
+		isChildWindowOpened = false;
 		});
 	child->add(applyButton);
 
+	// キャンセルボタン
 	auto exitButton = tgui::Button::create(mLoc->Get("BTN_CANCEL"));
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
-	exitButton->setSize(120, 30);
-	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - 10, static_cast<int>(listBox->getSize().y) + 5);
+	exitButton->setSize(120, 32);
+	exitButton->setPosition(890, 518);
 	exitButton->onPress([&]() {
-		std::cout << "Cansel selection action triggered!" << std::endl;
 		isChildWindowOpened = false;
 		});
 	child->add(exitButton);
 
+	// 初期選択（一覧が空でなければ先頭を選択）
+	if (!fileEntries.empty())
+	{
+		const std::string firstKey = fileEntries.begin()->first;
+		fileListBox->setSelectedItemById(firstKey);
+		selectedFileKey = firstKey;
+		populateLevelsForFile(firstKey);
+	}
+
 	// ゲームループを停止
 	mWindow->setActive(false);
-
-	// デルタタイム関連
 	sf::Time ticksCount = mClock.getElapsedTime();
 
-	// 入力と更新とウィンドウの終了処理
-	// ウィンドウが閉じるまでループ
 	while (isChildWindowOpened)
 	{
-		// 60FPSに合わせて遅延をかける
 		WaitForNextFrame(ticksCount);
-
-		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
-		if (deltaTime > 0.05f)
-		{
-			deltaTime = 0.05f;
-		}
 		ticksCount = mClock.getElapsedTime();
 
-		// イベントキューが存在する場合、それに応じた処理を全て行う
 		sf::Event event;
 		while (mWindow->pollEvent(event))
 		{
-			if (event.type == sf::Event::Closed ||
-				event.key.code == sf::Keyboard::Escape ||
-				event.key.code == sf::Keyboard::Enter)
+			if (event.type == sf::Event::Closed)
+			{
+				isChildWindowOpened = false;
+				mGameState = GameState::EQuit;
+			}
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
 			{
 				isChildWindowOpened = false;
 			}
@@ -2342,32 +3176,19 @@ void Game::SelectBoards()
 		}
 
 		mWindow->clear();
-
-		// 背面から描画
-		for (auto& sprite : mSprites)
-		{
-			sprite->Draw(mWindow);
-		}
-
-		// UIはゲームオブジェクトの上に描画するのでここに処理を書く
-		for (const auto& ui : mUIStack)
-		{
-			ui->Draw(mWindow);
-		}
-
-		mGui->draw(); // TGUIの描画
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
 		mWindow->display();
 	}
 
-	// ウィンドウのメモリ解放
-	child->close();
-
-	// ゲームループを再開
+	mGui->remove(child);
 	mWindow->setActive(true);
 }
 
 void Game::ChangeBoard()
 {
+	StopSolutionPlayback();
 	// ログをファイル出力してから全て消す
 	// TODO 盤面が変わった後のものになってしまっている
 	OutputLogs();
@@ -2375,6 +3196,17 @@ void Game::ChangeBoard()
 
 	// スナップショットを消去
 	ClearSnapshots();
+
+	// 盤面の同梱解手順を同期
+	auto solIt = mBoardSolutions.find(mCurrentKey);
+	if (solIt != mBoardSolutions.end())
+	{
+		mCurrentLevelSolutions = solIt->second;
+	}
+	else
+	{
+		mCurrentLevelSolutions.clear();
+	}
 
 	// 更新されたGameクラスのメンバ変数を参照して盤面を生成
 	std::vector<std::string> lines{ mInitBoardData[mCurrentKey] };

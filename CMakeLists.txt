@@ -25,6 +25,7 @@ set(PANDAE_SOURCES
     Sokoban-app/Game.cpp
     Sokoban-app/GameBoard.cpp
     Sokoban-app/HUDHelper.cpp
+    Sokoban-app/LevelFormat.cpp
     Sokoban-app/LocalizationManager.cpp
     Sokoban-app/Main.cpp
     Sokoban-app/MoveAnimationComponent.cpp
@@ -34,6 +35,7 @@ set(PANDAE_SOURCES
     Sokoban-app/Player.cpp
     Sokoban-app/SnapshotDialog.cpp
     Sokoban-app/SnapshotScreen.cpp
+    Sokoban-app/SolutionCodec.cpp
     Sokoban-app/SpriteComponent.cpp
     Sokoban-app/State.cpp
     Sokoban-app/THUD.cpp
@@ -181,4 +183,29 @@ if(PANDAE_BUILD_TESTS)
     endif()
 
     add_test(NAME AppPathsTests COMMAND AppPathsTests)
+
+    add_executable(LevelFormatTests
+        Sokoban-app/AppPaths.cpp
+        Sokoban-app/LevelFormat.cpp
+        Sokoban-app/tests/LevelFormatTests.cpp
+    )
+    target_include_directories(LevelFormatTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sokoban-app")
+    if(MSVC)
+        target_compile_options(LevelFormatTests PRIVATE /utf-8 /W3 /permissive-)
+    else()
+        target_compile_options(LevelFormatTests PRIVATE -Wall -Wextra)
+    endif()
+    add_test(NAME LevelFormatTests COMMAND LevelFormatTests)
+
+    add_executable(SolutionCodecTests
+        Sokoban-app/SolutionCodec.cpp
+        Sokoban-app/tests/SolutionCodecTests.cpp
+    )
+    target_include_directories(SolutionCodecTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sokoban-app")
+    if(MSVC)
+        target_compile_options(SolutionCodecTests PRIVATE /utf-8 /W3 /permissive-)
+    else()
+        target_compile_options(SolutionCodecTests PRIVATE -Wall -Wextra)
+    endif()
+    add_test(NAME SolutionCodecTests COMMAND SolutionCodecTests)
 endif()

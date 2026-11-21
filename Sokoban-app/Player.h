@@ -75,6 +75,7 @@ public:
 
 	sf::Vector2i GetBoardCoordinate() const { return this->mBoardCoordinate; }
 	void SetBoardCoordinate(const sf::Vector2i boardCoordinate);
+	void SetLogicalCoordinate(const sf::Vector2i& boardCoordinate) { mBoardCoordinate = boardCoordinate; }
 
 	class MoveAnimationComponent* GetMoveAnimation() const { return mMoveAnimation; }
 

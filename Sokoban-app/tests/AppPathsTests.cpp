@@ -41,14 +41,17 @@ int main()
 		Require(fs::is_directory(paths.GetBoardsDirectory()), "Create saved boards directory");
 		Require(fs::is_directory(paths.GetLogsDirectory()), "Create logs directory");
 		AppPaths::WriteFile(paths.GetBoardsDirectory() / "same.txt", "saved\n");
+		AppPaths::WriteFile(paths.GetBoardsDirectory() / "pack.sok", "Title: Pack\n#####\n#@$.#\n#####\n");
+		AppPaths::WriteFile(paths.GetBoardsDirectory() / "stage.XSB", "#####\n#@$.#\n#####\n");
 		const auto unicodeFile = paths.GetBoardsDirectory() / fs::u8path(u8"\u76e4\u9762.txt");
 		AppPaths::WriteFile(unicodeFile, "unicode filename\n");
 		const auto bytes = AppPaths::ReadFile(unicodeFile);
 		Require(std::string(bytes.begin(), bytes.end()) == "unicode filename\n", "Unicode path roundtrip");
 		const auto boards = paths.GetBoardFiles();
-		Require(boards.size() == 3, "List both bundled and saved boards");
-		Require(boards[0].key == "bundled:same.txt" && boards[1].key == "saved:same.txt",
-			"Same names must have distinct stable keys");
+		Require(boards.size() == 5, "List bundled and saved boards across .txt/.xsb/.sok");
+		Require(boards[0].key == "bundled:same.txt" && boards[1].key == "saved:pack.sok"
+			&& boards[2].key == "saved:same.txt" && boards[3].key == "saved:stage.XSB",
+			"Same names and extensions must have distinct stable keys");
 		const auto log = paths.NewLogPath("2026-01-01-00-00-00");
 		AppPaths::WriteFile(log, "first log");
 		const auto secondLog = paths.NewLogPath("2026-01-01-00-00-00");
@@ -62,7 +65,7 @@ int main()
 			missing.Initialize(portable / "Assets" / "Boards" / "same.txt");
 		}, "Missing assets must fail, without working-directory fallback");
 		AppPaths::WriteFile(paths.GetBoardsDirectory() / "same.txt", "updated\n");
-		Require(paths.GetBoardFiles().size() == 3, "Repeated saves must not duplicate board identities");
+		Require(paths.GetBoardFiles().size() == 5, "Repeated saves must not duplicate board identities");
 		const auto original = AppPaths::ReadFile(portable / "Assets" / "Boards" / "same.txt");
 		Require(std::string(original.begin(), original.end()) == "bundled\n", "Bundled data must remain untouched");
 
