@@ -1,4 +1,4 @@
-﻿#include "LocalizationManager.h"
+#include "LocalizationManager.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>

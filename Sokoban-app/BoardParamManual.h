@@ -11,10 +11,10 @@ class Game;
 
 class BoardParamManual {
 public:
-    // 解説ウィンドウを表示する
+    // 隗｣隱ｬ繧ｦ繧｣繝ｳ繝峨え繧定｡ｨ遉ｺ縺吶ｋ
     static void display(Game* game, tgui::Gui& gui);
 
 private:
-    // ファイルからデータを読み込むヘルパー
+    // 繝輔ぃ繧､繝ｫ縺九ｉ繝�繝ｼ繧ｿ繧定ｪｭ縺ｿ霎ｼ繧繝倥Ν繝代�ｼ
     static std::string loadManualText(const std::string& filename);
 };

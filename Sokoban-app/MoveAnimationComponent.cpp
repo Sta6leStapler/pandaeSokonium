@@ -10,7 +10,7 @@ MoveAnimationComponent::MoveAnimationComponent(IActor* owner, int updateOrder)
     , mTimer(0.0f)
     , mIsAnimating(false)
 {
-    // Š—LŽÒ‚Å‚ ‚éƒAƒNƒ^[‚ÌƒRƒ“ƒ|[ƒlƒ“ƒgƒŠƒXƒg‚É’Ç‰Á‚µ‚Ü‚·B
+    // æ‰€æœ‰è€…ã§ã‚ã‚‹ã‚¢ã‚¯ã‚¿ãƒ¼ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆãƒªã‚¹ãƒˆã«è¿½åŠ ã—ã¾ã™ã€‚
     mOwner->AddComponent(this);
 }
 
@@ -26,7 +26,7 @@ void MoveAnimationComponent::Start(const sf::Vector2f& start, const sf::Vector2f
     mTimer = 0.0f;
     mIsAnimating = true;
 
-    // ƒAƒjƒ[ƒVƒ‡ƒ“ŠJŽn’¼Œã‚ÌˆÊ’u‚ðƒAƒNƒ^[‚É”½‰f
+    // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³é–‹å§‹ç›´å¾Œã®ä½ç½®ã‚’ã‚¢ã‚¯ã‚¿ãƒ¼ã«åæ˜ 
     mOwner->SetPosition(mStartPos);
 }
 
@@ -34,22 +34,22 @@ void MoveAnimationComponent::Update(float deltaTime) {
     if (mIsAnimating) {
         mTimer += deltaTime;
 
-        // i’»—¦ t (0.0 ` 1.0) ‚ÌŽZo
+        // é€²æ—çŽ‡ t (0.0 ï½ž 1.0) ã®ç®—å‡º
         // $t = \frac{mTimer}{mDuration}$
         float t = mTimer / mDuration;
 
-        // Š®—¹”»’è
+        // å®Œäº†åˆ¤å®š
         if (t >= 1.0f) {
             t = 1.0f;
             mIsAnimating = false;
         }
 
-        // üŒ`•âŠÔiLerpj‚É‚æ‚éŒ»ÝÀ•W‚ÌŒvŽZ
+        // ç·šå½¢è£œé–“ï¼ˆLerpï¼‰ã«ã‚ˆã‚‹ç¾åœ¨åº§æ¨™ã®è¨ˆç®—
         // $P(t) = (1 - t)P_{start} + tP_{end}$
         sf::Vector2f currentPos = mStartPos + t * (mEndPos - mStartPos);
 
-        // ƒAƒNƒ^[‚Ì•¨—À•WiƒXƒNƒŠ[ƒ“À•Wj‚ðXV
-        // ‚±‚ê‚É‚æ‚è SpriteComponent “™‚ªV‚µ‚¢ˆÊ’u‚Å•`‰æ‚³‚ê‚é‚æ‚¤‚É‚È‚è‚Ü‚·B
+        // ã‚¢ã‚¯ã‚¿ãƒ¼ã®ç‰©ç†åº§æ¨™ï¼ˆã‚¹ã‚¯ãƒªãƒ¼ãƒ³åº§æ¨™ï¼‰ã‚’æ›´æ–°
+        // ã“ã‚Œã«ã‚ˆã‚Š SpriteComponent ç­‰ãŒæ–°ã—ã„ä½ç½®ã§æç”»ã•ã‚Œã‚‹ã‚ˆã†ã«ãªã‚Šã¾ã™ã€‚
         mOwner->SetPosition(currentPos);
     }
 }

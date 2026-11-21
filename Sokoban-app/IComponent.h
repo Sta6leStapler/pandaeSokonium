@@ -5,15 +5,15 @@
 class IComponent
 {
 public:
-	// ƒfƒXƒgƒ‰ƒNƒ^
+	// ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 	virtual ~IComponent() = default;
 
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€‚Å‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ðXV‚·‚é
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ ã§ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æ›´æ–°ã™ã‚‹
 	virtual void Update(float deltaTime) = 0;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg“Á—L‚Ì“ü—Íˆ—
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆç‰¹æœ‰ã®å…¥åŠ›å‡¦ç†
 	virtual void ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) = 0;
 
-	// ƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 	virtual int GetUpdateOrder() = 0;
 };

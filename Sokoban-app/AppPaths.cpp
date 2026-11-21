@@ -1,6 +1,7 @@
 #include "AppPaths.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <fstream>
 #include <iterator>
 #include <stdexcept>

@@ -1,4 +1,4 @@
-﻿#include "Game.h"
+#include "Game.h"
 
 #include "IActor.h"
 #include "IComponent.h"
@@ -19,12 +19,16 @@
 #include "EditorScreen.h"
 #include "BoardConfigDialog.h"
 #include "LocalizationManager.h"
+#include "PlatformTime.h"
 
-#include <iostream>
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
-#include <chrono>
-#include <ctime>
+#include <iomanip>
+#include <iostream>
 #include <stdexcept>
 
 Game::Game()
@@ -109,7 +113,7 @@ void Game::RunLoop()
 void Game::LoadData()
 {
 	// フォントをロードし、初期化
-	const auto fontPath = mPaths.Asset("Assets/fonts/meiryo.ttc");
+	const auto fontPath = mPaths.Asset("Assets/fonts/BIZUDPGothic-Regular.ttf");
 	const auto font_name = fontPath.u8string();
 	mFontData = AppPaths::ReadFile(fontPath);
 	if (!mFontSFML.loadFromMemory(mFontData.data(), mFontData.size()))
@@ -469,8 +473,8 @@ void Game::ProcessInput()
 void Game::UpdateGame()
 {
 	// デルタタイムを計算する
-	// 最期のフレームから16msだけ待つ
-	while (mClock.getElapsedTime().asMilliseconds() - mTicksCount.asMilliseconds() < 16);
+	// 最後のフレームから16msだけ待つ
+	WaitForNextFrame(mTicksCount);
 
 	float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - mTicksCount.asMilliseconds()) / 1000.0f;
 	if (deltaTime > 0.05f)
@@ -622,6 +626,15 @@ void Game::Shutdown()
 	if (mWindow) mWindow->close();
 	delete mWindow;
 	mWindow = nullptr;
+}
+
+void Game::WaitForNextFrame(const sf::Time& previousTicks) const
+{
+	const sf::Int32 elapsedMs = mClock.getElapsedTime().asMilliseconds() - previousTicks.asMilliseconds();
+	if (elapsedMs < 16)
+	{
+		sf::sleep(sf::milliseconds(16 - elapsedMs));
+	}
 }
 
 void Game::ShowFileError(const std::string& message)
@@ -1014,7 +1027,7 @@ bool Game::CallSave(const std::vector<std::string>& boardData)
 
 	while (isDialogActive)
 	{
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		WaitForNextFrame(ticksCount);
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
 		if (deltaTime > 0.05f) deltaTime = 0.05f;
 		ticksCount = mClock.getElapsedTime();
@@ -1227,8 +1240,7 @@ void Game::AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2
 
 	// 年月日と時刻を文字列にフォーマット
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-	std::tm timeinfo;
-	localtime_s(&timeinfo, &now_time);
+	std::tm timeinfo = PlatformTime::GetLocalTime(now_time);
 	char buffer[24];
 	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeinfo);
 
@@ -1253,8 +1265,7 @@ void Game::AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2
 
 	// 年月日と時刻を文字列にフォーマット
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-	std::tm timeinfo;
-	localtime_s(&timeinfo, &now_time);
+	std::tm timeinfo = PlatformTime::GetLocalTime(now_time);
 	char buffer[24];
 	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeinfo);
 
@@ -1339,7 +1350,7 @@ void Game::CallSaveLog()
 
 	while (isDialogActive)
 	{
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		WaitForNextFrame(ticksCount);
 		ticksCount = mClock.getElapsedTime();
 
 		sf::Event event;
@@ -1676,8 +1687,7 @@ std::string Game::GetDateTime()
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
 
 	// 年月日と時刻を文字列にフォーマット
-	std::tm timeinfo;
-	localtime_s(&timeinfo, &now_time);
+	std::tm timeinfo = PlatformTime::GetLocalTime(now_time);
 	char buffer[20];
 	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeinfo);
 	std::string datetime_str(buffer);
@@ -1816,7 +1826,7 @@ void Game::DisplayResult()
 	while (isChildWindowOpened)
 	{
 		// 60FPSに合わせて遅延をかける
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		WaitForNextFrame(ticksCount);
 
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
 		if (deltaTime > 0.05f)
@@ -2035,7 +2045,7 @@ void Game::DisplayHelpWindow()
 	while (isChildWindowOpened)
 	{
 		// 60FPSに合わせて遅延をかける
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		WaitForNextFrame(ticksCount);
 
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
 		if (deltaTime > 0.05f)
@@ -2308,7 +2318,7 @@ void Game::SelectBoards()
 	while (isChildWindowOpened)
 	{
 		// 60FPSに合わせて遅延をかける
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		WaitForNextFrame(ticksCount);
 
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
 		if (deltaTime > 0.05f)
@@ -2539,7 +2549,7 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 		while (isChildWindowOpened)
 		{
 			// 60FPSに合わせて遅延をかける
-			while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+			WaitForNextFrame(ticksCount);
 
 			float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
 			if (deltaTime > 0.05f)

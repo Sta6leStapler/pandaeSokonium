@@ -1,4 +1,4 @@
-﻿#include "PauseMenu.h"
+#include "PauseMenu.h"
 #include "Game.h"
 #include "LocalizationManager.h"
 

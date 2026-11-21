@@ -1,8 +1,9 @@
-﻿#include "SnapshotScreen.h"
+#include "SnapshotScreen.h"
 #include "Game.h"
 
 #include "SnapshotDialog.h"
 
+#include <algorithm>
 #include <iostream>
 
 SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)

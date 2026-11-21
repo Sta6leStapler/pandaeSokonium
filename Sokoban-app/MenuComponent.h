@@ -5,22 +5,22 @@
 class MenuComponent
 {
 public:
-	// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
-	// updateOrder‚ª’á‚¯‚ê‚Î,æ‚É•`‰æ‚³‚ê‚é(‰æ–Ê‚ÌŒã•û‚É—ˆ‚é)
+	// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+	// updateOrderãŒä½ã‘ã‚Œã°,å…ˆã«æç”»ã•ã‚Œã‚‹(ç”»é¢ã®å¾Œæ–¹ã«æ¥ã‚‹)
 	MenuComponent(class Menu* owner, int updateOrder = 100, int drawOrder = 100);
-	// ƒfƒXƒgƒ‰ƒNƒ^
+	// ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 	virtual ~MenuComponent();
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€‚Å‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ğXV‚·‚é
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ ã§ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æ›´æ–°ã™ã‚‹
 	void Update(float deltaTime);
-	// ‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ÌProcess Input
+	// ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®Process Input
 	void ProcessInput(const sf::Event::KeyEvent* keyState);
 
-	// •`‰æŠÖ”
+	// æç”»é–¢æ•°
 	void Draw(sf::RenderWindow* mWindow);
-	// ƒeƒNƒXƒ`ƒƒ‚Ìİ’è
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£ã®è¨­å®š
 	void SetTexture(sf::Texture* texture);
 
-	// ƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 
 	int GetUpdateOrder() const { return mUpdateOrder; }
 
@@ -33,13 +33,13 @@ public:
 	void SetCoordinateY(const int& coordinateY) { this->mCoordinateY = coordinateY; }
 
 private:
-	// ©g‚ğ•Û‚µ‚Ä‚¢‚éƒAƒNƒ^[(MenuƒNƒ‰ƒX)
+	// è‡ªèº«ã‚’ä¿æŒã—ã¦ã„ã‚‹ã‚¢ã‚¯ã‚¿ãƒ¼(Menuã‚¯ãƒ©ã‚¹)
 	class Menu* mOwner;
 
-	// ‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ÌUpdate order
+	// ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®Update order
 	int mUpdateOrder;
 
-	// ƒeƒNƒXƒ`ƒƒŠÖ˜A‚Ìƒƒ“ƒo•Ï”
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£é–¢é€£ã®ãƒ¡ãƒ³ãƒå¤‰æ•°
 	sf::Texture* mTexture;
 	int mDrawOrder;
 	int mTexWidth;

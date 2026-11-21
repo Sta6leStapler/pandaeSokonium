@@ -1,13 +1,15 @@
 #include "Pathfinder.h"
 
-// sf::Vector2i‚ğ”äŠr‚·‚é‚½‚ß‚Ì\‘¢‘Ì
+#include <algorithm>
+
+// sf::Vector2iã‚’æ¯”è¼ƒã™ã‚‹ãŸã‚ã®æ§‹é€ ä½“
 struct CompareVector2i {
     bool operator()(const sf::Vector2i& a, const sf::Vector2i& b) const {
-        // yÀ•W‚ªˆÙ‚È‚éê‡‚ÍyÀ•W‚Å”äŠr
+        // yåº§æ¨™ãŒç•°ãªã‚‹å ´åˆã¯yåº§æ¨™ã§æ¯”è¼ƒ
         if (a.y != b.y) {
             return a.y < b.y;
         }
-        // yÀ•W‚ª“¯‚¶ê‡‚ÍxÀ•W‚Å”äŠr
+        // yåº§æ¨™ãŒåŒã˜å ´åˆã¯xåº§æ¨™ã§æ¯”è¼ƒ
         return a.x < b.x;
     }
 };
@@ -19,10 +21,10 @@ std::vector<sf::Vector2i> Pathfinder::FindPath(
     const std::vector<sf::Vector2i>& baggagePositions,
     const sf::Vector2i& boardSize)
 {
-	// •—Dæ’Tõ‚Åstart‚©‚çend‚Ü‚Å‚ÌÅ’ZŒo˜H‚ğŒ©‚Â‚¯‚é
+	// å¹…å„ªå…ˆæ¢ç´¢ã§startã‹ã‚‰endã¾ã§ã®æœ€çŸ­çµŒè·¯ã‚’è¦‹ã¤ã‘ã‚‹
 	std::vector<sf::Vector2i> result{};
 
-	// ã‰º¶‰E‚Ì4•ûŒü
+	// ä¸Šä¸‹å·¦å³ã®4æ–¹å‘
     const std::vector<sf::Vector2i> directions{
         { 1, 0 },
         { 0, 1 },
@@ -30,22 +32,22 @@ std::vector<sf::Vector2i> Pathfinder::FindPath(
         { 0, -1 }
 	};
 
-    // •—Dæ’Tõ—p‚Ì’TõÏ‚İƒ}ƒX
+    // å¹…å„ªå…ˆæ¢ç´¢ç”¨ã®æ¢ç´¢æ¸ˆã¿ãƒã‚¹
     std::vector<std::vector<bool>> explored(boardSize.y, std::vector<bool>(boardSize.x, false));
 	explored[start.y][start.x] = true;
 
-    // •—Dæ’Tõ—p‚ÌƒLƒ…[
+    // å¹…å„ªå…ˆæ¢ç´¢ç”¨ã®ã‚­ãƒ¥ãƒ¼
 	std::queue<sf::Vector2i> q{};
     q.push(start);
 
-    // Šeƒ}ƒX‚Ö‚ÌÅ’ZŒo˜H‚ğ‹L˜^‚·‚éƒ}ƒbƒv
+    // å„ãƒã‚¹ã¸ã®æœ€çŸ­çµŒè·¯ã‚’è¨˜éŒ²ã™ã‚‹ãƒãƒƒãƒ—
     std::map<sf::Vector2i, sf::Vector2i, bool(*)(const sf::Vector2i&, const sf::Vector2i&)> cameFrom(
         [](const sf::Vector2i& a, const sf::Vector2i& b) {
             return (a.x == b.x) ? (a.y < b.y) : (a.x < b.x);
         });
     cameFrom[start] = start;
 
-    // ’Tõˆ—
+    // æ¢ç´¢å‡¦ç†
     bool found = false;
     while (!q.empty())
     {
@@ -60,8 +62,8 @@ std::vector<sf::Vector2i> Pathfinder::FindPath(
         {
             auto next = current + direction;
             if (!explored[next.y][next.x] &&
-                boardState[next.y][next.x] != '#' && // •Ç‚Å‚È‚¢
-                std::find(baggagePositions.begin(), baggagePositions.end(), next) == baggagePositions.end()) // ‰×•¨‚ª‚È‚¢
+                boardState[next.y][next.x] != '#' && // å£ã§ãªã„
+                std::find(baggagePositions.begin(), baggagePositions.end(), next) == baggagePositions.end()) // è·ç‰©ãŒãªã„
             {
                 explored[next.y][next.x] = true;
                 cameFrom[next] = current;
@@ -70,7 +72,7 @@ std::vector<sf::Vector2i> Pathfinder::FindPath(
         }
     }
 
-    // Œo˜H‚Ì•œŒ³
+    // çµŒè·¯ã®å¾©å…ƒ
     if (found)
     {
         sf::Vector2i current = end;
@@ -93,7 +95,7 @@ std::vector<sf::Vector2i> Pathfinder::FindAllReachable(
 {
     std::vector<sf::Vector2i> result{};
 
-	// ã‰º¶‰E‚Ì4•ûŒü
+	// ä¸Šä¸‹å·¦å³ã®4æ–¹å‘
     const std::vector<sf::Vector2i> directions{
         { 1, 0 },
         { 0, 1 },
@@ -101,15 +103,15 @@ std::vector<sf::Vector2i> Pathfinder::FindAllReachable(
         { 0, -1 }
     };
 
-    // •—Dæ’Tõ—p‚Ì’TõÏ‚İƒ}ƒX
+    // å¹…å„ªå…ˆæ¢ç´¢ç”¨ã®æ¢ç´¢æ¸ˆã¿ãƒã‚¹
     std::vector<std::vector<bool>> explored(boardSize.y, std::vector<bool>(boardSize.x, false));
     explored[start.y][start.x] = true;
 
-	// •—Dæ’Tõ—p‚ÌƒLƒ…[
+	// å¹…å„ªå…ˆæ¢ç´¢ç”¨ã®ã‚­ãƒ¥ãƒ¼
     std::queue<sf::Vector2i> q{};
     q.push(start);
 
-    // ’Tõˆ—
+    // æ¢ç´¢å‡¦ç†
     while (!q.empty())
     {
 		auto current = q.front();
@@ -139,40 +141,40 @@ std::vector<sf::Vector2i> Pathfinder::FindAllTransportable(
     const std::vector<sf::Vector2i>& baggagePositions,
     const sf::Vector2i& boardSize)
 {
-    // ã‰º¶‰E‚Ì4•ûŒü
+    // ä¸Šä¸‹å·¦å³ã®4æ–¹å‘
     const std::vector<sf::Vector2i> directions
     {
-        { 0, -1 }, // 0: ã
-        { 1,  0 }, // 1: ‰E
-        { 0,  1 }, // 2: ‰º
-        { -1, 0 }  // 3: ¶
+        { 0, -1 }, // 0: ä¸Š
+        { 1,  0 }, // 1: å³
+        { 0,  1 }, // 2: ä¸‹
+        { -1, 0 }  // 3: å·¦
     };
 
-    // ƒ_ƒCƒNƒXƒgƒ‰–@‚Å—p‚¢‚éó‘Ô‚ğŠÇ—‚·‚é\‘¢‘Ì
+    // ãƒ€ã‚¤ã‚¯ã‚¹ãƒˆãƒ©æ³•ã§ç”¨ã„ã‚‹çŠ¶æ…‹ã‚’ç®¡ç†ã™ã‚‹æ§‹é€ ä½“
     struct State
     {
-        int cost;                 // ‚»‚Ìó‘Ô‚ÉŠ‚é‚Ü‚Å‚Ì‘ƒRƒXƒgiƒvƒŒƒCƒ„[‚ÌˆÚ“®‹——£j
-        sf::Vector2i baggagePos;  // ‰×•¨‚ÌŒ»İˆÊ’u
-        int pushedFromDirIndex;   // ‚Ç‚Ì•ûŒü‚©‚ç‰Ÿ‚³‚ê‚Ä‚±‚ÌˆÊ’u‚É—ˆ‚½‚©
+        int cost;                 // ãã®çŠ¶æ…‹ã«è‡³ã‚‹ã¾ã§ã®ç·ã‚³ã‚¹ãƒˆï¼ˆãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•è·é›¢ï¼‰
+        sf::Vector2i baggagePos;  // è·ç‰©ã®ç¾åœ¨ä½ç½®
+        int pushedFromDirIndex;   // ã©ã®æ–¹å‘ã‹ã‚‰æŠ¼ã•ã‚Œã¦ã“ã®ä½ç½®ã«æ¥ãŸã‹
 
-        // —Dæ“x•t‚«ƒLƒ…[‚ÅƒRƒXƒg‚ª¬‚³‚¢‡‚Éæ‚èo‚·‚½‚ß‚Ì”äŠr‰‰Zq
+        // å„ªå…ˆåº¦ä»˜ãã‚­ãƒ¥ãƒ¼ã§ã‚³ã‚¹ãƒˆãŒå°ã•ã„é †ã«å–ã‚Šå‡ºã™ãŸã‚ã®æ¯”è¼ƒæ¼”ç®—å­
         bool operator>(const State& other) const
         {
             return cost > other.cost;
         }
     };
 
-    // —Dæ“x•t‚«ƒLƒ…[iÅ¬ƒq[ƒvj
+    // å„ªå…ˆåº¦ä»˜ãã‚­ãƒ¥ãƒ¼ï¼ˆæœ€å°ãƒ’ãƒ¼ãƒ—ï¼‰
     std::priority_queue<State, std::vector<State>, std::greater<State>> pq;
 
-    // Šeƒ}ƒX‚É‚Ç‚ÌŒü‚«‚©‚ç‰Ÿ‚³‚ê‚½‚©‚ğ‹L˜^‚·‚é (y, x, direction_index)
+    // å„ãƒã‚¹ã«ã©ã®å‘ãã‹ã‚‰æŠ¼ã•ã‚ŒãŸã‹ã‚’è¨˜éŒ²ã™ã‚‹ (y, x, direction_index)
     std::vector<std::vector<std::vector<bool>>> explored(
         boardSize.y, std::vector<std::vector<bool>>(
             boardSize.x, std::vector<bool>(directions.size(), false)
         )
     );
 
-    // ‰^”À‘ÎÛŠO‚Ì‰×•¨‚ÌˆÊ’u‚ğ‚‘¬‚ÉQÆ‚Å‚«‚é‚æ‚¤set‚ÉŠi”[
+    // é‹æ¬å¯¾è±¡å¤–ã®è·ç‰©ã®ä½ç½®ã‚’é«˜é€Ÿã«å‚ç…§ã§ãã‚‹ã‚ˆã†setã«æ ¼ç´
     std::set<sf::Vector2i, CompareVector2i> otherBaggages;
     for (const auto& pos : baggagePositions)
     {
@@ -182,15 +184,15 @@ std::vector<sf::Vector2i> Pathfinder::FindAllTransportable(
         }
     }
 
-    // ’Tõ‚ÌŠJn“_‚ğƒLƒ…[‚É’Ç‰Á
-    // Å‰‚Ì4•ûŒü‚Ö‚ÌƒvƒbƒVƒ…‚ğ‚İ‚é
+    // æ¢ç´¢ã®é–‹å§‹ç‚¹ã‚’ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ 
+    // æœ€åˆã®4æ–¹å‘ã¸ã®ãƒ—ãƒƒã‚·ãƒ¥ã‚’è©¦ã¿ã‚‹
     for (int i = 0; i < directions.size(); ++i)
     {
         const auto& pushDir = directions[i];
         sf::Vector2i baggageNextPos = start + pushDir;
         sf::Vector2i playerStandPos = start - pushDir;
 
-        // ‰×•¨‚ÌˆÚ“®æ‚ÆƒvƒŒƒCƒ„[‚Ì—§‚¿ˆÊ’u‚ª—LŒø‚©ƒ`ƒFƒbƒN
+        // è·ç‰©ã®ç§»å‹•å…ˆã¨ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç«‹ã¡ä½ç½®ãŒæœ‰åŠ¹ã‹ãƒã‚§ãƒƒã‚¯
         if (playerStandPos.x < 0 || playerStandPos.y < 0 || playerStandPos.x >= boardSize.x || playerStandPos.y >= boardSize.y ||
             baggageNextPos.x < 0 || baggageNextPos.y < 0 || baggageNextPos.x >= boardSize.x || baggageNextPos.y >= boardSize.y ||
             boardState[playerStandPos.y][playerStandPos.x] == '#' ||
@@ -200,8 +202,8 @@ std::vector<sf::Vector2i> Pathfinder::FindAllTransportable(
             continue;
         }
 
-        // ƒvƒŒƒCƒ„[‚ª‰×•¨‚ğ‰Ÿ‚·ˆÊ’u‚Ü‚ÅˆÚ“®‚·‚éŒo˜H‚ğ’T‚·
-        // ‚±‚ÌAáŠQ•¨‚Æ‚È‚é‚Ì‚Í‘¼‚Ì‰×•¨‚Ì‚İ
+        // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒè·ç‰©ã‚’æŠ¼ã™ä½ç½®ã¾ã§ç§»å‹•ã™ã‚‹çµŒè·¯ã‚’æ¢ã™
+        // ã“ã®æ™‚ã€éšœå®³ç‰©ã¨ãªã‚‹ã®ã¯ä»–ã®è·ç‰©ã®ã¿
         std::vector<sf::Vector2i> initialPath = FindPath(
             playerPosition, playerStandPos, boardState,
             baggagePositions,
@@ -210,13 +212,13 @@ std::vector<sf::Vector2i> Pathfinder::FindAllTransportable(
 
         if (!initialPath.empty() || playerPosition == playerStandPos)
         {
-            // ƒpƒX‚ªŒ©‚Â‚©‚ê‚ÎAÅ‰‚Ìó‘Ô‚Æ‚µ‚ÄƒLƒ…[‚É’Ç‰Á
+            // ãƒ‘ã‚¹ãŒè¦‹ã¤ã‹ã‚Œã°ã€æœ€åˆã®çŠ¶æ…‹ã¨ã—ã¦ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ 
             int initialCost = static_cast<int>(initialPath.size()) > 1 ? static_cast<int>(initialPath.size()) - 1 : 0;
             pq.push({ initialCost, baggageNextPos, i });
         }
     }
 
-    // ƒ_ƒCƒNƒXƒgƒ‰–@‚É‚æ‚é’Tõ
+    // ãƒ€ã‚¤ã‚¯ã‚¹ãƒˆãƒ©æ³•ã«ã‚ˆã‚‹æ¢ç´¢
     std::vector<std::vector<bool>> isReachable(boardSize.y, std::vector<bool>(boardSize.x, false));
 
     while (!pq.empty())
@@ -224,27 +226,27 @@ std::vector<sf::Vector2i> Pathfinder::FindAllTransportable(
         State current = pq.top();
         pq.pop();
 
-        // ‚·‚Å‚É‚±‚Ìó‘ÔiˆÊ’uA‰Ÿ‚³‚ê‚½•ûŒüj‚ª’TõÏ‚İ‚È‚çƒXƒLƒbƒv
+        // ã™ã§ã«ã“ã®çŠ¶æ…‹ï¼ˆä½ç½®ã€æŠ¼ã•ã‚ŒãŸæ–¹å‘ï¼‰ãŒæ¢ç´¢æ¸ˆã¿ãªã‚‰ã‚¹ã‚­ãƒƒãƒ—
         if (explored[current.baggagePos.y][current.baggagePos.x][current.pushedFromDirIndex])
         {
             continue;
         }
-        // ’TõÏ‚İ‚Ìˆó‚ğ‚Â‚¯‚é
+        // æ¢ç´¢æ¸ˆã¿ã®å°ã‚’ã¤ã‘ã‚‹
         explored[current.baggagePos.y][current.baggagePos.x][current.pushedFromDirIndex] = true;
         isReachable[current.baggagePos.y][current.baggagePos.x] = true;
 
-        // ‰×•¨‚ğ‰Ÿ‚µ‚½ŒãAƒvƒŒƒCƒ„[‚Í‰×•¨‚ª‚ ‚Á‚½êŠ‚ÉˆÚ“®‚·‚é
+        // è·ç‰©ã‚’æŠ¼ã—ãŸå¾Œã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¯è·ç‰©ãŒã‚ã£ãŸå ´æ‰€ã«ç§»å‹•ã™ã‚‹
         sf::Vector2i playerCurrentPos = current.baggagePos - directions[current.pushedFromDirIndex];
 
-        // Œ»İ‚Ì‰×•¨ˆÊ’u‚©‚çA‚³‚ç‚É4•ûŒü‚Ö‚ÌƒvƒbƒVƒ…‚ğ‚İ‚é
+        // ç¾åœ¨ã®è·ç‰©ä½ç½®ã‹ã‚‰ã€ã•ã‚‰ã«4æ–¹å‘ã¸ã®ãƒ—ãƒƒã‚·ãƒ¥ã‚’è©¦ã¿ã‚‹
         for (int i = 0; i < directions.size(); ++i)
         {
             const auto& nextPushDir = directions[i];
             sf::Vector2i nextBaggagePos = current.baggagePos + nextPushDir;
             sf::Vector2i nextPlayerStandPos = current.baggagePos - nextPushDir;
 
-            // æ‚ÉA‚İ‚æ‚¤‚Æ‚µ‚Ä‚¢‚éˆÚ“®æ‚ª—LŒø‚©ƒ`ƒFƒbƒN
-            // ƒvƒŒƒCƒ„[‚¨‚æ‚Ñ‰×•¨‚ÌˆÚ“®æ‚ª”Õ–Ê‚Ì”ÍˆÍŠO‚Å‚ ‚Á‚½‚èA•Çƒ}ƒX‚â•Ê‚Ì‰×•¨‚ª‚ ‚éƒ}ƒX‚Å‚È‚¯‚ê‚ÎOK
+            // å…ˆã«ã€è©¦ã¿ã‚ˆã†ã¨ã—ã¦ã„ã‚‹ç§»å‹•å…ˆãŒæœ‰åŠ¹ã‹ãƒã‚§ãƒƒã‚¯
+            // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŠã‚ˆã³è·ç‰©ã®ç§»å‹•å…ˆãŒç›¤é¢ã®ç¯„å›²å¤–ã§ã‚ã£ãŸã‚Šã€å£ãƒã‚¹ã‚„åˆ¥ã®è·ç‰©ãŒã‚ã‚‹ãƒã‚¹ã§ãªã‘ã‚Œã°OK
             if (nextPlayerStandPos.x < 0 || nextPlayerStandPos.y < 0 || nextPlayerStandPos.x >= boardSize.x || nextPlayerStandPos.y >= boardSize.y ||
                 nextBaggagePos.x < 0 || nextBaggagePos.y < 0 || nextBaggagePos.x >= boardSize.x || nextBaggagePos.y >= boardSize.y ||
                 boardState[nextPlayerStandPos.y][nextPlayerStandPos.x] == '#' ||
@@ -254,8 +256,8 @@ std::vector<sf::Vector2i> Pathfinder::FindAllTransportable(
                 continue;
             }
 
-            // ƒvƒŒƒCƒ„[‚ªŸ‚ÌƒvƒbƒVƒ…ˆÊ’u‚Ü‚ÅˆÚ“®‚·‚éŒo˜H‚ğ’T‚·
-            // ‚±‚ÌAŒ»İ“®‚©‚µ‚Ä‚¢‚é‰×•¨(current.baggagePos)‚àáŠQ•¨‚É‚È‚é
+            // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒæ¬¡ã®ãƒ—ãƒƒã‚·ãƒ¥ä½ç½®ã¾ã§ç§»å‹•ã™ã‚‹çµŒè·¯ã‚’æ¢ã™
+            // ã“ã®æ™‚ã€ç¾åœ¨å‹•ã‹ã—ã¦ã„ã‚‹è·ç‰©(current.baggagePos)ã‚‚éšœå®³ç‰©ã«ãªã‚‹
             std::vector<sf::Vector2i> baggageObstacles(otherBaggages.begin(), otherBaggages.end());
             baggageObstacles.emplace_back(current.baggagePos);
 
@@ -263,7 +265,7 @@ std::vector<sf::Vector2i> Pathfinder::FindAllTransportable(
                 playerCurrentPos, nextPlayerStandPos, boardState, baggageObstacles, boardSize
             );
 
-            // ƒpƒX‚ª‘¶İ‚µ‚½ê‡AƒRƒXƒg‚ğXV‚µ‚ÄƒLƒ…[‚ÉƒvƒbƒVƒ…
+            // ãƒ‘ã‚¹ãŒå­˜åœ¨ã—ãŸå ´åˆã€ã‚³ã‚¹ãƒˆã‚’æ›´æ–°ã—ã¦ã‚­ãƒ¥ãƒ¼ã«ãƒ—ãƒƒã‚·ãƒ¥
             if (!path.empty() || playerCurrentPos == nextPlayerStandPos)
             {
                 int moveCost = static_cast<int>(path.size()) > 1 ? static_cast<int>(path.size()) - 1 : 0;
@@ -273,7 +275,7 @@ std::vector<sf::Vector2i> Pathfinder::FindAllTransportable(
         }
     }
 
-    // --- 4. Œ‹‰Ê‚Ì¶¬ ---
+    // --- 4. çµæœã®ç”Ÿæˆ ---
     std::vector<sf::Vector2i> result{};
     for (int y = 0; y < boardSize.y; ++y)
     {
@@ -297,20 +299,20 @@ bool Pathfinder::isValidPath(
     const sf::Vector2i& boardSize
 )
 {
-    // ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌŒ»İ’n
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ç¾åœ¨åœ°
     sf::Vector2i currentPlayerPosition(start);
     std::vector<sf::Vector2i> currentBaggagePositions(baggagePositions);
     
-    // Œo˜H‚É‰ˆ‚Á‚Ä‡‚É”»’è
+    // çµŒè·¯ã«æ²¿ã£ã¦é †ã«åˆ¤å®š
     for (const auto& next : path)
     {
-        // ‚Ü‚¸AˆÚ“®æ‚ª”Õ–Ê“à‚©‚ÂA•Ç‚Å‚È‚¢‚©‚Ç‚¤‚©‚ğ”»’è‚·‚é
+        // ã¾ãšã€ç§»å‹•å…ˆãŒç›¤é¢å†…ã‹ã¤ã€å£ã§ãªã„ã‹ã©ã†ã‹ã‚’åˆ¤å®šã™ã‚‹
         if (next.x >= 0 && next.x < boardSize.x && next.y >= 0 && next.y < boardSize.y &&
             boardState[next.y][next.x] != '#')
         {
             auto iter = std::find(currentBaggagePositions.begin(), currentBaggagePositions.end(), next);
             
-            // ‰×•¨‚ª‚ ‚éê‡‚ÍA‰×•¨‚ğ‰Ÿ‚µ‚¾‚µ‚½æ‚ª‘Ã“–‚©‚Ç‚¤‚©‚Ì”»’è‚à‚·‚é
+            // è·ç‰©ãŒã‚ã‚‹å ´åˆã¯ã€è·ç‰©ã‚’æŠ¼ã—ã ã—ãŸå…ˆãŒå¦¥å½“ã‹ã©ã†ã‹ã®åˆ¤å®šã‚‚ã™ã‚‹
             if (iter != currentBaggagePositions.end())
             {
                 sf::Vector2i nextBaggagePos = *iter + (*iter - currentPlayerPosition);
@@ -343,13 +345,13 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
     const std::vector<sf::Vector2i>& initialBaggagePositions,
     const sf::Vector2i& boardSize)
 {
-    // --- 1. ‰Šúİ’è ---
+    // --- 1. åˆæœŸè¨­å®š ---
     const std::vector<sf::Vector2i> directions
     {
         { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 }
     };
 
-    // ƒ_ƒCƒNƒXƒgƒ‰–@‚Å—p‚¢‚éó‘Ôƒm[ƒh
+    // ãƒ€ã‚¤ã‚¯ã‚¹ãƒˆãƒ©æ³•ã§ç”¨ã„ã‚‹çŠ¶æ…‹ãƒãƒ¼ãƒ‰
     struct Node
     {
         int cost;
@@ -361,14 +363,14 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
 
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> pq;
 
-    // Œo˜H•œŒ³‚Ì‚½‚ß‚ÉA‚Ç‚Ìó‘Ô‚©‚ç—ˆ‚½‚©‚ğ‹L˜^‚·‚éƒ}ƒbƒv
-    // Key: {‰×•¨ˆÊ’u, ‰Ÿ‚³‚ê‚½•ûŒü}, Value: eƒm[ƒh‚Ìó‘Ô
+    // çµŒè·¯å¾©å…ƒã®ãŸã‚ã«ã€ã©ã®çŠ¶æ…‹ã‹ã‚‰æ¥ãŸã‹ã‚’è¨˜éŒ²ã™ã‚‹ãƒãƒƒãƒ—
+    // Key: {è·ç‰©ä½ç½®, æŠ¼ã•ã‚ŒãŸæ–¹å‘}, Value: è¦ªãƒãƒ¼ãƒ‰ã®çŠ¶æ…‹
     std::map<sf::Vector2i, std::map<int, Node>, CompareVector2i> cameFrom;
 
-    // Šeó‘Ô‚Ö‚ÌÅ¬ƒRƒXƒg‚ğ‹L˜^‚·‚éƒ}ƒbƒv
+    // å„çŠ¶æ…‹ã¸ã®æœ€å°ã‚³ã‚¹ãƒˆã‚’è¨˜éŒ²ã™ã‚‹ãƒãƒƒãƒ—
     std::map<sf::Vector2i, std::map<int, int>, CompareVector2i> costSoFar;
 
-    // ‰^”À‘ÎÛŠO‚Ì‰×•¨
+    // é‹æ¬å¯¾è±¡å¤–ã®è·ç‰©
     std::set<sf::Vector2i, CompareVector2i> otherBaggages;
     for (const auto& pos : initialBaggagePositions)
     {
@@ -377,15 +379,15 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
         }
     }
 
-    // --- 2. ’Tõ‚ÌŠJn“_‚ğƒLƒ…[‚É’Ç‰Á ---
+    // --- 2. æ¢ç´¢ã®é–‹å§‹ç‚¹ã‚’ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ  ---
     for (int i = 0; i < directions.size(); ++i)
     {
         const auto& pushDir = directions[i];
         sf::Vector2i baggageNextPos = baggageStart + pushDir;
         sf::Vector2i playerStandPos = baggageStart - pushDir;
 
-        // Å‰‚ÌƒvƒbƒVƒ…‚ª‰Â”\‚©ŒŸØ
-        if (playerStandPos.x < 0 || playerStandPos.y < 0 || /* ...‹«ŠE“™‚Ìƒ`ƒFƒbƒN... */
+        // æœ€åˆã®ãƒ—ãƒƒã‚·ãƒ¥ãŒå¯èƒ½ã‹æ¤œè¨¼
+        if (playerStandPos.x < 0 || playerStandPos.y < 0 || /* ...å¢ƒç•Œç­‰ã®ãƒã‚§ãƒƒã‚¯... */
             boardState[playerStandPos.y][playerStandPos.x] == '#' ||
             boardState[baggageNextPos.y][baggageNextPos.x] == '#' ||
             otherBaggages.count(baggageNextPos))
@@ -401,12 +403,12 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
             int initialCost = path.empty() ? 0 : static_cast<int>(path.size());
             pq.push({ initialCost, baggageNextPos, i });
             costSoFar[baggageNextPos][i] = initialCost;
-            // eƒm[ƒh‚ÍŠJnˆÊ’u‚Æ‚µ‚Ä‹L˜^
+            // è¦ªãƒãƒ¼ãƒ‰ã¯é–‹å§‹ä½ç½®ã¨ã—ã¦è¨˜éŒ²
             cameFrom[baggageNextPos][i] = { 0, baggageStart, -1 };
         }
     }
 
-    // --- 3. ƒ_ƒCƒNƒXƒgƒ‰–@‚É‚æ‚é’Tõ ---
+    // --- 3. ãƒ€ã‚¤ã‚¯ã‚¹ãƒˆãƒ©æ³•ã«ã‚ˆã‚‹æ¢ç´¢ ---
     Node goalNode = { -1, {-1, -1}, -1 };
     while (!pq.empty())
     {
@@ -415,10 +417,10 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
 
         if (current.cost > costSoFar[current.baggagePos][current.pushedFromDirIndex])
         {
-            continue; // ‚æ‚èƒRƒXƒg‚Ì‘å‚«‚¢Œo˜H‚È‚Ì‚ÅƒXƒLƒbƒv
+            continue; // ã‚ˆã‚Šã‚³ã‚¹ãƒˆã®å¤§ãã„çµŒè·¯ãªã®ã§ã‚¹ã‚­ãƒƒãƒ—
         }
 
-        // ƒS[ƒ‹‚É“’B‚µ‚½‚çI—¹
+        // ã‚´ãƒ¼ãƒ«ã«åˆ°é”ã—ãŸã‚‰çµ‚äº†
         if (current.baggagePos == baggageEnd)
         {
             goalNode = current;
@@ -427,14 +429,14 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
 
         sf::Vector2i playerCurrentPos = current.baggagePos - directions[current.pushedFromDirIndex];
 
-        // Ÿ‚Ì4•ûŒü‚Ö‚ÌƒvƒbƒVƒ…‚ğ‚İ‚é
+        // æ¬¡ã®4æ–¹å‘ã¸ã®ãƒ—ãƒƒã‚·ãƒ¥ã‚’è©¦ã¿ã‚‹
         for (int i = 0; i < directions.size(); ++i)
         {
             sf::Vector2i nextBaggagePos = current.baggagePos + directions[i];
             sf::Vector2i nextPlayerStandPos = current.baggagePos - directions[i];
 
-            // ... ˆÚ“®æ‚ÌŒŸØ ...
-            if (/* ...‹«ŠE“™‚Ìƒ`ƒFƒbƒN... */
+            // ... ç§»å‹•å…ˆã®æ¤œè¨¼ ...
+            if (/* ...å¢ƒç•Œç­‰ã®ãƒã‚§ãƒƒã‚¯... */
                 boardState[nextPlayerStandPos.y][nextPlayerStandPos.x] == '#' ||
                 boardState[nextBaggagePos.y][nextBaggagePos.x] == '#' ||
                 otherBaggages.count(nextBaggagePos))
@@ -443,14 +445,14 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
             }
 
             std::vector<sf::Vector2i> baggageObs(otherBaggages.begin(), otherBaggages.end());
-            baggageObs.emplace_back(current.baggagePos); // ¡‚Ì‰×•¨ˆÊ’u‚àáŠQ•¨
+            baggageObs.emplace_back(current.baggagePos); // ä»Šã®è·ç‰©ä½ç½®ã‚‚éšœå®³ç‰©
 
             std::vector<sf::Vector2i> path = FindPath(playerCurrentPos, nextPlayerStandPos, boardState, baggageObs, boardSize);
 
             if (!path.empty() || playerCurrentPos == nextPlayerStandPos)
             {
                 int moveCost = path.empty() ? 0 : static_cast<int>(path.size());
-                int newTotalCost = current.cost + moveCost + 1; // +1‚Í‰×•¨‚ğ‰Ÿ‚·ƒRƒXƒg
+                int newTotalCost = current.cost + moveCost + 1; // +1ã¯è·ç‰©ã‚’æŠ¼ã™ã‚³ã‚¹ãƒˆ
 
                 if (costSoFar[nextBaggagePos].find(i) == costSoFar[nextBaggagePos].end() || newTotalCost < costSoFar[nextBaggagePos][i])
                 {
@@ -462,17 +464,17 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
         }
     }
 
-    // --- 4. Œo˜H‚Ì•œŒ³ ---
+    // --- 4. çµŒè·¯ã®å¾©å…ƒ ---
     if (goalNode.cost == -1)
     {
-        return {}; // ƒS[ƒ‹‚É“’B‚Å‚«‚È‚©‚Á‚½
+        return {}; // ã‚´ãƒ¼ãƒ«ã«åˆ°é”ã§ããªã‹ã£ãŸ
     }
 
     std::vector<sf::Vector2i> playerPathResult{};
     std::vector<Node> baggagePath;
     Node current = goalNode;
 
-    // cameFrom‚ğ‹t‚É’H‚Á‚Ä‰×•¨‚ÌˆÚ“®Œo˜H‚ğì¬
+    // cameFromã‚’é€†ã«è¾¿ã£ã¦è·ç‰©ã®ç§»å‹•çµŒè·¯ã‚’ä½œæˆ
     while (current.pushedFromDirIndex != -1)
     {
         baggagePath.emplace_back(current);
@@ -480,7 +482,7 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
     }
     std::reverse(baggagePath.begin(), baggagePath.end());
 
-    // ‰×•¨‚ÌˆÚ“®Œo˜H‚©‚çƒvƒŒƒCƒ„[‚ÌŠ®‘S‚ÈˆÚ“®Œo˜H‚ğ¶¬
+    // è·ç‰©ã®ç§»å‹•çµŒè·¯ã‹ã‚‰ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®å®Œå…¨ãªç§»å‹•çµŒè·¯ã‚’ç”Ÿæˆ
     sf::Vector2i currentPlayerPos = playerStart;
     sf::Vector2i lastBaggagePos = baggageStart;
 
@@ -494,7 +496,7 @@ std::vector<sf::Vector2i> Pathfinder::FindTransportPath(
         std::vector<sf::Vector2i> segment = FindPath(currentPlayerPos, playerStandPos, boardState, baggageObs, boardSize);
 
         playerPathResult.insert(playerPathResult.end(), segment.begin(), segment.end());
-        playerPathResult.emplace_back(lastBaggagePos); // ‰×•¨‚ğ‰Ÿ‚·“®‚«
+        playerPathResult.emplace_back(lastBaggagePos); // è·ç‰©ã‚’æŠ¼ã™å‹•ã
 
         currentPlayerPos = lastBaggagePos;
         lastBaggagePos = move.baggagePos;
@@ -511,16 +513,16 @@ std::map<int, std::vector<sf::Vector2i>> Pathfinder::FindAllDirectionTransportPa
     const std::vector<sf::Vector2i>& initialBaggagePositions,
     const sf::Vector2i& boardSize)
 {
-    // --- 1. ‰Šúİ’è ---
-    // ‰×•¨‚ğ‰Ÿ‚·•ûŒüƒxƒNƒgƒ‹‚ÆƒL[‚Ì’è‹`
+    // --- 1. åˆæœŸè¨­å®š ---
+    // è·ç‰©ã‚’æŠ¼ã™æ–¹å‘ãƒ™ã‚¯ãƒˆãƒ«ã¨ã‚­ãƒ¼ã®å®šç¾©
     const std::vector<sf::Vector2i> directions{
-        { -1,  0 }, // 0: ‰×•¨‚ª¶‚ÖˆÚ“® (ƒvƒŒƒCƒ„[‚Í‰E‚©‚ç‰Ÿ‚·)
-        {  0, -1 }, // 1: ‰×•¨‚ªã‚ÖˆÚ“® (ƒvƒŒƒCƒ„[‚Í‰º‚©‚ç‰Ÿ‚·)
-        {  1,  0 }, // 2: ‰×•¨‚ª‰E‚ÖˆÚ“® (ƒvƒŒƒCƒ„[‚Í¶‚©‚ç‰Ÿ‚·)
-        {  0,  1 }  // 3: ‰×•¨‚ª‰º‚ÖˆÚ“® (ƒvƒŒƒCƒ„[‚Íã‚©‚ç‰Ÿ‚·)
+        { -1,  0 }, // 0: è·ç‰©ãŒå·¦ã¸ç§»å‹• (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¯å³ã‹ã‚‰æŠ¼ã™)
+        {  0, -1 }, // 1: è·ç‰©ãŒä¸Šã¸ç§»å‹• (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¯ä¸‹ã‹ã‚‰æŠ¼ã™)
+        {  1,  0 }, // 2: è·ç‰©ãŒå³ã¸ç§»å‹• (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¯å·¦ã‹ã‚‰æŠ¼ã™)
+        {  0,  1 }  // 3: è·ç‰©ãŒä¸‹ã¸ç§»å‹• (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¯ä¸Šã‹ã‚‰æŠ¼ã™)
     };
 
-    // ƒ_ƒCƒNƒXƒgƒ‰–@‚Å—p‚¢‚éó‘Ôƒm[ƒh
+    // ãƒ€ã‚¤ã‚¯ã‚¹ãƒˆãƒ©æ³•ã§ç”¨ã„ã‚‹çŠ¶æ…‹ãƒãƒ¼ãƒ‰
     struct Node {
         int cost;
         sf::Vector2i baggagePos;
@@ -531,19 +533,19 @@ std::map<int, std::vector<sf::Vector2i>> Pathfinder::FindAllDirectionTransportPa
         }
     };
 
-    // —Dæ“x•t‚«ƒLƒ…[‚ÆŠeí‹L˜^—pƒ}ƒbƒv
+    // å„ªå…ˆåº¦ä»˜ãã‚­ãƒ¥ãƒ¼ã¨å„ç¨®è¨˜éŒ²ç”¨ãƒãƒƒãƒ—
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> pq;
     std::map<sf::Vector2i, std::map<int, Node>, CompareVector2i> cameFrom;
     std::map<sf::Vector2i, std::map<int, int>, CompareVector2i> costSoFar;
 
-    // explored[y][x][direction] ‚ª true ‚Ìê‡A‚»‚Ìó‘Ô‚Í’TõÏ‚İ
+    // explored[y][x][direction] ãŒ true ã®å ´åˆã€ãã®çŠ¶æ…‹ã¯æ¢ç´¢æ¸ˆã¿
     std::vector<std::vector<std::vector<bool>>> explored(
         boardSize.y, std::vector<std::vector<bool>>(
             boardSize.x, std::vector<bool>(directions.size(), false)
         )
     );
 
-    // ‰^”À‘ÎÛŠO‚Ì‰×•¨
+    // é‹æ¬å¯¾è±¡å¤–ã®è·ç‰©
     std::set<sf::Vector2i, CompareVector2i> otherBaggages;
     for (const auto& pos : initialBaggagePositions) {
         if (pos != baggageStart) {
@@ -551,7 +553,7 @@ std::map<int, std::vector<sf::Vector2i>> Pathfinder::FindAllDirectionTransportPa
         }
     }
 
-    // --- 2. ’Tõ‚ÌŠJn“_‚ğƒLƒ…[‚É’Ç‰Á ---
+    // --- 2. æ¢ç´¢ã®é–‹å§‹ç‚¹ã‚’ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ  ---
     for (int i = 0; i < directions.size(); ++i) {
         const auto& pushDir = directions[i];
         sf::Vector2i playerStandPos = baggageStart - pushDir;
@@ -575,22 +577,22 @@ std::map<int, std::vector<sf::Vector2i>> Pathfinder::FindAllDirectionTransportPa
         }
     }
 
-    // --- 3. ƒ_ƒCƒNƒXƒgƒ‰–@‚É‚æ‚é’Tõ ---
+    // --- 3. ãƒ€ã‚¤ã‚¯ã‚¹ãƒˆãƒ©æ³•ã«ã‚ˆã‚‹æ¢ç´¢ ---
     std::map<int, Node> goalNodes;
 
     while (!pq.empty()) {
         Node current = pq.top();
         pq.pop();
 
-        // ‚±‚Ìó‘Ôi‰×•¨ˆÊ’uA‰Ÿ‚³‚ê‚½•ûŒüj‚ª’TõÏ‚İ‚È‚çƒXƒLƒbƒv
+        // ã“ã®çŠ¶æ…‹ï¼ˆè·ç‰©ä½ç½®ã€æŠ¼ã•ã‚ŒãŸæ–¹å‘ï¼‰ãŒæ¢ç´¢æ¸ˆã¿ãªã‚‰ã‚¹ã‚­ãƒƒãƒ—
         if (explored[current.baggagePos.y][current.baggagePos.x][current.pushedFromDirIndex]) {
             continue;
         }
-        // ‚±‚ê‚©‚ç‚±‚Ìó‘Ô‚ğˆ—‚·‚é‚Ì‚ÅA’TõÏ‚İ‚Ìˆó‚ğ‚Â‚¯‚é
+        // ã“ã‚Œã‹ã‚‰ã“ã®çŠ¶æ…‹ã‚’å‡¦ç†ã™ã‚‹ã®ã§ã€æ¢ç´¢æ¸ˆã¿ã®å°ã‚’ã¤ã‘ã‚‹
         explored[current.baggagePos.y][current.baggagePos.x][current.pushedFromDirIndex] = true;
 
 
-        // ƒS[ƒ‹‚É“’B‚µ‚½ê‡
+        // ã‚´ãƒ¼ãƒ«ã«åˆ°é”ã—ãŸå ´åˆ
         if (current.baggagePos == baggageEnd) {
             if (goalNodes.find(current.pushedFromDirIndex) == goalNodes.end() || current.cost < goalNodes[current.pushedFromDirIndex].cost) {
                 goalNodes[current.pushedFromDirIndex] = current;
@@ -630,7 +632,7 @@ std::map<int, std::vector<sf::Vector2i>> Pathfinder::FindAllDirectionTransportPa
         }
     }
 
-    // --- 4. Œo˜H‚Ì•œŒ³ ---
+    // --- 4. çµŒè·¯ã®å¾©å…ƒ ---
     std::map<int, std::vector<sf::Vector2i>> resultPaths;
     if (goalNodes.empty()) {
         return {};

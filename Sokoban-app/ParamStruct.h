@@ -3,18 +3,18 @@
 #include <cmath>
 #include <SFML/System/Vector2.hpp>
 
-// ”Õ–Ê¶¬ƒAƒ‹ƒSƒŠƒYƒ€‚É“n‚·ƒpƒ‰ƒ[ƒ^‚ğ‚Ü‚Æ‚ß‚½\‘¢‘Ì
+// ç›¤é¢ç”Ÿæˆã‚¢ãƒ«ã‚´ãƒªã‚ºãƒ ã«æ¸¡ã™ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’ã¾ã¨ã‚ãŸæ§‹é€ ä½“
 struct GenerationParameters {
-    sf::Vector2i boardSize;     // ”Õ–Ê‚Ì•(x)‚Æ‚‚³(y)
-    int baggageNum;             // ‰×•¨‚Ì” (b)
-    int resetCount;             // ‰×•¨‚ÆƒvƒŒƒCƒ„[‚Ì”z’uƒŠƒZƒbƒg‰ñ” (c)
-    int transportCount;         // ‰×•¨‚Ì‰^”À(’Ê˜H‚ğ•Ç‚É•Ï‚¦‚é)‰ñ” (n)
-    float wallRate;            // ‰Šú•Çƒ}ƒX‚ÌŠ„‡
-    float visitedRate;         // –K–âÏ‚İƒ^ƒCƒ‹‚ÌŠ„‡
-    int evalFuncIndex;          // •]‰¿ŠÖ”‚Ìí—Ş
+    sf::Vector2i boardSize;     // ç›¤é¢ã®å¹…(x)ã¨é«˜ã•(y)
+    int baggageNum;             // è·ç‰©ã®æ•° (b)
+    int resetCount;             // è·ç‰©ã¨ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®é…ç½®ãƒªã‚»ãƒƒãƒˆå›æ•° (c)
+    int transportCount;         // è·ç‰©ã®é‹æ¬(é€šè·¯ã‚’å£ã«å¤‰ãˆã‚‹)å›æ•° (n)
+    float wallRate;            // åˆæœŸå£ãƒã‚¹ã®å‰²åˆ
+    float visitedRate;         // è¨ªå•æ¸ˆã¿ã‚¿ã‚¤ãƒ«ã®å‰²åˆ
+    int evalFuncIndex;          // è©•ä¾¡é–¢æ•°ã®ç¨®é¡
 
-    // Œ»İ‚Ìƒpƒ‰ƒ[ƒ^‚©‚çŒvZ—Ê‚Ì‘Š‘Î“I‚ÈƒXƒRƒA‚ğZo‚·‚é
-    // [ŒvZ®] O(b * c * n * (xy * log(xy))^2)
+    // ç¾åœ¨ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‹ã‚‰è¨ˆç®—é‡ã®ç›¸å¯¾çš„ãªã‚¹ã‚³ã‚¢ã‚’ç®—å‡ºã™ã‚‹
+    // [è¨ˆç®—å¼] O(b * c * n * (xy * log(xy))^2)
     float calculateComplexityScore() const {
         float xy = static_cast<float>(boardSize.x * boardSize.y);
         if (xy <= 0) return 0;
@@ -24,17 +24,17 @@ struct GenerationParameters {
         float n = static_cast<float>(transportCount);
         float logXY = std::log2(xy);
 
-        // (xy * log(xy))^2 ‚Ì€‚ªx”z“I
+        // (xy * log(xy))^2 ã®é …ãŒæ”¯é…çš„
         return b * c * n * std::powf(xy * logXY, 2);
     }
 };
 
-// Šeƒpƒ‰ƒ[ƒ^‚Ì§–ñ‚âà–¾‚ğ’è‹`‚·‚éƒƒ^î•ñ
+// å„ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®åˆ¶ç´„ã‚„èª¬æ˜ã‚’å®šç¾©ã™ã‚‹ãƒ¡ã‚¿æƒ…å ±
 struct ParameterMeta {
-    std::string key;          // “à•”¯•Êq
-    std::string name;         // •\¦–¼
-    std::string description;  // ƒc[ƒ‹ƒ`ƒbƒv—pà–¾•¶
-    float min;               // Å¬’l
-    float max;               // Å‘å’l
-    bool isInteger;           // ®”‚Æ‚µ‚Äˆµ‚¤‚©iƒXƒeƒbƒv’l‚Ì§Œä—pj
+    std::string key;          // å†…éƒ¨è­˜åˆ¥å­
+    std::string name;         // è¡¨ç¤ºå
+    std::string description;  // ãƒ„ãƒ¼ãƒ«ãƒãƒƒãƒ—ç”¨èª¬æ˜æ–‡
+    float min;               // æœ€å°å€¤
+    float max;               // æœ€å¤§å€¤
+    bool isInteger;           // æ•´æ•°ã¨ã—ã¦æ‰±ã†ã‹ï¼ˆã‚¹ãƒ†ãƒƒãƒ—å€¤ã®åˆ¶å¾¡ç”¨ï¼‰
 };

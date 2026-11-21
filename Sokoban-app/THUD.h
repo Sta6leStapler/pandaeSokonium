@@ -22,32 +22,32 @@ public:
 		EDeadlockedBaggages
 	};
 
-	// ƒCƒ“ƒ^[ƒtƒF[ƒX‚©‚çƒI[ƒo[ƒ‰ƒCƒh‚µ‚½ŠÖ”
+	// ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ã‹ã‚‰ã‚ªãƒ¼ãƒãƒ¼ãƒ©ã‚¤ãƒ‰ã—ãŸé–¢æ•°
 	void Update(float deltaTime) override;
 	void Draw(sf::RenderWindow* window) override;
 	void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) override;
 	void OnLanguageChanged() override;
 
-	// ó‘Ô‚ğƒNƒ[ƒWƒ“ƒO‚É‚·‚é
+	// çŠ¶æ…‹ã‚’ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ³ã‚°ã«ã™ã‚‹
 	void Close() { mState = UIState::EClosing; }
 
-	// ó‘Ô‚ğæ“¾
+	// çŠ¶æ…‹ã‚’å–å¾—
 	UIState GetState() override { return mState; }
 	
-	// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ‚·‚éƒƒ“ƒo•Ï”
+	// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤ã™ã‚‹ãƒ¡ãƒ³ãƒå¤‰æ•°
 	void CancelButtonHolds();
 
 private:
 	class Game* mGame;
 
-	// tgui::GuiƒNƒ‰ƒX
+	// tgui::Guiã‚¯ãƒ©ã‚¹
 	std::unique_ptr<tgui::Gui> mGui;
 
-	// ƒeƒLƒXƒgUI—p‚Ì•Ï”
+	// ãƒ†ã‚­ã‚¹ãƒˆUIç”¨ã®å¤‰æ•°
 	tgui::ListBox::Ptr mListBox;
 	std::unordered_map<TextIndex, std::string> mTextInfo;
 
-	// Šeí§Œä—p•Ï”
+	// å„ç¨®åˆ¶å¾¡ç”¨å¤‰æ•°
 	sf::Vector2i mRollBackLargeButtonSize;
 	sf::Vector2i mRollBackSmallButtonSize;
 	sf::Vector2i mGameSystemButtonSize;
@@ -60,7 +60,7 @@ private:
 
 	tgui::Panel::Ptr mBlocker;
 
-	// ƒ{ƒ^ƒ“‚ğƒƒ“ƒo•Ï”‚É•ÏX‚µ‚Ä•Û‚·‚é
+	// ãƒœã‚¿ãƒ³ã‚’ãƒ¡ãƒ³ãƒå¤‰æ•°ã«å¤‰æ›´ã—ã¦ä¿æŒã™ã‚‹
 	std::vector<tgui::Button::Ptr> mSystemButtons;
 	tgui::BitmapButton::Ptr mUndoButton;
 	tgui::BitmapButton::Ptr mRedoButton;
@@ -75,13 +75,13 @@ private:
 	tgui::Button::Ptr mEditModeButton;
 	tgui::Button::Ptr mHelpButton;
 
-	// Undo/Redoƒ{ƒ^ƒ“‚Ì§Œä
-	bool mIsUndoHeld;   // Undoƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‘±‚¯‚Ä‚¢‚é‚©
-	bool mIsRedoHeld;   // Redoƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‘±‚¯‚Ä‚¢‚é‚©
-	float mUndoRepeatTimer; // Undo‚ÌƒŠƒs[ƒgƒ^ƒCƒ}[
-	float mRedoRepeatTimer; // Redo‚ÌƒŠƒs[ƒgƒ^ƒCƒ}[
+	// Undo/Redoãƒœã‚¿ãƒ³ã®åˆ¶å¾¡
+	bool mIsUndoHeld;   // Undoãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚Œç¶šã‘ã¦ã„ã‚‹ã‹
+	bool mIsRedoHeld;   // Redoãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚Œç¶šã‘ã¦ã„ã‚‹ã‹
+	float mUndoRepeatTimer; // Undoã®ãƒªãƒ”ãƒ¼ãƒˆã‚¿ã‚¤ãƒãƒ¼
+	float mRedoRepeatTimer; // Redoã®ãƒªãƒ”ãƒ¼ãƒˆã‚¿ã‚¤ãƒãƒ¼
 
-	// ó‘Ô
+	// çŠ¶æ…‹
 	UIState mState;
 };
 

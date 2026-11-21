@@ -11,10 +11,10 @@ MenuComponent::MenuComponent(Menu* owner, int updateOrder, int drawOrder)
 	, mCoordinateX(0)
 	, mCoordinateY(0)
 {
-	// ƒAƒNƒ^[‚ÌƒŠƒXƒg‚ðƒRƒ“ƒ|[ƒlƒ“ƒg‚É’Ç‰Á
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã®ãƒªã‚¹ãƒˆã‚’ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«è¿½åŠ 
 	mOwner->AddComponent(this);
 
-	// GameƒNƒ‰ƒX‚Åƒƒjƒ…[‚ÌƒXƒvƒ‰ƒCƒg‚ð’Ç‰Á
+	// Gameã‚¯ãƒ©ã‚¹ã§ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’è¿½åŠ 
 	mOwner->GetGame()->AddSprite(this);
 }
 
@@ -39,7 +39,7 @@ void MenuComponent::Draw(sf::RenderWindow* mWindow)
 
 	if (mTexture)
 	{
-		// ƒvƒŒƒCƒ„[‚ð”Õ–Êã‚ÌÀ•W‚É”z’u
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’ç›¤é¢ä¸Šã®åº§æ¨™ã«é…ç½®
 		sf::Sprite spr;
 		spr.setTexture(*mTexture);
 
@@ -54,7 +54,7 @@ void MenuComponent::Draw(sf::RenderWindow* mWindow)
 void MenuComponent::SetTexture(sf::Texture* texture)
 {
 	mTexture = texture;
-	// •‚Æ‚‚³‚ðÝ’è
+	// å¹…ã¨é«˜ã•ã‚’è¨­å®š
 	mTexWidth = texture->getSize().x;
 	mTexHeight = texture->getSize().y;
 }

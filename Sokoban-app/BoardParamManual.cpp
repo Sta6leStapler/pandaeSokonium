@@ -1,4 +1,4 @@
-﻿#include "BoardParamManual.h"
+#include "BoardParamManual.h"
 #include "Game.h"
 #include <fstream>
 #include <sstream>

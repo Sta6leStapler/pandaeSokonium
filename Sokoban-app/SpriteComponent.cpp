@@ -8,10 +8,10 @@ SpriteComponent::SpriteComponent(IActor* owner, int updateOrder, int drawOrder)
 	, mBoundingBox(sf::Vector2u{ 0, 0 })
 	, mCoordinate(sf::Vector2i{ 0, 0 })
 {
-	// ƒAƒNƒ^[‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ÌƒŠƒXƒg‚É’Ç‰Á
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®ãƒªã‚¹ãƒˆã«è¿½åŠ 
 	mOwner->AddComponent(this);
 
-	// GameƒNƒ‰ƒX‚Å”Õ–Ê‚ÌƒXƒvƒ‰ƒCƒg‚ð’Ç‰Á
+	// Gameã‚¯ãƒ©ã‚¹ã§ç›¤é¢ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’è¿½åŠ 
 	mOwner->GetGame()->AddSprite(this);
 }
 
@@ -30,11 +30,11 @@ void SpriteComponent::Draw(sf::RenderWindow* mWindow)
 {
 	if (mTexture)
 	{
-		// ƒeƒNƒXƒ`ƒƒ‚©‚çƒXƒvƒ‰ƒCƒg‚ðì¬
+		// ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‹ã‚‰ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ä½œæˆ
 		sf::Sprite spr;
 		spr.setTexture(*mTexture);
 
-		// ƒAƒNƒ^[‘¤‚ÉÝ’è‚³‚ê‚Ä‚¢‚éƒXƒP[ƒŠƒ“ƒO‚ÆƒIƒtƒZƒbƒg‚ð’²®
+		// ã‚¢ã‚¯ã‚¿ãƒ¼å´ã«è¨­å®šã•ã‚Œã¦ã„ã‚‹ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ã‚ªãƒ•ã‚»ãƒƒãƒˆã‚’èª¿æ•´
 		spr.setScale(mOwner->GetScale().x, mOwner->GetScale().y);
 		spr.setPosition(mOwner->GetPosition().x, mOwner->GetPosition().y);
 
@@ -45,6 +45,6 @@ void SpriteComponent::Draw(sf::RenderWindow* mWindow)
 void SpriteComponent::SetTexture(sf::Texture* texture)
 {
 	mTexture = texture;
-	// •‚Æ‚‚³‚ðÝ’è
+	// å¹…ã¨é«˜ã•ã‚’è¨­å®š
 	mBoundingBox = texture->getSize();
 }

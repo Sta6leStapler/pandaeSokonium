@@ -24,17 +24,17 @@ struct History
 struct Rating
 {
 	double totalRate;
-	int m2x2Spaces;				// 2x2‚Ì”
-	int m2x3Spaces;				// 2x3‚Ì”
-	int m3x3Spaces;				// 3x3‚Ì”
-	int mSwitchCount;			// ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”
+	int m2x2Spaces;				// 2x2ã®æ•°
+	int m2x3Spaces;				// 2x3ã®æ•°
+	int m3x3Spaces;				// 3x3ã®æ•°
+	int mSwitchCount;			// é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°
 	int mDisCenterToGoal;		// 
 	int mGoalArround;			// 
-	int mDeadEnd;				// üˆÍ‚Ì•Ç‚ª3‚ÂˆÈã‚Ì‰×•¨‚Ì”
-	int mCornerEnd;				// Šp‚Æ‚È‚é‚æ‚¤‚È’nŒ`‚É‚ ‚é‰×•¨‚Ì” (À•W“I‚ÈŠp‚Å‚Í‚È‚¢)
-	int mSides;					// ”Õ–Ê‚ÌŠOü‚Ì•Ó‚É”z’u‚³‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-	int mCorners;				// ”Õ–Ê‚ÌŠOü‚ÌŠp‚É”z’u‚³‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-	int mChangedCandidates;		// ˆÚ“®‘OŒã‚Å“®‚©‚¹‚é‚©‚Ç‚¤‚©‚ª•Ï‚í‚Á‚½‰×•¨‚Ì”
+	int mDeadEnd;				// å‘¨å›²ã®å£ãŒ3ã¤ä»¥ä¸Šã®è·ç‰©ã®æ•°
+	int mCornerEnd;				// è§’ã¨ãªã‚‹ã‚ˆã†ãªåœ°å½¢ã«ã‚ã‚‹è·ç‰©ã®æ•° (åº§æ¨™çš„ãªè§’ã§ã¯ãªã„)
+	int mSides;					// ç›¤é¢ã®å¤–å‘¨ã®è¾ºã«é…ç½®ã•ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+	int mCorners;				// ç›¤é¢ã®å¤–å‘¨ã®è§’ã«é…ç½®ã•ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+	int mChangedCandidates;		// ç§»å‹•å‰å¾Œã§å‹•ã‹ã›ã‚‹ã‹ã©ã†ã‹ãŒå¤‰ã‚ã£ãŸè·ç‰©ã®æ•°
 };
 
 class MySolution
@@ -49,12 +49,12 @@ public:
 		const double& visitedRatio,
 		const int& strategyIndex);
 
-	// ƒQƒbƒ^[ƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã‚»ãƒƒã‚¿ãƒ¼
 	Board GetBoard() { return mBoardStr; }
 	int GetBaggageNum() { return mBaggageNum; }
 	std::vector<std::pair<sf::Vector2i, sf::Vector2i>> GetInitToGoalList() { return mInitToGoalList; }
 	int GetSolveUpper() { return mSolveUpper; }
-	// ‰ğ‚Ìæ“¾
+	// è§£ã®å–å¾—
 	std::vector<sf::Vector2i> GetSolutionPos() { return mSolutionPos; }
 	std::string GetSolutionDirection() { return mSolutionDirection; }
 
@@ -67,28 +67,28 @@ private:
 		EWest
 	};
 
-	// ‰×•¨‚ÆƒG[ƒWƒFƒ“ƒg‚ğ”z’u‚·‚éƒtƒF[ƒY
+	// è·ç‰©ã¨ã‚¨ãƒ¼ã‚¸ã‚§ãƒ³ãƒˆã‚’é…ç½®ã™ã‚‹ãƒ•ã‚§ãƒ¼ã‚º
 	void InitSettings();
 	
-	// ‰¼‘zƒvƒŒƒC‚ÌƒVƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“‚ğs‚¤ƒtƒF[ƒY
+	// ä»®æƒ³ãƒ—ãƒ¬ã‚¤ã®ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã‚’è¡Œã†ãƒ•ã‚§ãƒ¼ã‚º
 	void RunSimulation();
 
-	// •Çƒ^ƒCƒ‹‚ğƒ‰ƒ“ƒ_ƒ€‚É”z’u‚·‚éŠÖ”
+	// å£ã‚¿ã‚¤ãƒ«ã‚’ãƒ©ãƒ³ãƒ€ãƒ ã«é…ç½®ã™ã‚‹é–¢æ•°
 	void SetWallTiles(const int& wallCount);
 
-	// °ƒ^ƒCƒ‹‚ÌüˆÍ3•ûŒüˆÈã‚ª•Çƒ^ƒCƒ‹‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‚©‚Ç‚¤‚©‚Ì”»’è‚ğs‚¤ŠÖ”
+	// åºŠã‚¿ã‚¤ãƒ«ã®å‘¨å›²3æ–¹å‘ä»¥ä¸ŠãŒå£ã‚¿ã‚¤ãƒ«ã§å›²ã¾ã‚Œã¦ã„ã‚‹ã‹ã©ã†ã‹ã®åˆ¤å®šã‚’è¡Œã†é–¢æ•°
 	bool hasEnclosedFloor(const Board& board);
 
-	// ”Õ–Ê‚ª2‚ÂˆÈã‚É•ª’f‚³‚ê‚Ä‚¢‚È‚¢‚©‚ğ”»’è‚·‚éŠÖ”
+	// ç›¤é¢ãŒ2ã¤ä»¥ä¸Šã«åˆ†æ–­ã•ã‚Œã¦ã„ãªã„ã‹ã‚’åˆ¤å®šã™ã‚‹é–¢æ•°
 	bool isBoardPartitioned(const Board& board);
 
-	// °ƒ^ƒCƒ‹‚ğƒ‰ƒ“ƒ_ƒ€‚É–K–âÏ‚İ‚É‰Šú‰»‚·‚éŠÖ”
+	// åºŠã‚¿ã‚¤ãƒ«ã‚’ãƒ©ãƒ³ãƒ€ãƒ ã«è¨ªå•æ¸ˆã¿ã«åˆæœŸåŒ–ã™ã‚‹é–¢æ•°
 	void SetVisitedStatus(std::vector<std::vector<unsigned int>>& visitedCount, const Board& board);
 
-	// ƒVƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“‚ÌI—¹”»’è‚ğs‚¤ŠÖ”
+	// ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã®çµ‚äº†åˆ¤å®šã‚’è¡Œã†é–¢æ•°
 	bool isLoopEnd(const Board& board, const std::vector<bool>& isMoved, const std::vector<std::vector<unsigned int>>& pPassCount, const std::vector<std::vector<unsigned int>>& bPassCount);
 
-	// ƒ‰ƒ“ƒ_ƒ€‚Èƒpƒ‰ƒ[ƒ^‚ğæ“¾‚·‚éŠÖ”
+	// ãƒ©ãƒ³ãƒ€ãƒ ãªãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’å–å¾—ã™ã‚‹é–¢æ•°
 	Direction RollDirection();
 	sf::Vector2i RollCoordinate();
 	sf::Vector2i RollCoordinate(const int& xMin, const int& xMax, const int& yMin, const int& yMax);
@@ -102,28 +102,28 @@ private:
 	std::pair<T, U> GetRandomElement(const std::unordered_map<T, U>& map);
 	std::vector<sf::Vector2i> GetRandomDirections();
 
-	// ‚ ‚éÀ•W‚ÌüˆÍ‚Ìƒ}ƒX‚ğ’²‚×‚éŠÖ”
+	// ã‚ã‚‹åº§æ¨™ã®å‘¨å›²ã®ãƒã‚¹ã‚’èª¿ã¹ã‚‹é–¢æ•°
 	std::vector<sf::Vector2i> GetAroundWalls(const sf::Vector2i& point);
 
-	// ‹l‚İ‚Ì‰×•¨‚Ì”z’u‚ª‚È‚¢‚±‚Æ‚ğŠm”F‚·‚éŠÖ”
+	// è©°ã¿ã®è·ç‰©ã®é…ç½®ãŒãªã„ã“ã¨ã‚’ç¢ºèªã™ã‚‹é–¢æ•°
 	bool isArrangementValid(const Board& board, const std::vector<sf::Vector2i>& bPositions);
 	
-	// ‰×•¨‚ª”z’u‚Å‚«‚é‚©’²‚×‚éŠÖ”
+	// è·ç‰©ãŒé…ç½®ã§ãã‚‹ã‹èª¿ã¹ã‚‹é–¢æ•°
 	bool existsFreeSpace(const Board& board, const std::vector<sf::Vector2i>& bPositions);
 
 	bool existsDuplicateHistory(const std::vector<History> history, const Board& board);
 
-	// ‰Ÿ‚¹‚é‰×•¨‚ÌŒó•â‚Æ‰Ÿ‚µn‚ß‚ç‚ê‚éˆÊ’u‚Ì‘S‚Ä‚ÌŒó•â‚ğ‹‚ß‚éŠÖ”
+	// æŠ¼ã›ã‚‹è·ç‰©ã®å€™è£œã¨æŠ¼ã—å§‹ã‚ã‚‰ã‚Œã‚‹ä½ç½®ã®å…¨ã¦ã®å€™è£œã‚’æ±‚ã‚ã‚‹é–¢æ•°
 	void SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, CandidateItems& outList, const int& prevBaggageIndex);
 	void SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, std::vector<int>& outList);
 
-	// ƒvƒŒƒCƒ„[‚Æ‚ ‚é‰×•¨‚Ì‰Â”\‚ÈˆÚ“®Œo˜H‚Ì‘S‚Ä‚ÌŒó•â‚ğ‹‚ß‚éŠÖ”
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨ã‚ã‚‹è·ç‰©ã®å¯èƒ½ãªç§»å‹•çµŒè·¯ã®å…¨ã¦ã®å€™è£œã‚’æ±‚ã‚ã‚‹é–¢æ•°
 	void SetRoutes(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, std::unordered_map<int, std::vector<Route>>& outRoutes, const CandidateItems& initPositions, const std::vector<std::vector<unsigned int>>& pPassed, const std::vector<std::vector<unsigned int>>& bPassed);
 
-	// ƒvƒŒƒCƒ„[‚ÌŒ»İ’n‚©‚ç‰×•¨‚Ì‰¡‚Ü‚Å‚ÌˆÚ“®Œo˜H‚ğ‹‚ß‚éŠÖ”
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç¾åœ¨åœ°ã‹ã‚‰è·ç‰©ã®æ¨ªã¾ã§ã®ç§»å‹•çµŒè·¯ã‚’æ±‚ã‚ã‚‹é–¢æ•°
 	Route FindRouteToBaggage(const sf::Vector2i& pCoordinate, const sf::Vector2i& goal, const Board& board, const std::vector<std::vector<unsigned int>>& pPassed, const std::vector<std::vector<unsigned int>>& bPassed);
 
-	// ƒvƒŒƒCƒ„[‚ÌˆÚ“®Œo˜H‚ğó‚¯æ‚èAƒVƒ~ƒ…ƒŒ[ƒg‚ğs‚¤ŠÖ”
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•çµŒè·¯ã‚’å—ã‘å–ã‚Šã€ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ãƒˆã‚’è¡Œã†é–¢æ•°
 	void MoveOnPath(
 		const Route& route,
 		Board& board,
@@ -133,7 +133,7 @@ private:
 		std::vector<std::vector<unsigned int>>& bPassCount,
 		const bool& isSave);
 
-	// Œo˜H‚ğ•]‰¿‚µA“K“–‚È‚à‚Ì‚ğ‘I‘ğ‚·‚éŠÖ”
+	// çµŒè·¯ã‚’è©•ä¾¡ã—ã€é©å½“ãªã‚‚ã®ã‚’é¸æŠã™ã‚‹é–¢æ•°
 	std::pair<int, Route> GetBestRoute(
 		const std::unordered_map<int, std::vector<Route>>& routes,
 		const Board& board,
@@ -144,10 +144,10 @@ private:
 		const int& switchCount,
 		const CandidateItems& movableBaggages);
 
-	// ‘I‘ğ‚³‚ê‚½•]‰¿ŠÖ”‚Ì’l‚ğ‹‚ß‚éŠÖ”
+	// é¸æŠã•ã‚ŒãŸè©•ä¾¡é–¢æ•°ã®å€¤ã‚’æ±‚ã‚ã‚‹é–¢æ•°
 	void SetEvaluationValue(Rating& rates, const int& switchCount);
 
-	// •ûŒü‚ğƒCƒ“ƒfƒbƒNƒX‚É•ÏŠ·‚·‚éŠÖ”
+	// æ–¹å‘ã‚’ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã«å¤‰æ›ã™ã‚‹é–¢æ•°
 	int GetDirectionIndex(const sf::Vector2i& dir)
 	{
 		if (dir == sf::Vector2i{ 1, 0 })
@@ -170,7 +170,7 @@ private:
 		return -1;
 	}
 
-	// À•W‚Ìƒf[ƒ^\‘¢‚Ì•ÏŠ·
+	// åº§æ¨™ã®ãƒ‡ãƒ¼ã‚¿æ§‹é€ ã®å¤‰æ›
 	std::pair<int, int> Vec2iToPair(const sf::Vector2i& pos)
 	{
 		return std::make_pair(pos.x, pos.y);
@@ -180,41 +180,41 @@ private:
 		return sf::Vector2i{ pos.first, pos.second };
 	}
 
-	// ˆÈ‰º‚Íƒƒ“ƒo•Ï” //
-	// ’TõŠÖ˜A‚Ì•Ï”
+	// ä»¥ä¸‹ã¯ãƒ¡ãƒ³ãƒå¤‰æ•° //
+	// æ¢ç´¢é–¢é€£ã®å¤‰æ•°
 	const std::vector<sf::Vector2i> directions =
 	{
-		sf::Vector2i(1, 0),   // ‰E
-		sf::Vector2i(0, 1),  // ‰º
-		sf::Vector2i(-1, 0),   // ¶
-		sf::Vector2i(0, -1)   // ã
+		sf::Vector2i(1, 0),   // å³
+		sf::Vector2i(0, 1),  // ä¸‹
+		sf::Vector2i(-1, 0),   // å·¦
+		sf::Vector2i(0, -1)   // ä¸Š
 	};
 
-	// —”ŠÖ˜A‚Ì•Ï”
+	// ä¹±æ•°é–¢é€£ã®å¤‰æ•°
 	std::random_device rd;
 	std::mt19937 mt;
 
-	// ”Õ–ÊŠÖ˜A‚Ì•Ï”
+	// ç›¤é¢é–¢é€£ã®å¤‰æ•°
 	sf::Vector2i mSize;
-	Board mBoardStr;	// ”Õ–Ê‚Ìî•ñ‚ğ•\‚·
-	int mBaggageNum;	// ‰×•¨‚Ì”
-	std::vector<sf::Vector2i> mBaggagesCoordinate;	// ‰×•¨‚Ì’u‚¢‚Ä‚ ‚éÀ•W‚ÌƒŠƒXƒg
+	Board mBoardStr;	// ç›¤é¢ã®æƒ…å ±ã‚’è¡¨ã™
+	int mBaggageNum;	// è·ç‰©ã®æ•°
+	std::vector<sf::Vector2i> mBaggagesCoordinate;	// è·ç‰©ã®ç½®ã„ã¦ã‚ã‚‹åº§æ¨™ã®ãƒªã‚¹ãƒˆ
 
-	// ”Õ–Ê‚Ì¶¬‚ÉŠÖ‚·‚é•Ï”
+	// ç›¤é¢ã®ç”Ÿæˆã«é–¢ã™ã‚‹å¤‰æ•°
 	const int mBuildsNum;
 	const int mRunsNum;
-	double mInitialWallRatio;	// ‰Šúİ’è‚Å•Çƒ^ƒCƒ‹‚ğ”z’u‚·‚éŠ„‡
-	double mVisitedRatio;		// –K–âÏ‚İ‚É‰Šú‰»‚·‚éŠ„‡
-	const int mStrategyIndex;		// Œo˜H‘I‘ğ‚Ì•]‰¿ŠÖ”‚ÌƒCƒ“ƒfƒbƒNƒX
-	std::vector<std::vector<History>> mBoardHistory;	// ”Õ–Ê‚Ì—š—ğ
+	double mInitialWallRatio;	// åˆæœŸè¨­å®šã§å£ã‚¿ã‚¤ãƒ«ã‚’é…ç½®ã™ã‚‹å‰²åˆ
+	double mVisitedRatio;		// è¨ªå•æ¸ˆã¿ã«åˆæœŸåŒ–ã™ã‚‹å‰²åˆ
+	const int mStrategyIndex;		// çµŒè·¯é¸æŠã®è©•ä¾¡é–¢æ•°ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
+	std::vector<std::vector<History>> mBoardHistory;	// ç›¤é¢ã®å±¥æ­´
 
-	// ¶¬‚É“¾‚ç‚ê‚é‰ğ‚ğ‹L˜^‚·‚é•Ï”
+	// ç”Ÿæˆæ™‚ã«å¾—ã‚‰ã‚Œã‚‹è§£ã‚’è¨˜éŒ²ã™ã‚‹å¤‰æ•°
 	std::vector<sf::Vector2i> mSolutionPos;
 	std::string mSolutionDirection;
 
-	// ‰ğ‚ÌãŠE
+	// è§£ã®ä¸Šç•Œ
 	int mSolveUpper;
 
-	// ‰×•¨‚ÆƒS[ƒ‹‚Ì‘Î‰
+	// è·ç‰©ã¨ã‚´ãƒ¼ãƒ«ã®å¯¾å¿œ
 	std::vector<std::pair<sf::Vector2i, sf::Vector2i>> mInitToGoalList;
 };

@@ -14,12 +14,12 @@ Font::~Font()
 
 bool Font::Load(const std::string& fileName)
 {
-	// ƒTƒ|[ƒg‚·‚éƒtƒHƒ“ƒgƒTƒCƒY
+	// ã‚µãƒãƒ¼ãƒˆã™ã‚‹ãƒ•ã‚©ãƒ³ãƒˆã‚µã‚¤ã‚º
 	std::vector<int> fontSizes = {
 		8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 52, 56, 60, 64, 68, 72
 	};
 
-	// ƒtƒHƒ“ƒg‚Ìƒ[ƒh
+	// ãƒ•ã‚©ãƒ³ãƒˆã®ãƒ­ãƒ¼ãƒ‰
 	if (!mFont->loadFromFile(fileName))
 	{
 		std::cout << "error : failed loading font." << std::endl;
@@ -27,7 +27,7 @@ bool Font::Load(const std::string& fileName)
 	}
 	
 
-	// ƒTƒCƒY‚ÌƒŠƒXƒg‚É’Ç‰Á
+	// ã‚µã‚¤ã‚ºã®ãƒªã‚¹ãƒˆã«è¿½åŠ 
 	for (const auto& size : fontSizes)
 	{
 		mFontSize.emplace(size);
@@ -45,17 +45,17 @@ sf::Texture* Font::RenderText(const std::string& text, const sf::Color& color /*
 {
 	sf::Texture* texture = nullptr;
 
-	// w’èƒTƒCƒY‚ÌƒtƒHƒ“ƒgƒf[ƒ^‚ğ’T‚·
+	// æŒ‡å®šã‚µã‚¤ã‚ºã®ãƒ•ã‚©ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿ã‚’æ¢ã™
 	if (mFontSize.find(pointSize) != mFontSize.end())
 	{
-		// sf::Text ƒIƒuƒWƒFƒNƒg‚ğİ’è
+		// sf::Text ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’è¨­å®š
 		sf::Text sfText;
-		sfText.setFont(*mFont.get());			// ƒtƒHƒ“ƒg‚ğİ’è
-		sfText.setString(text);					// •\¦‚·‚é•¶š—ñ‚ğİ’è
-		sfText.setCharacterSize(pointSize);		// •¶šƒTƒCƒY‚ğİ’è
-		sfText.setFillColor(color);	// ƒeƒLƒXƒg‚ÌFi•K—v‚É‰‚¶‚Ä•ÏX‰Âj
+		sfText.setFont(*mFont.get());			// ãƒ•ã‚©ãƒ³ãƒˆã‚’è¨­å®š
+		sfText.setString(text);					// è¡¨ç¤ºã™ã‚‹æ–‡å­—åˆ—ã‚’è¨­å®š
+		sfText.setCharacterSize(pointSize);		// æ–‡å­—ã‚µã‚¤ã‚ºã‚’è¨­å®š
+		sfText.setFillColor(color);	// ãƒ†ã‚­ã‚¹ãƒˆã®è‰²ï¼ˆå¿…è¦ã«å¿œã˜ã¦å¤‰æ›´å¯ï¼‰
 
-		// ƒeƒLƒXƒg‚ÌƒTƒCƒY‚ÉŠî‚Ã‚«•`‰æ—p‚Ì RenderTexture ‚ğì¬
+		// ãƒ†ã‚­ã‚¹ãƒˆã®ã‚µã‚¤ã‚ºã«åŸºã¥ãæç”»ç”¨ã® RenderTexture ã‚’ä½œæˆ
 		sf::FloatRect textBounds = sfText.getLocalBounds();
 		sf::RenderTexture renderTexture;
 		if (!renderTexture.create(static_cast<unsigned int>(textBounds.width), static_cast<unsigned int>(textBounds.height)))
@@ -63,13 +63,13 @@ sf::Texture* Font::RenderText(const std::string& text, const sf::Color& color /*
 			std::cerr << "Failed creating RenderTexture." << std::endl;
 		}
 
-		// RenderTexture ‚ÉƒeƒLƒXƒg‚ğ•`‰æ
-		renderTexture.clear(sf::Color::Transparent);			// ”wŒi‚ğ“§–¾‚ÉƒNƒŠƒA
-		sfText.setPosition(-textBounds.left, -textBounds.top);	// ƒeƒLƒXƒg‚ÌˆÊ’u‚ğ•â³
-		renderTexture.draw(sfText);								// ƒeƒLƒXƒg‚ğ•`‰æ
-		renderTexture.display();								// •`‰æŒ‹‰Ê‚ğŠm’è
+		// RenderTexture ã«ãƒ†ã‚­ã‚¹ãƒˆã‚’æç”»
+		renderTexture.clear(sf::Color::Transparent);			// èƒŒæ™¯ã‚’é€æ˜ã«ã‚¯ãƒªã‚¢
+		sfText.setPosition(-textBounds.left, -textBounds.top);	// ãƒ†ã‚­ã‚¹ãƒˆã®ä½ç½®ã‚’è£œæ­£
+		renderTexture.draw(sfText);								// ãƒ†ã‚­ã‚¹ãƒˆã‚’æç”»
+		renderTexture.display();								// æç”»çµæœã‚’ç¢ºå®š
 
-		// RenderTexture‚©‚çsf::Texture‚ğ¶¬
+		// RenderTextureã‹ã‚‰sf::Textureã‚’ç”Ÿæˆ
 		texture = new sf::Texture(renderTexture.getTexture());
 	}
 	else
@@ -84,34 +84,34 @@ sf::Texture* Font::RenderTextOnCenter(const std::string& text, const sf::Vector2
 {
 	sf::Texture* texture = nullptr;
 
-	// w’èƒTƒCƒY‚ÌƒtƒHƒ“ƒgƒf[ƒ^‚ğ’T‚·
+	// æŒ‡å®šã‚µã‚¤ã‚ºã®ãƒ•ã‚©ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿ã‚’æ¢ã™
 	if (mFontSize.find(pointSize) != mFontSize.end())
 	{
-		// sf::Text ƒIƒuƒWƒFƒNƒg‚ğİ’è
+		// sf::Text ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’è¨­å®š
 		sf::Text sfText;
-		sfText.setFont(*mFont.get());			// ƒtƒHƒ“ƒg‚ğİ’è
-		sfText.setString(text);					// •\¦‚·‚é•¶š—ñ‚ğİ’è
-		sfText.setCharacterSize(pointSize);		// •¶šƒTƒCƒY‚ğİ’è
-		sfText.setFillColor(color);	// ƒeƒLƒXƒg‚ÌFi•K—v‚É‰‚¶‚Ä•ÏX‰Âj
+		sfText.setFont(*mFont.get());			// ãƒ•ã‚©ãƒ³ãƒˆã‚’è¨­å®š
+		sfText.setString(text);					// è¡¨ç¤ºã™ã‚‹æ–‡å­—åˆ—ã‚’è¨­å®š
+		sfText.setCharacterSize(pointSize);		// æ–‡å­—ã‚µã‚¤ã‚ºã‚’è¨­å®š
+		sfText.setFillColor(color);	// ãƒ†ã‚­ã‚¹ãƒˆã®è‰²ï¼ˆå¿…è¦ã«å¿œã˜ã¦å¤‰æ›´å¯ï¼‰
 
-		// ƒeƒLƒXƒg‚Ìƒ[ƒJƒ‹ƒoƒEƒ“ƒfƒBƒ“ƒOƒ{ƒbƒNƒX‚ğæ“¾
+		// ãƒ†ã‚­ã‚¹ãƒˆã®ãƒ­ãƒ¼ã‚«ãƒ«ãƒã‚¦ãƒ³ãƒ‡ã‚£ãƒ³ã‚°ãƒœãƒƒã‚¯ã‚¹ã‚’å–å¾—
 		sf::FloatRect textBounds = sfText.getLocalBounds();
 
-		// ƒeƒLƒXƒg‚Ì’†‰›‘µ‚¦‚ÌˆÊ’u‚ğŒvZ
+		// ãƒ†ã‚­ã‚¹ãƒˆã®ä¸­å¤®æƒãˆã®ä½ç½®ã‚’è¨ˆç®—
 		sf::Vector2f pos{ (boundingBox.x - textBounds.width) / 2.0f - textBounds.left, (boundingBox.y - textBounds.height) / 2.0f - textBounds.top };
 
 		sf::RenderTexture renderTexture;
 		if (!renderTexture.create(static_cast<unsigned int>(boundingBox.x), static_cast<unsigned int>(boundingBox.y))) {
-			std::cerr << "RenderTexture‚Ìì¬‚É¸”s‚µ‚Ü‚µ‚½B" << std::endl;
+			std::cerr << "RenderTextureã®ä½œæˆã«å¤±æ•—ã—ã¾ã—ãŸã€‚" << std::endl;
 		}
 
-		// RenderTexture ‚ÉƒeƒLƒXƒg‚ğ•`‰æ
-		renderTexture.clear(sf::Color::Transparent);			// ”wŒi‚ğ“§–¾‚ÉƒNƒŠƒA
-		sfText.setPosition(pos.x, pos.y);	// ƒeƒLƒXƒg‚ÌˆÊ’u‚ğ•â³
-		renderTexture.draw(sfText);								// ƒeƒLƒXƒg‚ğ•`‰æ
-		renderTexture.display();								// •`‰æŒ‹‰Ê‚ğŠm’è
+		// RenderTexture ã«ãƒ†ã‚­ã‚¹ãƒˆã‚’æç”»
+		renderTexture.clear(sf::Color::Transparent);			// èƒŒæ™¯ã‚’é€æ˜ã«ã‚¯ãƒªã‚¢
+		sfText.setPosition(pos.x, pos.y);	// ãƒ†ã‚­ã‚¹ãƒˆã®ä½ç½®ã‚’è£œæ­£
+		renderTexture.draw(sfText);								// ãƒ†ã‚­ã‚¹ãƒˆã‚’æç”»
+		renderTexture.display();								// æç”»çµæœã‚’ç¢ºå®š
 
-		// RenderTexture‚©‚çsf::Texture‚ğ¶¬
+		// RenderTextureã‹ã‚‰sf::Textureã‚’ç”Ÿæˆ
 		texture = new sf::Texture(renderTexture.getTexture());
 	}
 	else

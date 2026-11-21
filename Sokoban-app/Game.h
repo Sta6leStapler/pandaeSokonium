@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "SFML/Graphics.hpp"
 #include <unordered_map>
@@ -287,6 +287,8 @@ private:
 	void LoadData();
 	void UnloadData();
 	void ShowFileError(const std::string& message);
+	// 60FPSに合わせてCPUを占有せず次フレームまで待機する
+	void WaitForNextFrame(const sf::Time& previousTicks) const;
 
 	// ヘルパー関数は以下に定義
 	void SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr editBox, const bool& isInteger);

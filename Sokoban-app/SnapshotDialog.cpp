@@ -1,4 +1,4 @@
-﻿#include "SnapshotDialog.h"
+#include "SnapshotDialog.h"
 #include "Game.h"
 
 #include "SnapshotScreen.h"

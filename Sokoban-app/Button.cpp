@@ -17,7 +17,7 @@ Button::Button(const std::string& name, Font* font, std::function<void()> onClic
 Button::~Button()
 {
 	delete mNameTex;
-	// ƒtƒHƒ“ƒg‚ÍUIƒNƒ‰ƒX‚©‚çw’è‚³‚ê‚Ä‚¢‚é‚Ì‚ÅA‚±‚±‚Å‚ÍÁ‚³‚È‚¢
+	// ãƒ•ã‚©ãƒ³ãƒˆã¯UIã‚¯ãƒ©ã‚¹ã‹ã‚‰æŒ‡å®šã•ã‚Œã¦ã„ã‚‹ã®ã§ã€ã“ã“ã§ã¯æ¶ˆã•ãªã„
 	mFont = nullptr;
 }
 

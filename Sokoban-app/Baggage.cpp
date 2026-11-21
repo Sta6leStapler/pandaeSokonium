@@ -1,10 +1,11 @@
-﻿#include "Baggage.h"
+#include "Baggage.h"
 
 #include "Game.h"
 #include "SpriteComponent.h"
 #include "MoveAnimationComponent.h"
 #include "HUDHelper.h"
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 

@@ -1,9 +1,10 @@
-﻿#include "Player.h"
+#include "Player.h"
 
 #include "Baggage.h"
 #include "SpriteComponent.h"
 #include "MoveAnimationComponent.h"
 
+#include <algorithm>
 #include <fstream>
 
 #include <iostream>

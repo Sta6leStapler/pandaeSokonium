@@ -53,19 +53,51 @@
 
 ## 開発環境と依存関係
 
-- **言語**: Visual C++
+- **言語**: C++17
 - **ライブラリ**:
-  - [SFML](https://www.sfml-dev.org/) (Simple and Fast Multimedia Library)
-  - [TGUI](https://tgui.eu/) (SFML 用 GUI ライブラリ)
-- **開発環境**: Visual Studio 2022
+  - [SFML](https://www.sfml-dev.org/) 2.6.2 (Simple and Fast Multimedia Library)
+  - [TGUI](https://tgui.eu/) 1.6.1 (SFML 用 GUI ライブラリ)
+- **フォント**: BIZ UDPGothic (`BIZUDPGothic-Regular.ttf`, SIL Open Font License 1.1)
+- **ライセンス**: サードパーティライブラリ・フォントのライセンス全文は `THIRD_PARTY_LICENSES.txt` を参照してください。
+- **ビルド環境**: Visual Studio 2022（`.sln` / `.vcxproj`）または CMake 3.20+（Windows / Linux / macOS）
 
 ---
 
-## ビルド手順（Visual Studio）
+## ビルド手順（CMake：Windows / Linux / macOS 共通）
 
-1. SFMLとTGUIをダウンロードし、プロジェクトルートの../include/と../lib/に配置
+CMake はデフォルトで `FetchContent` を用いて SFML 2.6.2 と TGUI 1.6.1 を自動取得します（システム導入済みの SFML 2.6 / TGUI 1.6 を使う場合は `-DPANDAE_USE_SYSTEM_DEPS=ON` を指定してください）。
+
+### Windows (MSVC)
+```powershell
+cmake --preset windows-msvc
+cmake --build --preset windows-msvc-release --parallel
+ctest --preset windows-msvc-release
+```
+既存のローカル `include/`・`lib/` を使う場合は `windows-msvc-local` プリセットを使用できます。
+
+### Linux (Ubuntu 例)
+```bash
+sudo apt-get install -y \
+  libx11-dev libxrandr-dev libxcursor-dev libxi-dev \
+  libudev-dev libgl1-mesa-dev libfreetype-dev \
+  libopenal-dev libflac-dev libvorbis-dev
+cmake --preset linux-release
+cmake --build --preset linux-release --parallel
+ctest --preset linux-release
+```
+
+### macOS
+```bash
+cmake --preset macos-release
+cmake --build --preset macos-release --parallel
+ctest --preset macos-release
+```
+
+## ビルド手順（Visual Studio 2022）
+
+1. SFML 2.6.2 と TGUI 1.6.1 をダウンロードし、プロジェクトルートの `include/` と `lib/` に配置
 2. `Sokoban-app.sln` を Visual Studio で開く
-3. ビルド構成を選択(Debug/Release、Win32/x64) 
+3. ビルド構成を選択 (Debug/Release、x64)
 4. ビルド＆実行（`Ctrl+F5`）
 
 ## 必要なライブラリファイル
@@ -120,9 +152,8 @@ AppPathsTests.exe
 
 作業ディレクトリ非依存、日本語パス、同名盤面の識別、ログ名の衝突、
 既存盤面の保持、読み書き失敗、`.app` の配置を検証します。
-今回変更した既存C++ファイルはBOM付きUTF-8に変換し、Visual Studioが各ファイルの
-文字コードを識別できるようにしています。変更したソースの文字列には
-`/execution-charset:utf-8` を指定します。未変更の既存ソースは従来の文字コードを維持しています。
+全 C++ ソースファイルは BOM なし UTF-8（LF）に統一しており、Visual Studio / CMake 双方で `/utf-8` 相当の設定を用いてビルドします。
+`.vcxproj` と `CMakeLists.txt` のソース一覧の整合性は `python scripts/check_source_sync.py` で検証できます。
 
 [1]:https://deepwiki.com/Sta6leStapler/pandaeSokonium/1-overview
 

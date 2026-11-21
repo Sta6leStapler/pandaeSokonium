@@ -1,6 +1,9 @@
-﻿#include "EditorScreen.h"
+#include "EditorScreen.h"
 #include "Game.h"
 #include "SFML/Graphics.hpp"
+
+#include <algorithm>
+#include <cmath>
 
 // コンストラクタ
 EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)

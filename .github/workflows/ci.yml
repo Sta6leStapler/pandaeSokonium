@@ -1,0 +1,72 @@
+name: Cross-Platform Build and Test
+
+on:
+  push:
+    branches: [master, main, "feat/**", "feature/**"]
+  pull_request:
+
+jobs:
+  source-sync:
+    name: Verify CMake & vcxproj Source Sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check CMakeLists.txt and Sokoban-app.vcxproj sync
+        run: python3 scripts/check_source_sync.py
+
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
+    needs: source-sync
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            preset: windows-msvc
+            build_preset: windows-msvc-release
+            test_preset: windows-msvc-release
+            deps_dir: build/windows-msvc/_deps
+          - os: ubuntu-latest
+            preset: linux-release
+            build_preset: linux-release
+            test_preset: linux-release
+            deps_dir: build/linux-release/_deps
+          - os: macos-latest
+            preset: macos-release
+            build_preset: macos-release
+            test_preset: macos-release
+            deps_dir: build/macos-release/_deps
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux SFML dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libx11-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libudev-dev libgl1-mesa-dev libfreetype-dev \
+            libopenal-dev libflac-dev libvorbis-dev
+
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.deps_dir }}
+          key: deps-${{ runner.os }}-sfml2.6.2-tgui1.6.1-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            deps-${{ runner.os }}-sfml2.6.2-tgui1.6.1-
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.build_preset }} --parallel
+
+      - name: Run CTest
+        run: ctest --preset ${{ matrix.test_preset }}

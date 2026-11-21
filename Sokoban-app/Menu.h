@@ -8,7 +8,7 @@
 class Menu
 {
 public:
-	// ƒvƒŒƒCƒ„[‚ÌŒü‚«‚ğ•\Œ»‚·‚é—ñ‹“Œ^
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®å‘ãã‚’è¡¨ç¾ã™ã‚‹åˆ—æŒ™å‹
 	enum Direction
 	{
 		ENorth,
@@ -20,23 +20,23 @@ public:
 	Menu(class Game* game);
 	virtual ~Menu();
 
-	// GameƒNƒ‰ƒX‚©‚çXVˆ—‚ğŒÄ‚Ño‚·
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰æ›´æ–°å‡¦ç†ã‚’å‘¼ã³å‡ºã™
 	void Update(float deltaTime);
 
-	// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ğXV
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æ›´æ–°
 	void UpdateComponents(float deltaTime);
 
-	// GameƒNƒ‰ƒX‚©‚ç“ü—Íˆ—‚ğŒÄ‚Ño‚·
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å…¥åŠ›å‡¦ç†ã‚’å‘¼ã³å‡ºã™
 	void ProcessInput(const sf::Event::KeyEvent* keyState);
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì’Ç‰Á‚Æíœ
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®è¿½åŠ ã¨å‰Šé™¤
 	void AddComponent(class MenuComponent* component);
 	void RemoveComponent(class MenuComponent* component);
 
-	// ƒvƒŒƒCƒ„[‚ÌˆÊ’u‚ğXV‚·‚é
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ä½ç½®ã‚’æ›´æ–°ã™ã‚‹
 	void Reload();
 
-	// ƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 	State GetState() const { return mState; }
 	void SetState(const State state) { mState = state; }
 
@@ -52,10 +52,10 @@ public:
 	class Game* GetGame() { return mGame; }
 
 private:
-	// ƒAƒNƒ^[‚Ìó‘Ô
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã®çŠ¶æ…‹
 	class State mState;
 
-	// •ÏŠ·
+	// å¤‰æ›
 	sf::Vector2f mPosition;
 	sf::Vector2f mScale;
 	float mRotation;
@@ -64,19 +64,19 @@ private:
 
 	std::string mBoardName;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ég‚¤ƒeƒNƒXƒ`ƒƒ
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«ä½¿ã†ãƒ†ã‚¯ã‚¹ãƒãƒ£
 	std::unordered_map<Direction, sf::Texture*> mTextures;
 
 	class Game* mGame;
 
-	// ˆÈ‰º‚ÍƒAƒNƒ^[“Á—L‚Ìƒƒ“ƒo•Ï”
+	// ä»¥ä¸‹ã¯ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®ãƒ¡ãƒ³ãƒå¤‰æ•°
 
-	// ’¼‘O‚ÌƒtƒŒ[ƒ€‚ÌƒL[“ü—Í
+	// ç›´å‰ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã®ã‚­ãƒ¼å…¥åŠ›
 	sf::Event::KeyEvent prevKeys;
 
-	// ˆÚ“®“ü—Í‚ÌƒN[ƒ‹ƒ_ƒEƒ“
+	// ç§»å‹•å…¥åŠ›ã®ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³
 	float mMoveCooldown;
 
-	// ˆÚ“®“ü—Í‚ÌŒŸ’m
+	// ç§»å‹•å…¥åŠ›ã®æ¤œçŸ¥
 	bool mDetection;
 };

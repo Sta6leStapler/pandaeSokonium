@@ -1,4 +1,4 @@
-﻿#include "EditorSetupDialog.h"
+#include "EditorSetupDialog.h"
 #include "Game.h"
 
 EditorSetupDialog::EditorSetupDialog(Game* game, sf::RenderWindow* window)
