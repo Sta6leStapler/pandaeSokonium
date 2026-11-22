@@ -10,7 +10,7 @@
 class GameBoard : IActor
 {
 public:
-	// Œü‚«‚ğ•\Œ»‚·‚é—ñ‹“Œ^
+	// å‘ãã‚’è¡¨ç¾ã™ã‚‹åˆ—æŒ™å‹
 	enum Direction
 	{
 		ENorth,
@@ -22,23 +22,23 @@ public:
 	GameBoard(class Game* game);
 	virtual ~GameBoard();
 
-	// ƒAƒNƒ^[‚ªƒAƒNƒeƒBƒuó‘Ô‚Ì‚Æ‚«XVˆ—‚ğs‚¤ŠÖ”
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒã‚¢ã‚¯ãƒ†ã‚£ãƒ–çŠ¶æ…‹ã®ã¨ãæ›´æ–°å‡¦ç†ã‚’è¡Œã†é–¢æ•°
 	void Update(float deltaTime) override;
 
-	// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ğXV
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æ›´æ–°
 	void UpdateComponents(float deltaTime) override;
 
-	// GameƒNƒ‰ƒX‚©‚ç“ü—Íˆ—‚ğŒÄ‚Ño‚·
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å…¥åŠ›å‡¦ç†ã‚’å‘¼ã³å‡ºã™
 	void ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) override;
 
-	// ƒAƒNƒ^[‚ª‚Â‚·‚×‚Ä‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì“ü—Íˆ—‚ğs‚¤
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤ã™ã¹ã¦ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
 	void ProcessInputComponents(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) override;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì’Ç‰Á‚Æíœ
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®è¿½åŠ ã¨å‰Šé™¤
 	void AddComponent(class IComponent* component) override;
 	void RemoveComponent(class IComponent* component) override;
 
-	// ƒAƒNƒ^[‹¤’Ê‚ÌƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ã‚¢ã‚¯ã‚¿ãƒ¼å…±é€šã®ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 	class Game* GetGame() override { return mGame; }
 	IActor::ActorState GetState() override { return mState; }
 	void SetState(const ActorState state) override { this->mState = state; }
@@ -47,35 +47,35 @@ public:
 	sf::Vector2f GetScale() override { return mScale; }
 	float GetRotation() override { return mRotation; }
 
-	// ˆÈ‰º–{ƒAƒNƒ^[“Á—L‚Ìƒƒ“ƒoŠÖ”
-	// ”Õ–Ê‚ğXV‚·‚é
+	// ä»¥ä¸‹æœ¬ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®ãƒ¡ãƒ³ãƒé–¢æ•°
+	// ç›¤é¢ã‚’æ›´æ–°ã™ã‚‹
 	void Reload();
-	// ƒnƒCƒ‰ƒCƒg’†‚Ìƒ^ƒCƒ‹‚ÌƒŠƒXƒg‚ğæ“¾
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆä¸­ã®ã‚¿ã‚¤ãƒ«ã®ãƒªã‚¹ãƒˆã‚’å–å¾—
 	std::vector<sf::Vector2i> GetMoveHighlightedTiles() const { return mMoveHighlightedTiles; }
 	std::vector<sf::Vector2i> GetPushHighlightedTiles() const { return mPushHighlightedTiles; }
-	// GameƒNƒ‰ƒX‚©‚çŒÄ‚Î‚êAƒvƒŒƒCƒ„[‚ªˆÚ“®‰Â”\‚Èƒ^ƒCƒ‹‚ÌƒnƒCƒ‰ƒCƒg‚ğİ’è‚·‚é
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å‘¼ã°ã‚Œã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•å¯èƒ½ãªã‚¿ã‚¤ãƒ«ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’è¨­å®šã™ã‚‹
 	void SetMoveHighlightedTiles(const std::vector<sf::Vector2i>& tiles);
-	// ƒvƒŒƒCƒ„[‚ªˆÚ“®‰Â”\‚Èƒ^ƒCƒ‹‚ÌƒnƒCƒ‰ƒCƒg‚ğ‚·‚×‚ÄƒNƒŠƒA‚·‚é
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•å¯èƒ½ãªã‚¿ã‚¤ãƒ«ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’ã™ã¹ã¦ã‚¯ãƒªã‚¢ã™ã‚‹
 	void ClearMoveHighlights();
-	// GameƒNƒ‰ƒX‚©‚çŒÄ‚Î‚êA‰×•¨‚ğ‰^”À‰Â”\‚Èƒ^ƒCƒ‹‚ÌƒnƒCƒ‰ƒCƒg‚ğİ’è‚·‚é
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å‘¼ã°ã‚Œã€è·ç‰©ã‚’é‹æ¬å¯èƒ½ãªã‚¿ã‚¤ãƒ«ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’è¨­å®šã™ã‚‹
 	void SetPushHighlightedTiles(const std::vector<sf::Vector2i>& tiles, class Baggage* baggage);
-	// ‰×•¨‚ª‰^”À‰Â”\‚Èƒ^ƒCƒ‹‚ÌƒnƒCƒ‰ƒCƒg‚ğ‚·‚×‚ÄƒNƒŠƒA‚·‚é
+	// è·ç‰©ãŒé‹æ¬å¯èƒ½ãªã‚¿ã‚¤ãƒ«ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’ã™ã¹ã¦ã‚¯ãƒªã‚¢ã™ã‚‹
 	void ClearPushHighlights();
-	// GameƒNƒ‰ƒX‚©‚çŒÄ‚Î‚êA‰×•¨‚ğ‰^”À‰Â”\‚È•ûŒü‚ğİ’è‚·‚é
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å‘¼ã°ã‚Œã€è·ç‰©ã‚’é‹æ¬å¯èƒ½ãªæ–¹å‘ã‚’è¨­å®šã™ã‚‹
 	void SetPushDirections(const std::vector<int>& indexes, class Baggage* baggage);
-	// ‰×•¨‚ª‰^”À‰Â”\‚È•ûŒü‚Ì•\¦‚ğ‚·‚×‚ÄƒNƒŠƒA‚·‚é
+	// è·ç‰©ãŒé‹æ¬å¯èƒ½ãªæ–¹å‘ã®è¡¨ç¤ºã‚’ã™ã¹ã¦ã‚¯ãƒªã‚¢ã™ã‚‹
 	void ClearPushDirections();
 
-	// ƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 	std::string GetBoardName() const { return this->mBoardName; }
 	sf::Vector2f GetForward() const { return sf::Vector2f(std::cos(mRotation), -std::sin(mRotation)); }
 	sf::Texture* GetBoardTexture() const;
 
 private:
-	// ƒAƒNƒ^[‚Ìó‘Ô
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã®çŠ¶æ…‹
 	IActor::ActorState mState;
 
-	// •ÏŠ·
+	// å¤‰æ›
 	sf::Vector2f mPosition;
 	sf::Vector2f mScale;
 	float mRotation;
@@ -86,19 +86,19 @@ private:
 
 	std::string mBoardName;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ég‚¤ƒeƒNƒXƒ`ƒƒ
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«ä½¿ã†ãƒ†ã‚¯ã‚¹ãƒãƒ£
 	std::unordered_map<std::string, sf::Texture*> mTextures;
 
 	class Game* mGame;
 
-	// ƒAƒNƒ^[“Á—L‚Ìƒƒ“ƒo•Ï”
-	// ƒnƒCƒ‰ƒCƒg’†‚Ìƒ^ƒCƒ‹‚ÌƒŠƒXƒg
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®ãƒ¡ãƒ³ãƒå¤‰æ•°
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆä¸­ã®ã‚¿ã‚¤ãƒ«ã®ãƒªã‚¹ãƒˆ
 	std::vector<sf::Vector2i> mMoveHighlightedTiles;
 	std::vector<sf::Vector2i> mPushHighlightedTiles;
-	// ƒnƒCƒ‰ƒCƒg—pƒeƒNƒXƒ`ƒƒ
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆç”¨ãƒ†ã‚¯ã‚¹ãƒãƒ£
 	sf::Texture* mMoveHighlightTexture;
 	sf::Texture* mPushHighlightTexture;
-	// –îˆó‚ÌƒeƒNƒXƒ`ƒƒ
+	// çŸ¢å°ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£
 	std::map<Direction, sf::Texture*> mIdleArrowTextures;
 	std::map<Direction, sf::Texture*> mOnCursorArrowTextures;
 

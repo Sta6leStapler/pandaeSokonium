@@ -1,5 +1,6 @@
 #include "BoardConfigDialog.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 
@@ -12,7 +13,7 @@ BoardConfigDialog::BoardConfigDialog(Game* game, tgui::Gui& gui, tgui::Theme& th
     , mTheme(theme)
     , mParams(currentParams)
 {
-    // ƒƒ^ƒf[ƒ^‚Ì’è‹`
+    // ãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿ã®å®šç¾©
     mMeta = {
         {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_WIDTH"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_WIDTH"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_WIDTH"), 5, 48, true},
         {mGame->GetLoc()->Get("GENERATE_BOARD_META_TITLE_HEIGHT"), mGame->GetLoc()->Get("GENERATE_BOARD_META_TEXT_HEIGHT"), mGame->GetLoc()->Get("GENERATE_BOARD_META_POP_HEIGHT"), 5, 48, true},
@@ -29,39 +30,39 @@ BoardConfigDialog::BoardConfigDialog(Game* game, tgui::Gui& gui, tgui::Theme& th
 
 void BoardConfigDialog::setupUI()
 {
-    // qƒEƒBƒ“ƒhƒE‚Ìì¬
+    // å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ä½œæˆ
     mWindow = tgui::ChildWindow::create(mGame->GetLoc()->Get("GENERATE_BOARD_WINDOW_TITLE"));
     mWindow->setRenderer(mTheme.getRenderer("ChildWindow"));
     mWindow->setSize(800, 560);
-    // ‰æ–Ê’†‰›‚É”z’u
+    // ç”»é¢ä¸­å¤®ã«é…ç½®
     mWindow->setPosition("420", "80");
-    // ƒEƒBƒ“ƒhƒE‚ğ’¼Ú•Â‚¶‚½ê‡
+    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ç›´æ¥é–‰ã˜ãŸå ´åˆ
     mWindow->onClose([this]() { mResult = Result::Cancel; mIsActive = false; });
 
     float yPos = 20;
     for (const auto& meta : mMeta)
     {
-        // 1. ƒ‰ƒxƒ‹‚Æƒc[ƒ‹ƒ`ƒbƒv‚Ìì¬
+        // 1. ãƒ©ãƒ™ãƒ«ã¨ãƒ„ãƒ¼ãƒ«ãƒãƒƒãƒ—ã®ä½œæˆ
         auto label = tgui::Label::create(meta.name + " :");
         label->setRenderer(mTheme.getRenderer("Label"));
         label->setPosition(30, yPos);
         label->setTextSize(18);
 
-        // ƒc[ƒ‹ƒ`ƒbƒv‚Ìİ’è
-        // ƒzƒo[‚É•â‘«à–¾‚ğo‚·
+        // ãƒ„ãƒ¼ãƒ«ãƒãƒƒãƒ—ã®è¨­å®š
+        // ãƒ›ãƒãƒ¼æ™‚ã«è£œè¶³èª¬æ˜ã‚’å‡ºã™
         auto toolTip = tgui::Label::create(meta.description);
         toolTip->setRenderer(mTheme.getRenderer("ToolTip"));
         //toolTip->setPadding(5);
         label->setToolTip(toolTip);
         mWindow->add(label);
 
-        // 2. ƒGƒfƒBƒbƒgƒ{ƒbƒNƒXi”’l’¼Ú“ü—Í—pj
+        // 2. ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹ï¼ˆæ•°å€¤ç›´æ¥å…¥åŠ›ç”¨ï¼‰
         auto editBox = tgui::EditBox::create();
         editBox->setRenderer(mTheme.getRenderer("EditBox"));
         editBox->setSize(80, 25);
         editBox->setPosition(200, yPos);
 
-        // 3. ƒXƒ‰ƒCƒ_[iƒ}ƒEƒX‘€ì—pj
+        // 3. ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ï¼ˆãƒã‚¦ã‚¹æ“ä½œç”¨ï¼‰
         auto slider = tgui::Slider::create();
         slider->setRenderer(mTheme.getRenderer("Slider"));
         slider->setPosition(300, yPos + 4);
@@ -69,17 +70,17 @@ void BoardConfigDialog::setupUI()
         slider->setMinimum(meta.min);
         slider->setMaximum(meta.max);
 
-        // ƒpƒ‰ƒ[ƒ^‚Ìí—Ş‚É‚æ‚Á‚ÄƒXƒeƒbƒv’l‚ğØ‚è‘Ö‚¦‚é
+        // ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®ç¨®é¡ã«ã‚ˆã£ã¦ã‚¹ãƒ†ãƒƒãƒ—å€¤ã‚’åˆ‡ã‚Šæ›¿ãˆã‚‹
         if (meta.isInteger)
         {
             slider->setStep(1.0f);
         }
         else
         {
-            slider->setStep(0.01f); // À”’l‚Í×‚©‚­’²®‰Â”\‚É‚·‚é
+            slider->setStep(0.01f); // å®Ÿæ•°å€¤ã¯ç´°ã‹ãèª¿æ•´å¯èƒ½ã«ã™ã‚‹
         }
 
-        // ‰Šú’l‚Ì”½‰f
+        // åˆæœŸå€¤ã®åæ˜ 
         float initialValue = 0.0f;
         if (meta.key == "width") initialValue = static_cast<float>(mParams.boardSize.x);
         else if (meta.key == "height") initialValue = static_cast<float>(mParams.boardSize.y);
@@ -93,8 +94,8 @@ void BoardConfigDialog::setupUI()
         slider->setValue(initialValue);
         editBox->setText(meta.isInteger ? std::to_string((int)initialValue) : std::to_string(initialValue).substr(0, 4));
 
-        // ƒCƒxƒ“ƒg‚ÌƒoƒCƒ“ƒh
-        // syncValues‚Æ‚¢‚¤‹¤’ÊŠÖ”‚É”ò‚Î‚µAƒXƒ‰ƒCƒ_[‘€ì‚ÆƒL[ƒ{[ƒh“ü—Í‚ÅƒƒWƒbƒN‚ªd•¡‚·‚é‚Ì‚ğ”ğ‚¯‚é
+        // ã‚¤ãƒ™ãƒ³ãƒˆã®ãƒã‚¤ãƒ³ãƒ‰
+        // syncValuesã¨ã„ã†å…±é€šé–¢æ•°ã«é£›ã°ã—ã€ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼æ“ä½œæ™‚ã¨ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰å…¥åŠ›æ™‚ã§ãƒ­ã‚¸ãƒƒã‚¯ãŒé‡è¤‡ã™ã‚‹ã®ã‚’é¿ã‘ã‚‹
         slider->onValueChange([this, meta](float val) { syncValues(meta.key, val, true); });
         editBox->onReturnKeyPress([this, meta, editBox]() {
             try
@@ -108,20 +109,20 @@ void BoardConfigDialog::setupUI()
         mWindow->add(editBox);
         mWindow->add(slider);
 
-        // ƒ}ƒbƒv‚É•ÛiŒã‚Å’l‚ğ“Ç‚İo‚·‚½‚ßj
+        // ãƒãƒƒãƒ—ã«ä¿æŒï¼ˆå¾Œã§å€¤ã‚’èª­ã¿å‡ºã™ãŸã‚ï¼‰
         mUIMap[meta.key] = { slider, editBox };
 
         yPos += 45;
     }
 
-    // ŒvZ•‰‰×‚Ì•\¦ƒ‰ƒxƒ‹
+    // è¨ˆç®—è² è·ã®è¡¨ç¤ºãƒ©ãƒ™ãƒ«
     mComplexityLabel = tgui::Label::create("");
     mComplexityLabel->setPosition(30, yPos + 20);
     mComplexityLabel->setTextSize(20);
     mWindow->add(mComplexityLabel);
     updateComplexityEstimation();
 
-    // Œˆ’èƒ{ƒ^ƒ“
+    // æ±ºå®šãƒœã‚¿ãƒ³
     auto applyBtn = tgui::Button::create(mGame->GetLoc()->Get("GENERATE_BOARD_WINDOW_BTN_APPLY_GENERATE"));
     applyBtn->setRenderer(mTheme.getRenderer("Button"));
     applyBtn->setSize(160, 30);
@@ -129,7 +130,7 @@ void BoardConfigDialog::setupUI()
     applyBtn->onPress([this]() { mResult = Result::Apply; mIsActive = false; });
     mWindow->add(applyBtn);
 
-    // ƒLƒƒƒ“ƒZƒ‹ƒ{ƒ^ƒ“
+    // ã‚­ãƒ£ãƒ³ã‚»ãƒ«ãƒœã‚¿ãƒ³
     auto cancelBtn = tgui::Button::create(mGame->GetLoc()->Get("BTN_CANCEL"));
     cancelBtn->setRenderer(mTheme.getRenderer("Button"));
     cancelBtn->setSize(100, 30);
@@ -137,13 +138,13 @@ void BoardConfigDialog::setupUI()
     cancelBtn->onPress([this]() { mResult = Result::Cancel; mIsActive = false; });
     mWindow->add(cancelBtn);
 
-    // ƒpƒ‰ƒ[ƒ^‚Ìƒ}ƒjƒ…ƒAƒ‹‚ğ•\¦‚·‚éƒ{ƒ^ƒ“
+    // ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®ãƒãƒ‹ãƒ¥ã‚¢ãƒ«ã‚’è¡¨ç¤ºã™ã‚‹ãƒœã‚¿ãƒ³
     auto helpBtn = tgui::Button::create("?");
     helpBtn->setRenderer(mTheme.getRenderer("Button"));
     helpBtn->setSize(30, 30);
-    helpBtn->setPosition("100% - 370", "100% - 50"); // Apply/Cancel‚Ì¶‘¤
+    helpBtn->setPosition("100% - 370", "100% - 50"); // Apply/Cancelã®å·¦å´
     helpBtn->onPress([this] {
-        // ƒ}ƒjƒ…ƒAƒ‹ƒEƒBƒ“ƒhƒE‚ğdô•\¦
+        // ãƒãƒ‹ãƒ¥ã‚¢ãƒ«ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’é‡ç•³è¡¨ç¤º
         BoardParamManual::display(mGame, mGui);
         });
     mWindow->add(helpBtn);
@@ -153,7 +154,7 @@ void BoardConfigDialog::setupUI()
 
 void BoardConfigDialog::syncValues(const std::string& key, float value, bool fromSlider)
 {
-    // 1. ƒpƒ‰ƒ[ƒ^\‘¢‘Ì‚ÌXV
+    // 1. ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ§‹é€ ä½“ã®æ›´æ–°
     if (key == "width") mParams.boardSize.x = (int)value;
     else if (key == "height") mParams.boardSize.y = (int)value;
     else if (key == "baggage") mParams.baggageNum = (int)value;
@@ -163,20 +164,20 @@ void BoardConfigDialog::syncValues(const std::string& key, float value, bool fro
     else if (key == "visited") mParams.visitedRate = value;
     else if (key == "eval") mParams.evalFuncIndex = (int)value;
 
-    // 2. UI‚Ì“¯Šú
-    // ƒXƒ‰ƒCƒ_[‚ª“®‚¢‚½‚çƒGƒfƒBƒbƒgƒ{ƒbƒNƒX‚ğ‘‚«Š·‚¦A‚»‚Ì‹t‚às‚¤B
+    // 2. UIã®åŒæœŸ
+    // ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ãŒå‹•ã„ãŸã‚‰ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹ã‚’æ›¸ãæ›ãˆã€ãã®é€†ã‚‚è¡Œã†ã€‚
     
-    // ‘ÎÛ‚Ìƒƒ^î•ñ‚ğ’T‚·
+    // å¯¾è±¡ã®ãƒ¡ã‚¿æƒ…å ±ã‚’æ¢ã™
     auto it = std::find_if(mMeta.begin(), mMeta.end(), [&](const ParameterMeta& m) { return m.key == key; });
 
     auto& ui = mUIMap[key];
     if (fromSlider) {
         if (it != mMeta.end() && it->isInteger) {
-            // ©‘R”‚Ìê‡‚Í¬”“_ˆÈ‰º‚ğ•\¦‚µ‚È‚¢
+            // è‡ªç„¶æ•°ã®å ´åˆã¯å°æ•°ç‚¹ä»¥ä¸‹ã‚’è¡¨ç¤ºã—ãªã„
             ui.editBox->setText(std::to_string(static_cast<int>(value))); //
         }
         else {
-            // À”‚Ìê‡‚Í¬”“_ˆÈ‰º‚ğ•\¦
+            // å®Ÿæ•°ã®å ´åˆã¯å°æ•°ç‚¹ä»¥ä¸‹ã‚’è¡¨ç¤º
             std::stringstream ss;
             ss << std::fixed << std::setprecision(2) << value;
             ui.editBox->setText(ss.str()); //
@@ -186,7 +187,7 @@ void BoardConfigDialog::syncValues(const std::string& key, float value, bool fro
         ui.slider->setValue(value);
     }
 
-    // 3. •‰‰×—\‘ª‚ÌXV
+    // 3. è² è·äºˆæ¸¬ã®æ›´æ–°
     updateComplexityEstimation();
 }
 
@@ -196,8 +197,8 @@ void BoardConfigDialog::updateComplexityEstimation()
     std::string level;
     sf::Color color;
 
-    // ƒXƒRƒA‚É‰‚¶‚½•]‰¿i”’l‚ÍÀsŠÂ‹«‚É‡‚í‚¹‚Ä—v’²®j
-    // Œ»İ‚Í‘ÌŠ´‚É‚æ‚é“K“–‚È’l‚ğ“ü‚ê‚Ä‚¢‚é
+    // ã‚¹ã‚³ã‚¢ã«å¿œã˜ãŸè©•ä¾¡ï¼ˆæ•°å€¤ã¯å®Ÿè¡Œç’°å¢ƒã«åˆã‚ã›ã¦è¦èª¿æ•´ï¼‰
+    // ç¾åœ¨ã¯ä½“æ„Ÿã«ã‚ˆã‚‹é©å½“ãªå€¤ã‚’å…¥ã‚Œã¦ã„ã‚‹
     if (score < 1e6) { level = mGame->GetLoc()->Get("GENERATE_BOARD_LBL_VERY_FAST"); color = sf::Color::Cyan; }
     else if (score < 1e8) { level = mGame->GetLoc()->Get("GENERATE_BOARD_LBL_FAST"); color = sf::Color::Green; }
     else if (score < 1e11) { level = mGame->GetLoc()->Get("GENERATE_BOARD_LBL_MODERATE"); color = sf::Color::Yellow; }
@@ -209,7 +210,7 @@ void BoardConfigDialog::updateComplexityEstimation()
 
 std::pair<BoardConfigDialog::Result, GenerationParameters> BoardConfigDialog::run(sf::RenderWindow& window, sf::Clock& clock)
 {
-    // ƒƒCƒ“‚ÌƒQ[ƒ€ƒ‹[ƒv‚Æ“¯—l‚ÌƒuƒƒbƒLƒ“ƒOƒ‹[ƒv
+    // ãƒ¡ã‚¤ãƒ³ã®ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã¨åŒæ§˜ã®ãƒ–ãƒ­ãƒƒã‚­ãƒ³ã‚°ãƒ«ãƒ¼ãƒ—
     sf::Time lastTicks = clock.getElapsedTime();
 
     while (mIsActive && window.isOpen())
@@ -225,8 +226,8 @@ std::pair<BoardConfigDialog::Result, GenerationParameters> BoardConfigDialog::ru
         }
 
         window.clear();
-        mGame->DrawSprites();   // ”w–Ê‚ÌƒQ[ƒ€‰æ–Ê‚ğ•`‰æ‚·‚é
-        mGame->DrawUI();        // ”w–Ê‚ÌUI‚ğ•`‰æ‚·‚é (•\¦‚·‚é‚¾‚¯‚Å”½‰‚Í‚µ‚È‚¢)
+        mGame->DrawSprites();   // èƒŒé¢ã®ã‚²ãƒ¼ãƒ ç”»é¢ã‚’æç”»ã™ã‚‹
+        mGame->DrawUI();        // èƒŒé¢ã®UIã‚’æç”»ã™ã‚‹ (è¡¨ç¤ºã™ã‚‹ã ã‘ã§åå¿œã¯ã—ãªã„)
         mGui.draw();
         window.display();
     }

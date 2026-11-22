@@ -18,13 +18,22 @@
 #include "EditorSetupDialog.h"
 #include "EditorScreen.h"
 #include "BoardConfigDialog.h"
+#include "LevelFormat.h"
 #include "LocalizationManager.h"
+#include "PlatformInput.h"
+#include "PlatformTime.h"
 
-#include <iostream>
+#include "SFML/Window/Clipboard.hpp"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
-#include <chrono>
-#include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <stdexcept>
 
 Game::Game()
 	: mWindow(nullptr)
@@ -41,55 +50,66 @@ Game::Game()
 	, mAutoRepeatTimer(std::map<sf::Keyboard::Key, float>{})
 	, mBaggageLimit(1)
 	, mStep(0)
+	, mSolutionPlaybackIndex(0)
+	, mIsPlayingSolution(false)
+	, mSolutionPlaybackTimer(0.0f)
+	, mLoc(nullptr)
+	, mWasDeadlocked(false)
+	, mWasComplete(false)
 {
-	// ”Õ–Ê‚ğƒ[ƒh‚·‚é“x‚ÉXV‚·‚é‚Ì‚ÍˆÈ‰º‚Ìƒƒ“ƒo•Ï”
+	// ç›¤é¢ã‚’ãƒ­ãƒ¼ãƒ‰ã™ã‚‹åº¦ã«æ›´æ–°ã™ã‚‹ã®ã¯ä»¥ä¸‹ã®ãƒ¡ãƒ³ãƒå¤‰æ•°
 	// mGenParams.boardSize
-	// Œ»İ‚Ì”Õ–ÊƒTƒCƒY
+	// ç¾åœ¨ã®ç›¤é¢ã‚µã‚¤ã‚º
 	// mBaggageNum
-	// Œ»İ‚Ì”Õ–Ê‚Ì‰×•¨‚Ì”
+	// ç¾åœ¨ã®ç›¤é¢ã®è·ç‰©ã®æ•°
 	// m	Params
-	// ”Õ–Ê‚Ì©“®¶¬‚ğs‚¤Û‚Ìƒpƒ‰ƒ[ƒ^
+	// ç›¤é¢ã®è‡ªå‹•ç”Ÿæˆã‚’è¡Œã†éš›ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
 	// mCurrentKey
-	// Œ»İ‚Ì”Õ–Ê‚ÌƒL[ (ƒQ[ƒ€‹N“®‚©‚çƒ[ƒh‚³‚ê‚½”Õ–Ê‚ğ“Ç‚İ‚Ş‚Ì‚Ég‚¤)
+	// ç¾åœ¨ã®ç›¤é¢ã®ã‚­ãƒ¼ (ã‚²ãƒ¼ãƒ èµ·å‹•æ™‚ã‹ã‚‰ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸç›¤é¢ã‚’èª­ã¿è¾¼ã‚€ã®ã«ä½¿ã†)
 	// mFilenames
-	// ƒQ[ƒ€‹N“®‚©‚çƒ[ƒh‚³‚ê‚½”Õ–Ê‚ÌƒL[‚ÌƒŠƒXƒg
+	// ã‚²ãƒ¼ãƒ èµ·å‹•æ™‚ã‹ã‚‰ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸç›¤é¢ã®ã‚­ãƒ¼ã®ãƒªã‚¹ãƒˆ
 	// mBoardData
-	// ƒQ[ƒ€‹N“®‚©‚çƒ[ƒh‚³‚ê‚½”Õ–Ê‚ÌƒŠƒXƒg (isó‘Ô‚ğ”½‰f)
+	// ã‚²ãƒ¼ãƒ èµ·å‹•æ™‚ã‹ã‚‰ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸç›¤é¢ã®ãƒªã‚¹ãƒˆ (é€²è¡ŒçŠ¶æ…‹ã‚’åæ˜ )
 	// mInitBoardData
-	// ƒQ[ƒ€‹N“®‚©‚çƒ[ƒh‚³‚ê‚½”Õ–Ê‚Ì‰Šúó‘ÔƒŠƒXƒg
+	// ã‚²ãƒ¼ãƒ èµ·å‹•æ™‚ã‹ã‚‰ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸç›¤é¢ã®åˆæœŸçŠ¶æ…‹ãƒªã‚¹ãƒˆ
 	// mBoardState
-	// Œ»İ‚Ì”Õ–Ê‚ÌƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğœ‚¢‚½’nŒ`î•ñ
+	// ç¾åœ¨ã®ç›¤é¢ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’é™¤ã„ãŸåœ°å½¢æƒ…å ±
 	// mGoalPos
-	// Œ»İ‚Ì”Õ–Ê‚ÌƒS[ƒ‹ˆÊ’u‚ÌƒŠƒXƒg
+	// ç¾åœ¨ã®ç›¤é¢ã®ã‚´ãƒ¼ãƒ«ä½ç½®ã®ãƒªã‚¹ãƒˆ
 	// mBaggageLimit
-	// Œ»İ‚Ì”Õ–Ê‚ÌL‚³‚Æ‰Šú•Çƒ}ƒX‚Ì¶¬Š„‡‚©‚çŒvZ‚³‚ê‚éAİ’u‚Å‚«‚é‰×•¨‚Ì”
+	// ç¾åœ¨ã®ç›¤é¢ã®åºƒã•ã¨åˆæœŸå£ãƒã‚¹ã®ç”Ÿæˆå‰²åˆã‹ã‚‰è¨ˆç®—ã•ã‚Œã‚‹ã€è¨­ç½®ã§ãã‚‹è·ç‰©ã®æ•°
 	// mInitialPlayerPos
-	// Œ»İ‚Ì”Õ–Ê‚ÌƒvƒŒƒCƒ„[‚Ì‰ŠúˆÊ’u
+	// ç¾åœ¨ã®ç›¤é¢ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸä½ç½®
 	// mInitialBaggagePos
-	// Œ»İ‚Ì”Õ–Ê‚Ì‰×•¨‚Ì‰ŠúˆÊ’u
+	// ç¾åœ¨ã®ç›¤é¢ã®è·ç‰©ã®åˆæœŸä½ç½®
 	// mStep
-	// Œ»İ‚Ì”Õ–Ê‚Ìè”
+	// ç¾åœ¨ã®ç›¤é¢ã®æ‰‹æ•°
 	// mLogs
-	// Œ»İ‚Ì”Õ–Ê‚Ì“ü—Í‚ÌƒƒO
+	// ç¾åœ¨ã®ç›¤é¢ã®å…¥åŠ›ã®ãƒ­ã‚°
 }
+
 
 bool Game::Initialize()
 {
-	// ƒEƒBƒ“ƒhƒE‚Ìì¬
-	// ÅŒã2‚Â‚Ìˆø”‚Í‰æ–ÊƒTƒCƒYŒÅ’è‚Ì‚½‚ß‚Ì‚¨‚Ü‚¶‚È‚¢
-	sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(static_cast<unsigned int>(mWindowSize.x), static_cast<unsigned int>(mWindowSize.y)), "SFML Window", sf::Style::Titlebar | sf::Style::Close);
-	mWindow = window;
-	
-	// ƒtƒ@ƒCƒ‹‚Ì“Ç‚İ‚İ
-	LoadData();
-
-	mClock.restart();
-
-	mTicksCount = mClock.getElapsedTime();
-
-	mStart = std::chrono::system_clock::now();
-
-	return true;
+	try
+	{
+		mPaths.Initialize();
+		const sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+		const sf::Vector2u initialSize = PlatformInput::ComputeInitialWindowSize(mWindowSize, desktop.width, desktop.height);
+		mWindow = new sf::RenderWindow(sf::VideoMode(initialSize.x, initialSize.y),
+			"SFML Window", sf::Style::Titlebar | sf::Style::Close);
+		mWindow->setView(sf::View(sf::FloatRect(0.0f, 0.0f, mWindowSize.x, mWindowSize.y)));
+		LoadData();
+		mClock.restart();
+		mTicksCount = mClock.getElapsedTime();
+		mStart = std::chrono::system_clock::now();
+		return true;
+	}
+	catch (const std::exception& error)
+	{
+		std::cerr << "Initialization failed: " << error.what() << std::endl;
+		return false;
+	}
 }
 
 void Game::RunLoop()
@@ -104,55 +124,56 @@ void Game::RunLoop()
 
 void Game::LoadData()
 {
-	// ƒtƒHƒ“ƒg‚ğƒ[ƒh‚µA‰Šú‰»
-	std::string font_name = "Assets/fonts/meiryo.ttc";
-	if (!mFontSFML.loadFromFile(font_name))
+	// ãƒ•ã‚©ãƒ³ãƒˆã‚’ãƒ­ãƒ¼ãƒ‰ã—ã€åˆæœŸåŒ–
+	const auto fontPath = mPaths.Asset("Assets/fonts/BIZUDPGothic-Regular.ttf");
+	const auto font_name = fontPath.u8string();
+	mFontData = AppPaths::ReadFile(fontPath);
+	if (!mFontSFML.loadFromMemory(mFontData.data(), mFontData.size()))
 	{
-		std::cout << "error : failed loading font." << std::endl;
+		throw std::runtime_error("Failed to load font: " + font_name);
 	}
 	mInfoTxt.setFont(mFontSFML);
-	mInfoTxt.setCharacterSize(mWindow->getSize().y);
-	mInfoTxt.setScale(20.0f / static_cast<float>(mWindow->getSize().y), 20.0f / static_cast<float>(mWindow->getSize().y));
+	mInfoTxt.setCharacterSize(static_cast<unsigned int>(mWindowSize.y));
+	mInfoTxt.setScale(20.0f / mWindowSize.y, 20.0f / mWindowSize.y);
 
-	// UI‚ÌƒeƒLƒXƒg‚ğ“Ç‚İ‚İ
+	// UIã®ãƒ†ã‚­ã‚¹ãƒˆã‚’èª­ã¿è¾¼ã¿
 	mLoc = new LocalizationManager();
-	mLoc->LoadLanguage("Assets/Languages/jp.txt"); // ƒfƒtƒHƒ‹ƒgŒ¾Œê‚Í“ú–{Œê
+	if (!mLoc->LoadLanguage(mPaths.Asset("Assets/Languages/jp.txt")))
+		throw std::runtime_error("Failed to load default language"); // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆè¨€èªã¯æ—¥æœ¬èª
 
-	// ƒEƒBƒ“ƒhƒE‚Ìƒ^ƒCƒgƒ‹‚ğİ’è
+	// åŠ¹æœéŸ³ã‚’èª­ã¿è¾¼ã¿ï¼ˆéŸ³å£°ãƒ‡ãƒã‚¤ã‚¹éå¯¾å¿œç’°å¢ƒã§ã‚‚èµ·å‹•ã¯ç¶™ç¶šï¼‰
+	mSoundManager = std::make_unique<SoundManager>();
+	mSoundManager->Initialize(mPaths);
+
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¿ã‚¤ãƒˆãƒ«ã‚’è¨­å®š
 	mWindow->setTitle(mLoc->Get("GAME_TITLE"));
 
-	// gui‚Ìƒe[ƒ}‚ğƒ[ƒh
+	// guiã®ãƒ†ãƒ¼ãƒã‚’ãƒ­ãƒ¼ãƒ‰
 	mGui = std::make_unique<tgui::Gui>(*mWindow);
-	mTheme = std::make_unique<tgui::Theme>("Assets/themes/Black.txt");
-	// gui‚ÌƒtƒHƒ“ƒg‚àƒ[ƒh
-	mFontTGUI = std::make_unique<tgui::Font>(font_name);
+	mTheme = std::make_unique<tgui::Theme>(mPaths.Asset("Assets/themes/Black.txt").u8string());
+	// guiã®ãƒ•ã‚©ãƒ³ãƒˆã‚‚ãƒ­ãƒ¼ãƒ‰
+	mFontTGUI = std::make_unique<tgui::Font>(mFontData.data(), mFontData.size());
+	if (!*mFontTGUI)
+		throw std::runtime_error("Failed to load GUI font: " + font_name);
 	mGui->setFont(*mFontTGUI);
 
-	// ”Õ–Êƒf[ƒ^‚ğ“Ç‚İæ‚é
+	// ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’èª­ã¿å–ã‚‹
 	//*
-	std::string filename = "Assets/Boards/default.txt", name = "default";
+	const auto filename = mPaths.Asset("Assets/Boards/default.txt");
+	const auto defaultCollection = LevelFormat::LoadCollectionFromFile(filename);
+	const auto& defaultLevel = defaultCollection.mLevels.front();
+	std::string name = "bundled:default.txt";
 	mCurrentKey = name;
 	mFilenames.push_back(name);
-	std::ifstream file(filename);
-	if (!file.is_open())
-	{
-		std::cerr << "Failed to open file" << std::endl;
-		return;
-	}
-
-	std::vector<std::string> lines;
-	std::string line;
-	while (std::getline(file, line))
-	{
-		lines.emplace_back(line);
-	}
+	std::vector<std::string> lines = defaultLevel.mBoard;
 
 	mBoardData.emplace(name, lines);
 	mInitBoardData.emplace(name, lines);
-	file.close();
+	mBoardSolutions[name] = defaultLevel.mSolutions;
+	mCurrentLevelSolutions = defaultLevel.mSolutions;
 	//*/
 
-	// ©“®¶¬‚Ìê‡
+	// è‡ªå‹•ç”Ÿæˆã®å ´åˆ
 	// MySolution
 	/*
 	InputBoardData();
@@ -165,7 +186,7 @@ void Game::LoadData()
 	mInitBoardData.emplace(mCurrentKey, lines);
 	//*/
 
-	// ”Õ–Ê‚Ì‰Šúó‘Ô‚ğƒZƒbƒg
+	// ç›¤é¢ã®åˆæœŸçŠ¶æ…‹ã‚’ã‚»ãƒƒãƒˆ
 	std::vector<sf::Vector2i> mBoxesPos;
 	{
 		int i = 0, j = 0;
@@ -217,15 +238,30 @@ void Game::LoadData()
 		}
 	}
 
-	// ”wŒi‚Ìì¬
-	// ”wŒi‚Í‰æ–Ê‚Ì’†‰›‚É”z’u
+	// Validate file-backed textures before actors register their components.
+	for (const auto* name : {
+		"BackGround.png", "Floor.png", "Wall.png", "Goal.png",
+		"Box.png", "ShinyBox.png", "DeadlockedBox.png",
+		"playerE.png", "playerN.png", "playerW.png", "playerS.png",
+		"MoveGuideGrid.png", "PushGuideGrid.png",
+		"PushGuideArrowIdleFromE.png", "PushGuideArrowIdleFromS.png",
+		"PushGuideArrowIdleFromW.png", "PushGuideArrowIdleFromN.png",
+		"PushGuideArrowOnCursorFromE.png", "PushGuideArrowOnCursorFromS.png",
+		"PushGuideArrowOnCursorFromW.png", "PushGuideArrowOnCursorFromN.png",
+		"Undo.png", "Redo.png", "Reset.png", "RedoAll.png", "SaveBoard.png", "SaveLog.png" })
+	{
+		LoadTexture(std::string("Assets/") + name);
+	}
+
+	// èƒŒæ™¯ã®ä½œæˆ
+	// èƒŒæ™¯ã¯ç”»é¢ã®ä¸­å¤®ã«é…ç½®
 	new BackGround(this);
 
-	// ƒ{[ƒh‚ğì¬
+	// ãƒœãƒ¼ãƒ‰ã‚’ä½œæˆ
 	mGameBoard = new GameBoard(this);
 
-	// ©“®¶¬—p‚Ìƒpƒ‰ƒ[ƒ^‚ğ‰Šú‰»
-	// ƒfƒtƒHƒ‹ƒg‚Ì”Õ–Ê‚Í©“®¶¬‚³‚ê‚È‚¢‚Ì‚ÅA“K“–‚È’l‚ğ“ü‚ê‚Ä‚¨‚­
+	// è‡ªå‹•ç”Ÿæˆç”¨ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’åˆæœŸåŒ–
+	// ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã®ç›¤é¢ã¯è‡ªå‹•ç”Ÿæˆã•ã‚Œãªã„ã®ã§ã€é©å½“ãªå€¤ã‚’å…¥ã‚Œã¦ãŠã
 	mGenParams.boardSize = sf::Vector2i{ static_cast<int>(lines.front().size()), static_cast<int>(lines.size()) };
 	mGenParams.baggageNum = static_cast<int>(mBoxesPos.size());
 	mGenParams.resetCount = 1;
@@ -234,55 +270,57 @@ void Game::LoadData()
 	mGenParams.visitedRate = 0.0f;
 	mGenParams.evalFuncIndex = 0;
 
-	// ƒvƒŒƒCƒ„[‚Ìì¬
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ä½œæˆ
 	mPlayer = new Player(this);
 
-	// ‰×•¨‚ğì¬
-	// ‰×•¨‚Ì‰ŠúÀ•W‚ğ“¾‚é
+	// è·ç‰©ã‚’ä½œæˆ
+	// è·ç‰©ã®åˆæœŸåº§æ¨™ã‚’å¾—ã‚‹
 	for (const auto& item : mBoxesPos)
 	{
 		mBaggages.emplace_back(new Baggage(this, item));
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
 
-	// HUD•â•‚ÌƒNƒ‰ƒX‚ğéŒ¾
+	// HUDè£œåŠ©ã®ã‚¯ãƒ©ã‚¹ã‚’å®£è¨€
 	mHUDHelper = new HUDHelper(this);
 
-	// TODO UIŠÖ˜A‚ÌƒNƒ‰ƒX‚ÌƒCƒ“ƒXƒ^ƒ“ƒXì¬‚Ìˆ—‚ğ‘‚­
-	// HUD‚ÌƒCƒ“ƒXƒ^ƒ“ƒXì¬
-	// ”Õ–Ê‚Ìî•ñ‚ğ“¾‚Ä‚©‚çì¬‚·‚é
-	// tgui‚ğ—p‚¢‚éê‡‚ÍˆÈ‰º‚É‘‚­
-	// ƒQ[ƒ€ƒ‹[ƒv•”•ª‚Ìˆ—‚Í–¢À‘•
+	// TODO UIé–¢é€£ã®ã‚¯ãƒ©ã‚¹ã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ä½œæˆã®å‡¦ç†ã‚’æ›¸ã
+	// HUDã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ä½œæˆ
+	// ç›¤é¢ã®æƒ…å ±ã‚’å¾—ã¦ã‹ã‚‰ä½œæˆã™ã‚‹
+	// tguiã‚’ç”¨ã„ã‚‹å ´åˆã¯ä»¥ä¸‹ã«æ›¸ã
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—éƒ¨åˆ†ã®å‡¦ç†ã¯æœªå®Ÿè£…
 	new THUD(this, mWindow);
 
-	// ©ì‚ÌHUDƒNƒ‰ƒX‚ğ—p‚¢‚éê‡‚ÍˆÈ‰º‚ÌƒRƒƒ“ƒgƒAƒEƒg‚ğ–ß‚·
+	// è‡ªä½œã®HUDã‚¯ãƒ©ã‚¹ã‚’ç”¨ã„ã‚‹å ´åˆã¯ä»¥ä¸‹ã®ã‚³ãƒ¡ãƒ³ãƒˆã‚¢ã‚¦ãƒˆã‚’æˆ»ã™
 	// new HUD(this);
 }
 
 void Game::UnloadData()
 {
-	// ƒAƒNƒ^[‚ğíœ
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã‚’å‰Šé™¤
 	while (!mActiveActors.empty())
 	{
 		delete mActiveActors.back();
 	}
 
-	// HUDƒwƒ‹ƒp[‚ğíœ
+	// HUDãƒ˜ãƒ«ãƒ‘ãƒ¼ã‚’å‰Šé™¤
 	delete mHUDHelper;
 
-	// UIƒXƒ^ƒbƒN‚ğ‚·‚×‚Äíœ
+	// UIã‚¹ã‚¿ãƒƒã‚¯ã‚’ã™ã¹ã¦å‰Šé™¤
 	while (!mUIStack.empty())
 	{
 		delete mUIStack.back();
 		mUIStack.pop_back();
 	}
 
-	// ƒeƒNƒXƒ`ƒƒ‚ğíœ
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’å‰Šé™¤
 	for (auto& item : mTextures)
 	{
 		delete item.second;
 	}
 	mTextures.clear();
+	delete mLoc;
+	mLoc = nullptr;
 }
 
 void Game::ProcessInput()
@@ -290,7 +328,7 @@ void Game::ProcessInput()
 	sf::Event event;
 	while (mWindow->pollEvent(event))
 	{
-		// ƒEƒBƒ“ƒhƒE‚ğI—¹‚·‚éƒCƒxƒ“ƒg‚ğŒŸ’m‚µ‚½‚çAƒQ[ƒ€ó‘Ô‚ğI—¹‚É‚µ‚ÄƒCƒxƒ“ƒgˆ—‚ğ‘¦À‚É—£’E
+		// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’çµ‚äº†ã™ã‚‹ã‚¤ãƒ™ãƒ³ãƒˆã‚’æ¤œçŸ¥ã—ãŸã‚‰ã€ã‚²ãƒ¼ãƒ çŠ¶æ…‹ã‚’çµ‚äº†ã«ã—ã¦ã‚¤ãƒ™ãƒ³ãƒˆå‡¦ç†ã‚’å³åº§ã«é›¢è„±
 		switch (event.type)
 		{
 		case sf::Event::Closed:
@@ -298,112 +336,120 @@ void Game::ProcessInput()
 			break;
 		}
 
-		// ƒQ[ƒ€ƒvƒŒƒCó‘Ô‚È‚ç‚ÎAƒL[ƒ{[ƒh‚âƒ{ƒ^ƒ“‚Ì“ü—Íˆ—‚ğó‚¯•t‚¯‚é
+		// ã‚²ãƒ¼ãƒ ãƒ—ãƒ¬ã‚¤çŠ¶æ…‹ãªã‚‰ã°ã€ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã‚„ãƒœã‚¿ãƒ³ã®å…¥åŠ›å‡¦ç†ã‚’å—ã‘ä»˜ã‘ã‚‹
 		if (mGameState == GameState::EGamePlay)
 		{
-			// ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Å‚È‚¯‚ê‚Î“ü—Í‚ğó‚¯•t‚¯‚é
-			if (!IsAnyMovementAnimating())
+			// è§£æ‰‹é †ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³å†ç”Ÿä¸­ã¯Escã‚­ãƒ¼ã§åœæ­¢å¯èƒ½
+			if (mIsPlayingSolution)
 			{
-				// ƒQ[ƒ€‘S‘Ì‚ÉŠÖ‚·‚éŠeí“ü—Íˆ—
-				// ’P‰Ÿ‚µˆ—
+				if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+				{
+					StopSolutionPlayback();
+				}
+			}
+			// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã§ãªã‘ã‚Œã°å…¥åŠ›ã‚’å—ã‘ä»˜ã‘ã‚‹
+			else if (!IsAnyMovementAnimating())
+			{
+				// ã‚²ãƒ¼ãƒ å…¨ä½“ã«é–¢ã™ã‚‹å„ç¨®å…¥åŠ›å‡¦ç†
+				// å˜æŠ¼ã—å‡¦ç†
 				if (event.type == sf::Event::KeyPressed)
 				{
-					// ‚±‚ÌƒL[‚ª‰Ÿ‚³‚ê‚Ä‚©‚çŒo‰ß‚µ‚½ŠÔ‚ğŠm”F
+					// ã“ã®ã‚­ãƒ¼ãŒæŠ¼ã•ã‚Œã¦ã‹ã‚‰çµŒéã—ãŸæ™‚é–“ã‚’ç¢ºèª
 					float duration = mKeyHeldDuration.count(event.key.code) ? mKeyHeldDuration.at(event.key.code) : 0.0f;
 
-					// ‰Ÿ‚³‚ê‚½Å‰‚ÌƒtƒŒ[ƒ€i‰Ÿ‰ºŠÔ‚ª”ñí‚É’Z‚¢j‚©‚ğ”»’è
+					// æŠ¼ã•ã‚ŒãŸæœ€åˆã®ãƒ•ãƒ¬ãƒ¼ãƒ ï¼ˆæŠ¼ä¸‹æ™‚é–“ãŒéå¸¸ã«çŸ­ã„ï¼‰ã‹ã‚’åˆ¤å®š
 					if (duration < GetTapThresHold())
 					{
-						// EscƒL[‚Åƒ|[ƒYƒƒjƒ…[‚ğŠJ‚­
+						// Escã‚­ãƒ¼ã§ãƒãƒ¼ã‚ºãƒ¡ãƒ‹ãƒ¥ãƒ¼ã‚’é–‹ã
 						if (event.key.code == sf::Keyboard::Escape && mGameState == GameState::EGamePlay)
 						{
-							// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+							// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 							CancelAllUIHolds();
 							new PauseMenu(this, mWindow);
 							mGameState = GameState::EPaused;
 						}
 
-						// z ‚Åundoˆ—
+						// z ã§undoå‡¦ç†
 						if (event.key.code == sf::Keyboard::Z)
 						{
-							// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+							// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 							CancelAllUIHolds();
 							CallUndo();
 						}
 
-						// y ‚Åredoˆ—
+						// y ã§redoå‡¦ç†
 						if (event.key.code == sf::Keyboard::Y)
 						{
-							// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+							// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 							CancelAllUIHolds();
 							CallRedo();
 						}
 
-						// PGUP‚ÅÅV‚Ìó‘Ô‚É‚·‚é
+						// PGUPã§æœ€æ–°ã®çŠ¶æ…‹ã«ã™ã‚‹
 						if (event.key.code == sf::Keyboard::PageUp)
 						{
-							// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+							// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 							CancelAllUIHolds();
 							CallRedoAll();
 						}
 
-						// PGDN‚Å‰Šúó‘Ô‚É‚·‚é
+						// PGDNã§åˆæœŸçŠ¶æ…‹ã«ã™ã‚‹
 						if (event.key.code == sf::Keyboard::PageDown)
 						{
-							// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+							// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 							CancelAllUIHolds();
 							CallReset();
 						}
 
-						// Ctrl + r‚Å‘S‚ÄƒŠƒZƒbƒg
-						if (event.key.control && event.key.code == sf::Keyboard::R)
+						// Ctrl + r (macOSã§ã¯Cmd + rã‚‚å¯) ã§å…¨ã¦ãƒªã‚»ãƒƒãƒˆ
+						if (PlatformInput::IsCommandModifierPressed(event.key) && event.key.code == sf::Keyboard::R)
 						{
-							// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+							// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 							CancelAllUIHolds();
 							CallRestart();
 						}
 
-						// Ctrl + s ‚ÅŒ»İ‚Ì”Õ–Ê‚ğƒZ[ƒu
-						if (event.key.control && event.key.code == sf::Keyboard::S)
+						// Ctrl + s (macOSã§ã¯Cmd + sã‚‚å¯) ã§ç¾åœ¨ã®ç›¤é¢ã‚’ã‚»ãƒ¼ãƒ–
+						if (PlatformInput::IsCommandModifierPressed(event.key) && event.key.code == sf::Keyboard::S)
 						{
-							// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+							// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 							CancelAllUIHolds();
 							CallSave();
 						}
 
-						// H ‚Åƒwƒ‹ƒv‰æ–Ê‚Ì•\¦
+						// H ã§ãƒ˜ãƒ«ãƒ—ç”»é¢ã®è¡¨ç¤º
 						if (event.key.code == sf::Keyboard::H)
 						{
-							// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+							// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 							CancelAllUIHolds();
 							DisplayHelpWindow();
 						}
 
-						// F5 ‚Å”Õ–Ê‚ÌƒŠƒ[ƒhi©“®¶¬‚Ì”Õ–Ê‚È‚çV‚½‚È”Õ–Ê‚Ì¶¬j
+						// F5 ã§ç›¤é¢ã®ãƒªãƒ­ãƒ¼ãƒ‰ï¼ˆè‡ªå‹•ç”Ÿæˆã®ç›¤é¢ãªã‚‰æ–°ãŸãªç›¤é¢ã®ç”Ÿæˆï¼‰
 						if (event.key.code == sf::Keyboard::F5)
 						{
-							// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+							// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 							CancelAllUIHolds();
 							CallReload();
 						}
 					}
 				}
 
-				// ’·‰Ÿ‚µ‚Ìˆ—
-				// ƒCƒxƒ“ƒg‚Æ‚ÍŠÖŒW‚È‚­AŒ»İ‚ÌƒL[‰Ÿ‰ºó‘Ô‚Æƒ^ƒCƒ}[‚©‚ç”»’f
+				// é•·æŠ¼ã—ã®å‡¦ç†
+				// ã‚¤ãƒ™ãƒ³ãƒˆã¨ã¯é–¢ä¿‚ãªãã€ç¾åœ¨ã®ã‚­ãƒ¼æŠ¼ä¸‹çŠ¶æ…‹ã¨ã‚¿ã‚¤ãƒãƒ¼ã‹ã‚‰åˆ¤æ–­
 				switch (event.key.code)
 				{
 				case sf::Keyboard::Z:
-					// Undoˆ—
-					// ’·‰Ÿ‚µó‘Ô‚É‚ ‚èA‚©‚ÂƒŠƒs[ƒgƒ^ƒCƒ}[‚ª0ˆÈ‰º‚©H
+					// Undoå‡¦ç†
+					// é•·æŠ¼ã—çŠ¶æ…‹ã«ã‚ã‚Šã€ã‹ã¤ãƒªãƒ”ãƒ¼ãƒˆã‚¿ã‚¤ãƒãƒ¼ãŒ0ä»¥ä¸‹ã‹ï¼Ÿ
 					if (mKeyHeldDuration.at(sf::Keyboard::Z) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Z) <= 0.0f)
 					{
 						CallUndo();
 					}
 					break;
 				case sf::Keyboard::Y:
-					// Redoˆ—
-					// ’·‰Ÿ‚µó‘Ô‚É‚ ‚èA‚©‚ÂƒŠƒs[ƒgƒ^ƒCƒ}[‚ª0ˆÈ‰º‚©H
+					// Redoå‡¦ç†
+					// é•·æŠ¼ã—çŠ¶æ…‹ã«ã‚ã‚Šã€ã‹ã¤ãƒªãƒ”ãƒ¼ãƒˆã‚¿ã‚¤ãƒãƒ¼ãŒ0ä»¥ä¸‹ã‹ï¼Ÿ
 					if (mKeyHeldDuration.at(sf::Keyboard::Y) > GetHoldThresHold() && mAutoRepeatTimer.at(sf::Keyboard::Y) <= 0.0f)
 					{
 						CallRedo();
@@ -414,33 +460,38 @@ void Game::ProcessInput()
 				}
 			}
 
-			// ‘S‚Ä‚ÌActor‚Ì“ü—Íˆ—‚ğs‚¤
-			mUpdatingActors = true;
-
-			for (auto& actor : mActiveActors)
+			// è§£æ‰‹é †å†ç”Ÿä¸­ã¯ã‚¢ã‚¯ã‚¿ãƒ¼ã¸ã®æ‰‹å‹•å…¥åŠ›ã‚’å—ã‘ä»˜ã‘ãªã„
+			if (!mIsPlayingSolution)
 			{
-				actor->ProcessInput(&event, mKeyHeldDuration, mAutoRepeatTimer);
-			}
+				// å…¨ã¦ã®Actorã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
+				mUpdatingActors = true;
 
-			mUpdatingActors = false;
-			// ƒAƒNƒ^[‚Ì“ü—Íˆ—‚Í‚±‚±‚Ü‚Å
+				for (auto& actor : mActiveActors)
+				{
+					actor->ProcessInput(&event, mKeyHeldDuration, mAutoRepeatTimer);
+				}
+
+				mUpdatingActors = false;
+				// ã‚¢ã‚¯ã‚¿ãƒ¼ã®å…¥åŠ›å‡¦ç†ã¯ã“ã“ã¾ã§
+			}
 		}
 
-		// ‚»‚Ì‘¼‚Ìó‘Ô‚Å‚ÍUI‚Ì“ü—Íˆ—‚ğs‚¤
-		// ƒQ[ƒ€ƒvƒŒƒC’†‚Ég‚¦‚éUI‚Í–¢À‘•
+		// ãã®ä»–ã®çŠ¶æ…‹ã§ã¯UIã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
+		// ã‚²ãƒ¼ãƒ ãƒ—ãƒ¬ã‚¤ä¸­ã«ä½¿ãˆã‚‹UIã¯æœªå®Ÿè£…
 		if (!mUIStack.empty())// && mGameState != GameState::EUIPaused)
 		{
-			// ˆê”Ôè‘O‚ÌƒŒƒCƒ„‚ÌUI‚Ì“ü—Íˆ—‚Ì‚İs‚¤
-			mUIStack.back()->ProcessInput(&event, sf::Mouse::getPosition(*mWindow));
+			// ä¸€ç•ªæ‰‹å‰ã®ãƒ¬ã‚¤ãƒ¤ã®UIã®å…¥åŠ›å‡¦ç†ã®ã¿è¡Œã†ï¼ˆç¸®å°è¡¨ç¤ºæ™‚ã¯è«–ç†åº§æ¨™ã¸å¤‰æ›ï¼‰
+			const sf::Vector2f logicalMouse = MapPixelToLogicalCoords(sf::Mouse::getPosition(*mWindow));
+			mUIStack.back()->ProcessInput(&event, sf::Vector2i{ static_cast<int>(logicalMouse.x), static_cast<int>(logicalMouse.y) });
 		}
 	}
 }
 
 void Game::UpdateGame()
 {
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€‚ğŒvZ‚·‚é
-	// ÅŠú‚ÌƒtƒŒ[ƒ€‚©‚ç16ms‚¾‚¯‘Ò‚Â
-	while (mClock.getElapsedTime().asMilliseconds() - mTicksCount.asMilliseconds() < 16);
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ ã‚’è¨ˆç®—ã™ã‚‹
+	// æœ€å¾Œã®ãƒ•ãƒ¬ãƒ¼ãƒ ã‹ã‚‰16msã ã‘å¾…ã¤
+	WaitForNextFrame(mTicksCount);
 
 	float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - mTicksCount.asMilliseconds()) / 1000.0f;
 	if (deltaTime > 0.05f)
@@ -449,38 +500,41 @@ void Game::UpdateGame()
 	}
 	mTicksCount = mClock.getElapsedTime();
 
-	// ‘S‚Ä‚ÌƒL[‚ğƒXƒLƒƒƒ“‚µ‚Äƒ^ƒCƒ}[‚ğXV
-	// sf::Keyboard::KeyCount ‚ÍƒL[‚Ì‘”‚ğ¦‚·
+	// å…¨ã¦ã®ã‚­ãƒ¼ã‚’ã‚¹ã‚­ãƒ£ãƒ³ã—ã¦ã‚¿ã‚¤ãƒãƒ¼ã‚’æ›´æ–°
+	// sf::Keyboard::KeyCount ã¯ã‚­ãƒ¼ã®ç·æ•°ã‚’ç¤ºã™
 	for (int k = 0; k < sf::Keyboard::KeyCount; ++k)
 	{
 		sf::Keyboard::Key currentKey = static_cast<sf::Keyboard::Key>(k);
 
 		if (sf::Keyboard::isKeyPressed(currentKey))
 		{
-			// ---- ƒL[‚ª‰Ÿ‚³‚ê‚Ä‚¢‚éê‡‚Ìˆ— ----
-			// ‰Ÿ‰ºŠÔ‚ğ‰ÁZ
+			// ---- ã‚­ãƒ¼ãŒæŠ¼ã•ã‚Œã¦ã„ã‚‹å ´åˆã®å‡¦ç† ----
+			// æŠ¼ä¸‹æ™‚é–“ã‚’åŠ ç®—
 			mKeyHeldDuration[currentKey] += deltaTime;
 
-			// ’·‰Ÿ‚µó‘Ô‚©H
+			// é•·æŠ¼ã—çŠ¶æ…‹ã‹ï¼Ÿ
 			if (mKeyHeldDuration[currentKey] > HOLD_THRESHOLD)
 			{
-				// ƒŠƒs[ƒgƒ^ƒCƒ}[‚ğŒ¸Z
+				// ãƒªãƒ”ãƒ¼ãƒˆã‚¿ã‚¤ãƒãƒ¼ã‚’æ¸›ç®—
 				mAutoRepeatTimer[currentKey] -= deltaTime;
 			}
 		}
 		else
 		{
-			// ---- ƒL[‚ª—£‚³‚ê‚Ä‚¢‚éê‡‚Ìˆ— ----
+			// ---- ã‚­ãƒ¼ãŒé›¢ã•ã‚Œã¦ã„ã‚‹å ´åˆã®å‡¦ç† ----
 			if (mKeyHeldDuration[currentKey] > 0.0f)
 			{
-				// ‰Ÿ‰ºŠÔ‚Æƒ^ƒCƒ}[‚ğƒŠƒZƒbƒg
+				// æŠ¼ä¸‹æ™‚é–“ã¨ã‚¿ã‚¤ãƒãƒ¼ã‚’ãƒªã‚»ãƒƒãƒˆ
 				mKeyHeldDuration[currentKey] = 0.0f;
 				mAutoRepeatTimer[currentKey] = 0.0f;
 			}
 		}
 	}
 
-	// ‘S‚Ä‚ÌƒAƒNƒ^[‚ğXV
+	// è§£æ‰‹é †ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³å†ç”Ÿä¸­ãªã‚‰1æ‰‹ãšã¤é€²ã‚ã‚‹
+	UpdateSolutionPlayback(deltaTime);
+
+	// å…¨ã¦ã®ã‚¢ã‚¯ã‚¿ãƒ¼ã‚’æ›´æ–°
 	mUpdatingActors = true;
 
 	for (auto& actor : mActiveActors)
@@ -493,13 +547,19 @@ void Game::UpdateGame()
 		item->Update(deltaTime);
 	}
 
-	// ”Õ–Ê‚ÌXV‚ğs‚Á‚½‚Ì‚ÅAHUDHelper‚Ì“à—e‚àXV
+	// ç›¤é¢ã®æ›´æ–°ã‚’è¡Œã£ãŸã®ã§ã€HUDHelperã®å†…å®¹ã‚‚æ›´æ–°
 	mHUDHelper->Update();
+	const bool isDeadlockedNow = !mHUDHelper->GetDeadlockedBaggages().empty();
+	if (isDeadlockedNow && !mWasDeadlocked)
+	{
+		PlaySound(SoundManager::SoundEffect::Deadlock);
+	}
+	mWasDeadlocked = isDeadlockedNow;
 
 	mUpdatingActors = false;
-	// ƒAƒNƒ^[‚ÌXV‚Í‚±‚±‚Ü‚Å
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã®æ›´æ–°ã¯ã“ã“ã¾ã§
 
-	// ƒXƒ^ƒbƒN‚ÌUI‰æ–Ê‚ğXV‚·‚é
+	// ã‚¹ã‚¿ãƒƒã‚¯ã®UIç”»é¢ã‚’æ›´æ–°ã™ã‚‹
 	for (auto& ui : mUIStack)
 	{
 		if (ui->GetState() == IUIScreen::EActive)
@@ -508,8 +568,8 @@ void Game::UpdateGame()
 		}
 	}
 
-	// ƒNƒ[ƒWƒ“ƒOó‘Ô‚ÌUI‰æ–Ê‚ğ‚·‚×‚Ä”jŠü‚·‚é
-	// ƒXƒ^ƒbƒN‚Æ“¯“™‚Ìˆ—‚ğ‚·‚é‚½‚ßAƒŠƒXƒg‚Ì––”ö‚©‚çíœ‚ğ‚µ‚Ä‚¢‚­
+	// ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ³ã‚°çŠ¶æ…‹ã®UIç”»é¢ã‚’ã™ã¹ã¦ç ´æ£„ã™ã‚‹
+	// ã‚¹ã‚¿ãƒƒã‚¯ã¨åŒç­‰ã®å‡¦ç†ã‚’ã™ã‚‹ãŸã‚ã€ãƒªã‚¹ãƒˆã®æœ«å°¾ã‹ã‚‰å‰Šé™¤ã‚’ã—ã¦ã„ã
 	for (int i = static_cast<int>(mUIStack.size()) - 1; i >= 0; --i)
 	{
 		if (mUIStack[i]->GetState() == IUIScreen::EClosing)
@@ -519,13 +579,13 @@ void Game::UpdateGame()
 		}
 	}
 
-	// ‘Ò‹@’†‚ÌƒAƒNƒ^[‚ğÀs‰Â”\ó‘Ô‚É‚·‚é
+	// å¾…æ©Ÿä¸­ã®ã‚¢ã‚¯ã‚¿ãƒ¼ã‚’å®Ÿè¡Œå¯èƒ½çŠ¶æ…‹ã«ã™ã‚‹
 	for (auto& pendingActor : mPendingActors)
 	{
 		mActiveActors.emplace_back(pendingActor);
 	}
 
-	// €‚ñ‚¾ƒAƒNƒ^[‚ğíœ‚·‚é
+	// æ­»ã‚“ã ã‚¢ã‚¯ã‚¿ãƒ¼ã‚’å‰Šé™¤ã™ã‚‹
 	std::vector<IActor*> deadActors;
 	for (auto actor : mActiveActors)
 	{
@@ -540,75 +600,111 @@ void Game::UpdateGame()
 		delete actor;
 	}
 
-	// ƒQ[ƒ€‚ÌƒNƒŠƒA”»’è‚ğŒÄ‚Ño‚·
+	// ã‚²ãƒ¼ãƒ ã®ã‚¯ãƒªã‚¢åˆ¤å®šã‚’å‘¼ã³å‡ºã™
 	HasComplete();
 }
 
 void Game::GenerateOutput()
 {
-	// ‘S‚Ä‚ÌƒXƒvƒ‰ƒCƒg‚ğ‚ÂƒRƒ“ƒ|[ƒlƒ“ƒg‚ğ•`‰æ
+	// å…¨ã¦ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’æŒã¤ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æç”»
 	mWindow->clear();
 
-	// ”w–Ê‚©‚ç•`‰æ
+	// èƒŒé¢ã‹ã‚‰æç”»
 	DrawSprites();
 
-	// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+	// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 	DrawUI();
 	
 	mWindow->display();
 
-	// ƒQ[ƒ€ƒNƒŠƒAó‘Ô‚È‚çƒŠƒUƒ‹ƒg‰æ–Ê‚ğo—Í
+	// ã‚²ãƒ¼ãƒ ã‚¯ãƒªã‚¢çŠ¶æ…‹ãªã‚‰ãƒªã‚¶ãƒ«ãƒˆç”»é¢ã‚’å‡ºåŠ›
 	if (mIsComplete && !IsAnyMovementAnimating())
 	{
 		DisplayResult();
 	}
 }
 
+
 sf::Texture* Game::LoadTexture(const std::string& fileName)
 {
-	sf::Texture* tex = new sf::Texture();
-	// “¯‚¶–¼‘O‚ÌƒeƒNƒXƒ`ƒƒ‚ªŠù‚Éì¬‚³‚ê‚Ä‚¢‚é‚©’²‚×‚é
 	auto iter = mTextures.find(fileName);
 	if (iter != mTextures.end())
-	{
-		tex = iter->second;
-	}
-	else
-	{
-		// ƒtƒ@ƒCƒ‹‚ğƒ[ƒh
-		sf::Image* img = new sf::Image();
+		return iter->second;
 
-		if (!img->loadFromFile(fileName.c_str()))
-		{
-			std::cout << "Failed to load texture file " << fileName.c_str() << std::endl;
-			return nullptr;
-		}
-
-		// ‰æ‘œƒf[ƒ^‚©‚çƒeƒNƒXƒ`ƒƒ‚ğì¬
-		if (!tex->loadFromImage(*img))
-		{
-			std::cout << "Failed to convert surface to texture for " << fileName.c_str() << std::endl;
-			delete img;
-			return nullptr;
-		}
-		delete img;
-
-		mTextures.emplace(fileName.c_str(), tex);
-	}
-	return tex;
+	const auto path = mPaths.Asset(fileName);
+	const auto data = AppPaths::ReadFile(path);
+	auto texture = std::make_unique<sf::Texture>();
+	if (!texture->loadFromMemory(data.data(), data.size()))
+		throw std::runtime_error("Failed to load texture: " + path.u8string());
+	auto result = texture.get();
+	mTextures.emplace(fileName, result);
+	texture.release();
+	return result;
 }
+
 
 void Game::Shutdown()
 {
-	mWindow->close();
 	UnloadData();
+	mSoundManager.reset();
+	mFontTGUI.reset();
+	mTheme.reset();
+	mGui.reset();
+	if (mWindow) mWindow->close();
 	delete mWindow;
+	mWindow = nullptr;
 }
 
-// ƒAƒNƒ^[‚Ì’Ç‰Á‚Æíœ
+void Game::WaitForNextFrame(const sf::Time& previousTicks) const
+{
+	const sf::Int32 elapsedMs = mClock.getElapsedTime().asMilliseconds() - previousTicks.asMilliseconds();
+	if (elapsedMs < 16)
+	{
+		sf::sleep(sf::milliseconds(16 - elapsedMs));
+	}
+}
+
+void Game::ShowFileError(const std::string& message)
+{
+	std::cerr << message << std::endl;
+	if (mGameState == GameState::EQuit) return;
+
+	bool open = true;
+	auto dialog = tgui::MessageBox::create(mLoc->Get("FILE_ERROR_TITLE"),
+		mLoc->Get("FILE_ERROR_MESSAGE") + "\n" + message, { mLoc->Get("BTN_OK") });
+	dialog->setRenderer(mTheme->getRenderer("MessageBox"));
+	dialog->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
+	dialog->onButtonPress([&]() { open = false; });
+	dialog->onClose([&]() { open = false; });
+	mGui->add(dialog);
+
+	while (open)
+	{
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				mGameState = GameState::EQuit;
+				open = false;
+				break;
+			}
+			mGui->handleEvent(event);
+		}
+		mWindow->clear();
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
+		mWindow->display();
+		sf::sleep(sf::milliseconds(16));
+	}
+	mGui->remove(dialog);
+}
+
+// ã‚¢ã‚¯ã‚¿ãƒ¼ã®è¿½åŠ ã¨å‰Šé™¤
 void Game::AddActor(IActor* actor)
 {
-	// XV’†‚ÌƒAƒNƒ^[‚ª‚ ‚ê‚ÎA‘Ò‹@’†‚É’Ç‰Á‚·‚é
+	// æ›´æ–°ä¸­ã®ã‚¢ã‚¯ã‚¿ãƒ¼ãŒã‚ã‚Œã°ã€å¾…æ©Ÿä¸­ã«è¿½åŠ ã™ã‚‹
 	if (mUpdatingActors)
 	{
 		mPendingActors.emplace_back(actor);
@@ -621,8 +717,8 @@ void Game::AddActor(IActor* actor)
 
 void Game::RemoveActor(IActor* actor)
 {
-	// ˆø”‚ÌƒAƒNƒ^[‚ª‘¶İ‚µ‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
-	// ‘Ò‹@’†‚©H
+	// å¼•æ•°ã®ã‚¢ã‚¯ã‚¿ãƒ¼ãŒå­˜åœ¨ã—ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
+	// å¾…æ©Ÿä¸­ã‹ï¼Ÿ
 	auto iter = std::find(mPendingActors.begin(), mPendingActors.end(), actor);
 	if (iter != mPendingActors.end())
 	{
@@ -630,7 +726,7 @@ void Game::RemoveActor(IActor* actor)
 		mPendingActors.pop_back();
 	}
 
-	// ƒAƒNƒ^[‚É‚ ‚é‚©H
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã«ã‚ã‚‹ã‹ï¼Ÿ
 	iter = std::find(mActiveActors.begin(), mActiveActors.end(), actor);
 	if (iter != mActiveActors.end())
 	{
@@ -641,13 +737,18 @@ void Game::RemoveActor(IActor* actor)
 
 bool Game::IsAnyMovementAnimating() const
 {
-	// ƒvƒŒƒCƒ„[‚ÌƒAƒjƒ[ƒVƒ‡ƒ“Šm”F
+	if (mIsPlayingSolution)
+	{
+		return true;
+	}
+
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ç¢ºèª
 	if (mPlayer && mPlayer->GetMoveAnimation()->IsAnimating())
 	{
 		return true;
 	}
 
-	// ‘S‚Ä‚Ì‰×•¨‚ÌƒAƒjƒ[ƒVƒ‡ƒ“Šm”F
+	// å…¨ã¦ã®è·ç‰©ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ç¢ºèª
 	for (auto baggage : mBaggages)
 	{
 		if (baggage->GetMoveAnimation()->IsAnimating())
@@ -659,7 +760,7 @@ bool Game::IsAnyMovementAnimating() const
 	return false;
 }
 
-// ƒXƒvƒ‰ƒCƒg‚Ì’Ç‰Á‚Æíœ
+// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®è¿½åŠ ã¨å‰Šé™¤
 void Game::AddSprite(SpriteComponent* sprite)
 {
 	int myDrawOrder = sprite->GetDrawOrder();
@@ -686,7 +787,7 @@ void Game::RemoveSprite(SpriteComponent* sprite)
 	}
 }
 
-// ƒXƒvƒ‰ƒCƒg‚Ì•`‰æ
+// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®æç”»
 void Game::DrawSprites()
 {
 	for (auto& sprite : mSprites)
@@ -695,7 +796,7 @@ void Game::DrawSprites()
 	}
 }
 
-// UI‚Ì•`‰æ
+// UIã®æç”»
 void Game::DrawUI()
 {
 	for (const auto& ui : mUIStack)
@@ -704,7 +805,7 @@ void Game::DrawUI()
 	}
 }
 
-// ”Õ–ÊƒŠƒXƒg‚ÉV‚µ‚¢”Õ–Ê‚ğ’Ç‰Á
+// ç›¤é¢ãƒªã‚¹ãƒˆã«æ–°ã—ã„ç›¤é¢ã‚’è¿½åŠ 
 void Game::AddBoard(const std::string& key, const std::vector<std::string>& lines)
 {
 	if (!mInitBoardData.count(key))
@@ -715,19 +816,28 @@ void Game::AddBoard(const std::string& key, const std::vector<std::string>& line
 	}
 }
 
+sf::Vector2f Game::MapPixelToLogicalCoords(const sf::Vector2i& pixelPos) const
+{
+	if (!mWindow)
+	{
+		return sf::Vector2f{ static_cast<float>(pixelPos.x), static_cast<float>(pixelPos.y) };
+	}
+	return mWindow->mapPixelToCoords(pixelPos);
+}
+
 sf::Vector2i Game::ScreenToTileCoords(const sf::Vector2f& screenPos) const
 {
 	sf::Vector2f bounding_area_pos(screenPos);
 	bounding_area_pos -= mBoardViewArea.first;
 	sf::Vector2i result{ -1, -1 };
-	// ƒXƒP[ƒŠƒ“ƒO‚ğ‹‚ß‚é
-	// Œ»ó•`‰æ”ÍˆÍ‚Í³•ûŒ`‚È‚Ì‚ÅA”Õ–Ê‚ª‰¡’·‚©c’·‚©‚ÅƒXƒP[ƒŠƒ“ƒO‚ğ•Ï‚¦‚é
-	// ƒXƒP[ƒŠƒ“ƒO‚Í‘å‚«‚¢•û‚É‡‚í‚¹‚é
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã‚’æ±‚ã‚ã‚‹
+	// ç¾çŠ¶æç”»ç¯„å›²ã¯æ­£æ–¹å½¢ãªã®ã§ã€ç›¤é¢ãŒæ¨ªé•·ã‹ç¸¦é•·ã‹ã§ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã‚’å¤‰ãˆã‚‹
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¯å¤§ãã„æ–¹ã«åˆã‚ã›ã‚‹
 	float scaling = (mGenParams.boardSize.x > mGenParams.boardSize.y) ? ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mGenParams.boardSize.x)) : ((mBoardViewArea.second.y - mBoardViewArea.first.y) / static_cast<float>(mGenParams.boardSize.y));
 
 	if (bounding_area_pos.x >= 0.0f && bounding_area_pos.y >= 0.0f)
 	{
-		// ‰¡’·‚È‚çc•ûŒü‚Ì•½sˆÚ“®Ac’·‚È‚ç‰¡•ûŒü‚Ì•½sˆÚ“®
+		// æ¨ªé•·ãªã‚‰ç¸¦æ–¹å‘ã®å¹³è¡Œç§»å‹•ã€ç¸¦é•·ãªã‚‰æ¨ªæ–¹å‘ã®å¹³è¡Œç§»å‹•
 		if (mGenParams.boardSize.x > mGenParams.boardSize.y)
 		{
 			bounding_area_pos.y -= ((mBoardViewArea.second.y - mBoardViewArea.first.y) - ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mGenParams.boardSize.x)) * static_cast<float>(mGenParams.boardSize.y)) / 2.0f;
@@ -758,7 +868,7 @@ sf::Vector2f Game::TileToScreenCoords(const sf::Vector2i& tileCorrdsPos) const
 		result.x = static_cast<float>(static_cast<float>(bounding_area_pos.x) * scaling);
 		result.y = static_cast<float>(static_cast<float>(bounding_area_pos.y) * scaling);
 
-		// ‰¡’·‚È‚çc•ûŒü‚Ì•½sˆÚ“®Ac’·‚È‚ç‰¡•ûŒü‚Ì•½sˆÚ“®
+		// æ¨ªé•·ãªã‚‰ç¸¦æ–¹å‘ã®å¹³è¡Œç§»å‹•ã€ç¸¦é•·ãªã‚‰æ¨ªæ–¹å‘ã®å¹³è¡Œç§»å‹•
 		if (mGenParams.boardSize.x > mGenParams.boardSize.y)
 		{
 			result.y += ((mBoardViewArea.second.y - mBoardViewArea.first.y) - ((mBoardViewArea.second.x - mBoardViewArea.first.x) / static_cast<float>(mGenParams.boardSize.x)) * static_cast<float>(mGenParams.boardSize.y)) / 2.0f;
@@ -778,13 +888,13 @@ sf::Vector2f Game::TileToScreenCoords(const sf::Vector2i& tileCorrdsPos) const
 
 void Game::CallUndo()
 {
-	// ˆÚ“®‚ÌƒƒO‚ª‚ ‚èAƒXƒeƒbƒv”‚Í1ˆÈã‚©
+	// ç§»å‹•ã®ãƒ­ã‚°ãŒã‚ã‚Šã€ã‚¹ãƒ†ãƒƒãƒ—æ•°ã¯1ä»¥ä¸Šã‹
 	if (mLogs.size() > 0 && mStep > 0)
 	{
-		// ‰×•¨‚ªˆÚ“®‚µ‚Ä‚¢‚½‚©
+		// è·ç‰©ãŒç§»å‹•ã—ã¦ã„ãŸã‹
 		if (!mLogs[mStep - 1].isBMoved)
 		{
-			// ƒvƒŒƒCƒ„[‚ÌˆÊ’u‚ğ–ß‚·
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ä½ç½®ã‚’æˆ»ã™
 			if (mStep == 1)
 			{
 				mPlayer->SetBoardCoordinate(mInitialPlayerPos);
@@ -798,7 +908,7 @@ void Game::CallUndo()
 		}
 		else if (mLogs[mStep - 1].isBMoved)
 		{
-			// ÅŒã‚ÌƒXƒeƒbƒv‚ÉŠY“–‚·‚é‰×•¨‚ğ’T‚·
+			// æœ€å¾Œã®ã‚¹ãƒ†ãƒƒãƒ—ã«è©²å½“ã™ã‚‹è·ç‰©ã‚’æ¢ã™
 			Baggage* ptrBaggage = nullptr;
 			for (const auto& item : mBaggages)
 			{
@@ -809,7 +919,7 @@ void Game::CallUndo()
 				}
 			}
 
-			// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚ğ–ß‚·
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã‚’æˆ»ã™
 			if (mStep == 1)
 			{
 				mPlayer->SetBoardCoordinate(mInitialPlayerPos);
@@ -827,25 +937,26 @@ void Game::CallUndo()
 		ClearPushHighlights();
 		ClearPushDirections();
 		mStep--;
+		PlaySound(SoundManager::SoundEffect::Undo);
 		
 	}
 }
 
 void Game::CallRedo()
 {
-	// ƒƒO‚ÌƒTƒCƒY‚ÍŒ»İ‚ÌƒXƒeƒbƒv”‚æ‚è‘å‚«‚¢‚©
+	// ãƒ­ã‚°ã®ã‚µã‚¤ã‚ºã¯ç¾åœ¨ã®ã‚¹ãƒ†ãƒƒãƒ—æ•°ã‚ˆã‚Šå¤§ãã„ã‹
 	if (mLogs.size() > mStep)
 	{
-		// ‰×•¨‚ªˆÚ“®‚µ‚Ä‚¢‚½‚©
+		// è·ç‰©ãŒç§»å‹•ã—ã¦ã„ãŸã‹
 		if (!mLogs[mStep].isBMoved)
 		{
-			// ƒvƒŒƒCƒ„[‚ÌˆÊ’u‚ği‚ß‚é
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ä½ç½®ã‚’é€²ã‚ã‚‹
 			mPlayer->SetBoardCoordinate(mLogs[mStep].pCoordinate.second);
 			mPlayer->SetDirection(mLogs[mStep].direction2);
 		}
 		else if (mLogs[mStep].isBMoved)
 		{
-			// ŸƒXƒeƒbƒv‚ÉŠY“–‚·‚é‰×•¨‚ğ’T‚·
+			// æ¬¡ã‚¹ãƒ†ãƒƒãƒ—ã«è©²å½“ã™ã‚‹è·ç‰©ã‚’æ¢ã™
 			Baggage* ptrBaggage = nullptr;
 			for (const auto& item : mBaggages)
 			{
@@ -856,7 +967,7 @@ void Game::CallRedo()
 				}
 			}
 
-			// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚ği‚ß‚é
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã‚’é€²ã‚ã‚‹
 			mPlayer->SetBoardCoordinate(mLogs[mStep].pCoordinate.second);
 			mPlayer->SetDirection(mLogs[mStep].direction2);
 			ptrBaggage->SetBoardCoordinate(mLogs[mStep].bCoordinate.second);
@@ -865,6 +976,7 @@ void Game::CallRedo()
 		ClearPushHighlights();
 		ClearPushDirections();
 		mStep++;
+		PlaySound(SoundManager::SoundEffect::Redo);
 	}
 }
 
@@ -884,55 +996,68 @@ void Game::CallRedoAll()
 	}
 }
 
-void Game::CallSave(const std::vector<std::string>& boardData)
+bool Game::CallSave(const std::vector<std::string>& boardData)
 {
-	// •Û‘¶‘ÎÛ‚Ìƒf[ƒ^‚ğŒˆ’è
+	// ä¿å­˜å¯¾è±¡ã®ãƒ‡ãƒ¼ã‚¿ã‚’æ±ºå®š
 	std::vector<std::string> dataToSave = boardData;
 	if (dataToSave.empty())
 	{
-		// ˆø”‚ª‹ó‚È‚çAƒƒCƒ“ƒQ[ƒ€‚ÌŒ»İ‚Ì”Õ–Êi‰Šúó‘Ôj‚ğg—p
+		// å¼•æ•°ãŒç©ºãªã‚‰ã€ãƒ¡ã‚¤ãƒ³ã‚²ãƒ¼ãƒ ã®ç¾åœ¨ã®ç›¤é¢ï¼ˆåˆæœŸçŠ¶æ…‹ï¼‰ã‚’ä½¿ç”¨
 		dataToSave = mInitBoardData[mCurrentKey];
 	}
 
 	bool isDialogActive = true;
+	bool saved = false;
+	std::string saveError;
 
-	// ƒtƒ@ƒCƒ‹ƒ_ƒCƒAƒƒO‚Ìì¬
+	// ãƒ•ã‚¡ã‚¤ãƒ«ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã®ä½œæˆ
 	auto fileDialog = tgui::FileDialog::create();
 	fileDialog->setRenderer(mTheme->getRenderer("FileDialog"));
 	fileDialog->setTitle(mLoc->Get("BOARD_SAVE_DIALOG_TITLE"));
-	fileDialog->setFileMustExist(false); // •Û‘¶—p‚È‚Ì‚Å‘¶İ‚µ‚È‚¢ƒtƒ@ƒCƒ‹–¼‚à‹–‰Â
+	fileDialog->setFileMustExist(false); // ä¿å­˜ç”¨ãªã®ã§å­˜åœ¨ã—ãªã„ãƒ•ã‚¡ã‚¤ãƒ«åã‚‚è¨±å¯
 	fileDialog->setConfirmButtonText(mLoc->Get("BTN_SAVE"));
 	fileDialog->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
 	fileDialog->setListViewColumnCaptions(mLoc->Get("BOARD_SAVE_DIALOG_COL_NAME"), mLoc->Get("BOARD_SAVE_DIALOG_COL_SIZE"), mLoc->Get("BOARD_SAVE_DIALOG_COL_MODIFIED"));
 	fileDialog->setFilenameLabelText(mLoc->Get("BOARD_SAVE_DIALOG_LBL_FILENAME"));
 	fileDialog->setAllowCreateFolder(true);
 	fileDialog->setCreateFolderButtonText(mLoc->Get("BOARD_SAVE_DIALOG_CREATE_FOLDER"));
-	fileDialog->setPath("Assets/Boards"); // ƒfƒtƒHƒ‹ƒgƒpƒX
-	fileDialog->setFilename("Level_" + GetDateTime() + ".txt"); // ƒfƒtƒHƒ‹ƒgƒtƒ@ƒCƒ‹–¼
-	// Šù‘¶ƒtƒ@ƒCƒ‹‚ğ‘I‘ğ‚µ‚½ê‡‚Ìã‘‚«Šm”F
-	// (TGUI‚Ìƒo[ƒWƒ‡ƒ“‚É‚æ‚Á‚Ä‚Í setConfirmOverwrite(true) ‚ªƒfƒtƒHƒ‹ƒg‚Ü‚½‚Í‘¶İ‚µ‚È‚¢ê‡‚ª‚ ‚è‚Ü‚·‚ªA
-	//  ‘½‚­‚Ìƒo[ƒWƒ‡ƒ“‚ÅƒTƒ|[ƒg‚³‚ê‚Ä‚¢‚Ü‚·)
+	fileDialog->setPath(mPaths.GetBoardsDirectory().u8string()); // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆãƒ‘ã‚¹
+	fileDialog->setFilename("Level_" + GetDateTime() + ".sok"); // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆãƒ•ã‚¡ã‚¤ãƒ«å
+	fileDialog->setFileTypeFilters({
+		{ "Sokoban Levels (*.sok, *.xsb, *.txt)", { "*.sok", "*.xsb", "*.txt" } },
+		{ "SOK (*.sok)", { "*.sok" } },
+		{ "XSB (*.xsb)", { "*.xsb" } },
+		{ "Text (*.txt)", { "*.txt" } }
+	});
+	// æ—¢å­˜ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠã—ãŸå ´åˆã®ä¸Šæ›¸ãç¢ºèª
+	// (TGUIã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã«ã‚ˆã£ã¦ã¯ setConfirmOverwrite(true) ãŒãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¾ãŸã¯å­˜åœ¨ã—ãªã„å ´åˆãŒã‚ã‚Šã¾ã™ãŒã€
+	//  å¤šãã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã§ã‚µãƒãƒ¼ãƒˆã•ã‚Œã¦ã„ã¾ã™)
 	// fileDialog->setConfirmOverwrite(true); 
 
-	// ƒVƒOƒiƒ‹İ’è
-	fileDialog->onFileSelect([&](const tgui::String& paths) {
-		// paths‚Í‘I‘ğ‚³‚ê‚½ƒtƒ@ƒCƒ‹‚Ìƒtƒ‹ƒpƒX
-		std::string path = paths.toStdString();
+	// ã‚·ã‚°ãƒŠãƒ«è¨­å®š
 
-		// ƒtƒ@ƒCƒ‹‘‚«o‚µ
-		std::ofstream outputFile(path);
-		if (outputFile.is_open())
+	fileDialog->onFileSelect([&](const tgui::String& selectedPath) {
+		try
 		{
-			for (const auto& str : dataToSave)
+			const auto path = std::filesystem::u8path(selectedPath.toStdString());
+			LevelFormat::LevelData levelData;
+			levelData.mTitle = path.stem().u8string();
+			levelData.mBoard = dataToSave;
+			if (boardData.empty())
 			{
-				outputFile << str << std::endl;
+				const std::string currentLurd = GetCurrentLurdSolution(true);
+				if (!currentLurd.empty())
+				{
+					levelData.mSolutions.push_back(currentLurd);
+				}
 			}
-			outputFile.close();
+			LevelFormat::SaveLevelToFile(path, levelData);
+			saved = true;
 			std::cout << "Saved to " << path << std::endl;
 		}
-		else
+		catch (const std::exception& error)
 		{
-			std::cerr << "Error: Unable to open file '" << path << "' for writing." << std::endl;
+			saveError = error.what();
 		}
 		isDialogActive = false;
 		});
@@ -946,20 +1071,20 @@ void Game::CallSave(const std::vector<std::string>& boardData)
 		isDialogActive = false;
 		});
 
-	// ‰æ–Ê’†‰›‚É”z’uiƒTƒCƒYŒˆ’èŒã‚ÉŒvZ‚µ‚½‚Ù‚¤‚ª³Šm‚Å‚·‚ªAŠÈˆÕ“I‚Éj
+	// ç”»é¢ä¸­å¤®ã«é…ç½®ï¼ˆã‚µã‚¤ã‚ºæ±ºå®šå¾Œã«è¨ˆç®—ã—ãŸã»ã†ãŒæ­£ç¢ºã§ã™ãŒã€ç°¡æ˜“çš„ã«ï¼‰
 	fileDialog->setSize(600, 400);
 	fileDialog->setPosition((mWindowSize.x - 600) / 2, (mWindowSize.y - 400) / 2);
 
 	mGui->add(fileDialog);
 
-	// ƒuƒƒbƒLƒ“ƒOƒ‹[ƒviƒ_ƒCƒAƒƒO‚ª•Â‚¶‚é‚Ü‚Å‘Ò‹@j
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğˆê’â~
+	// ãƒ–ãƒ­ãƒƒã‚­ãƒ³ã‚°ãƒ«ãƒ¼ãƒ—ï¼ˆãƒ€ã‚¤ã‚¢ãƒ­ã‚°ãŒé–‰ã˜ã‚‹ã¾ã§å¾…æ©Ÿï¼‰
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’ä¸€æ™‚åœæ­¢
 	mWindow->setActive(false);
 	sf::Time ticksCount = mClock.getElapsedTime();
 
 	while (isDialogActive)
 	{
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		WaitForNextFrame(ticksCount);
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
 		if (deltaTime > 0.05f) deltaTime = 0.05f;
 		ticksCount = mClock.getElapsedTime();
@@ -970,40 +1095,44 @@ void Game::CallSave(const std::vector<std::string>& boardData)
 			if (event.type == sf::Event::Closed)
 			{
 				isDialogActive = false;
-				mGameState = GameState::EQuit; // ƒAƒvƒŠI—¹
+				mGameState = GameState::EQuit; // ã‚¢ãƒ—ãƒªçµ‚äº†
 			}
 			mGui->handleEvent(event);
 		}
 
 		mWindow->clear();
 
-		// ”w–Ê‚Ì•`‰æiƒQ[ƒ€‰æ–Ê‚Æ‘¼‚ÌUIj
+		// èƒŒé¢ã®æç”»ï¼ˆã‚²ãƒ¼ãƒ ç”»é¢ã¨ä»–ã®UIï¼‰
 		for (auto& sprite : mSprites) sprite->Draw(mWindow);
 		for (const auto& ui : mUIStack) ui->Draw(mWindow);
 
-		// TGUIiƒ_ƒCƒAƒƒOj‚Ì•`‰æ
+		// TGUIï¼ˆãƒ€ã‚¤ã‚¢ãƒ­ã‚°ï¼‰ã®æç”»
 		mGui->draw();
 		mWindow->display();
 	}
 
 	mGui->remove(fileDialog);
 	mWindow->setActive(true);
+	if (!saveError.empty()) ShowFileError(saveError);
+	return saved;
 }
 
 void Game::CallReload()
 {
-	// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚Æ”Õ–Ê‚ğXV
-	// ƒpƒ‰ƒ[ƒ^İ’èÛ‚ÉAclose‚ª‰Ÿ‚³‚ê‚È‚¯‚ê‚ÎA‘±‚«‚ÌXVˆ—‚ğs‚¤
+	StopSolutionPlayback();
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã¨ç›¤é¢ã‚’æ›´æ–°
+	// ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿è¨­å®šéš›ã«ã€closeãŒæŠ¼ã•ã‚Œãªã‘ã‚Œã°ã€ç¶šãã®æ›´æ–°å‡¦ç†ã‚’è¡Œã†
 	if (InputBoardData())
 	{
-		// ƒƒO‚ğƒtƒ@ƒCƒ‹o—Í‚µ‚Ä‚©‚ç‘S‚ÄÁ‚·
+		// ãƒ­ã‚°ã‚’ãƒ•ã‚¡ã‚¤ãƒ«å‡ºåŠ›ã—ã¦ã‹ã‚‰å…¨ã¦æ¶ˆã™
 		OutputLogs();
 		ClearParameters();
+		mCurrentLevelSolutions.clear();
 
-		// ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚àƒŠƒZƒbƒg
+		// ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚‚ãƒªã‚»ãƒƒãƒˆ
 		ClearSnapshots();
 
-		// XV‚³‚ê‚½GameƒNƒ‰ƒX‚Ìƒƒ“ƒo•Ï”‚ğQÆ‚µ‚Ä”Õ–Ê‚ğ¶¬
+		// æ›´æ–°ã•ã‚ŒãŸGameã‚¯ãƒ©ã‚¹ã®ãƒ¡ãƒ³ãƒå¤‰æ•°ã‚’å‚ç…§ã—ã¦ç›¤é¢ã‚’ç”Ÿæˆ
 		MySolution* gen = new MySolution(
 			mGenParams.boardSize,
 			mGenParams.baggageNum,
@@ -1016,14 +1145,14 @@ void Game::CallReload()
 		std::vector<std::string> lines = gen->GetBoard();
 		delete(gen);
 
-		// ¶¬‚³‚ê‚½”Õ–Ê‚ÌƒL[‚Í‚ğ•¶š—ñ‚É•ÏŠ·‚µ‚½‚à‚Ì‚É‚·‚é
+		// ç”Ÿæˆã•ã‚ŒãŸç›¤é¢ã®ã‚­ãƒ¼ã¯æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«å¤‰æ›ã—ãŸã‚‚ã®ã«ã™ã‚‹
 		mCurrentKey = GetDateTime();
 		mFilenames.emplace_back(mCurrentKey);
 		mBoardData.emplace(mCurrentKey, lines);
 		mInitBoardData.emplace(mCurrentKey, lines);
 		mBaggageLimit = GetBaggageNumLimit(mGenParams.boardSize, mGenParams.wallRate);
 
-		// ”Õ–Ê‚Ì‰Šúó‘Ô‚ğƒZƒbƒgi¶¬Œ‹‰Ê‚É‡‚í‚¹‚ÄƒTƒCƒY‚ğÄŠm’èj
+		// ç›¤é¢ã®åˆæœŸçŠ¶æ…‹ã‚’ã‚»ãƒƒãƒˆï¼ˆç”Ÿæˆçµæœã«åˆã‚ã›ã¦ã‚µã‚¤ã‚ºã‚’å†ç¢ºå®šï¼‰
 		mGenParams.boardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
 		std::vector<sf::Vector2i> mBoxesPos;
 		{
@@ -1076,13 +1205,13 @@ void Game::CallReload()
 			}
 		}
 
-		// ƒ{[ƒh‚ğÄ\’z
+		// ãƒœãƒ¼ãƒ‰ã‚’å†æ§‹ç¯‰
 		mGameBoard->Reload();
 
-		// ƒvƒŒƒCƒ„[‚ğÄ\’z
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’å†æ§‹ç¯‰
 		mPlayer->Reload();
 
-		// ‰×•¨‚ğÄ\’z
+		// è·ç‰©ã‚’å†æ§‹ç¯‰
 		while (!mBaggages.empty())
 		{
 			delete mBaggages.back();
@@ -1095,7 +1224,7 @@ void Game::CallReload()
 			mInitialBaggagePos.emplace(mBaggages.back(), item);
 		}
 
-		// HUDHelper‚ğÄ\’z
+		// HUDHelperã‚’å†æ§‹ç¯‰
 		mHUDHelper = new HUDHelper(this);
 
 		mStart = std::chrono::system_clock::now();
@@ -1104,28 +1233,29 @@ void Game::CallReload()
 
 void Game::CallRestart()
 {
-	// ƒƒO‚ğƒtƒ@ƒCƒ‹o—Í‚µ‚Ä‚©‚çƒpƒ‰ƒ[ƒ^‚ğƒŠƒZƒbƒg
+	StopSolutionPlayback();
+	// ãƒ­ã‚°ã‚’ãƒ•ã‚¡ã‚¤ãƒ«å‡ºåŠ›ã—ã¦ã‹ã‚‰ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’ãƒªã‚»ãƒƒãƒˆ
 	OutputLogs();
 	ResetParameters();
 
-	// ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚àƒŠƒZƒbƒg
+	// ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚‚ãƒªã‚»ãƒƒãƒˆ
 	ClearSnapshots();
 
 	mBoardData[mCurrentKey] = mInitBoardData[mCurrentKey];
 
-	// ƒ{[ƒh‚ğÄ\’z
+	// ãƒœãƒ¼ãƒ‰ã‚’å†æ§‹ç¯‰
 	mGameBoard->Reload();
 
-	// ƒvƒŒƒCƒ„[‚ğÄ\’z
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’å†æ§‹ç¯‰
 	mPlayer->Reload();
 
-	// ‰×•¨‚ğÄ\’z
+	// è·ç‰©ã‚’å†æ§‹ç¯‰
 	for (const auto& baggage : mInitialBaggagePos)
 	{
 		baggage.first->SetBoardCoordinate(baggage.second);
 	}
 
-	// HUDHelper‚ğÄ\’z
+	// HUDHelperã‚’å†æ§‹ç¯‰
 	mHUDHelper = new HUDHelper(this);
 
 	mStart = std::chrono::system_clock::now();
@@ -1133,7 +1263,7 @@ void Game::CallRestart()
 
 void Game::RemoveRedo()
 {
-	// Œ»İ‚ÌƒXƒeƒbƒv”‚æ‚è‘å‚«‚¢ƒXƒeƒbƒv‚ÌƒƒO‚ğ‚·‚×‚Äíœ
+	// ç¾åœ¨ã®ã‚¹ãƒ†ãƒƒãƒ—æ•°ã‚ˆã‚Šå¤§ãã„ã‚¹ãƒ†ãƒƒãƒ—ã®ãƒ­ã‚°ã‚’ã™ã¹ã¦å‰Šé™¤
 	std::vector<Log> subLogs(mLogs.begin() + mStep, mLogs.end());
 	auto it = mLogs.begin();
 	while (it != mLogs.end()) {
@@ -1147,7 +1277,7 @@ void Game::RemoveRedo()
 		}
 	}
 
-	// è‚ğ‚â‚è’¼‚·ê‡A‚±‚ê‚Ü‚Å‚ÌŒo˜H‚ğ³‰ğ‚ÌŒo˜H‚©‚ç”h¶‚µ‚½–Ø\‘¢‚É‚·‚é
+	// æ‰‹ã‚’ã‚„ã‚Šç›´ã™å ´åˆã€ã“ã‚Œã¾ã§ã®çµŒè·¯ã‚’æ­£è§£ã®çµŒè·¯ã‹ã‚‰æ´¾ç”Ÿã—ãŸæœ¨æ§‹é€ ã«ã™ã‚‹
 	if (!subLogs.empty())
 	{
 		if (mLogs.empty())
@@ -1163,23 +1293,22 @@ void Game::RemoveRedo()
 
 void Game::AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2, const Player::Direction& direction1, const Player::Direction& direction2)
 {
-	// Œ»İ‚Ì“ú•t‚Æ‚ğæ“¾
+	// ç¾åœ¨ã®æ—¥ä»˜ã¨æ™‚åˆ»ã‚’å–å¾—
 	auto now = std::chrono::system_clock::now();
 	auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
-	auto ms = now_ms.time_since_epoch().count() % 1000;  // ƒ~ƒŠ•b•”•ª‚ğæ“¾
+	auto ms = now_ms.time_since_epoch().count() % 1000;  // ãƒŸãƒªç§’éƒ¨åˆ†ã‚’å–å¾—
 
-	// ”NŒ“ú‚Æ‚ğ•¶š—ñ‚ÉƒtƒH[ƒ}ƒbƒg
+	// å¹´æœˆæ—¥ã¨æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆ
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-	std::tm timeinfo;
-	localtime_s(&timeinfo, &now_time);
+	std::tm timeinfo = PlatformTime::GetLocalTime(now_time);
 	char buffer[24];
 	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeinfo);
 
-	// ƒ~ƒŠ•b‚ğ3Œ…•\¦‚·‚é‚½‚ß‚ÉƒpƒfƒBƒ“ƒO‚ğ’Ç‰Á
+	// ãƒŸãƒªç§’ã‚’3æ¡è¡¨ç¤ºã™ã‚‹ãŸã‚ã«ãƒ‘ãƒ‡ã‚£ãƒ³ã‚°ã‚’è¿½åŠ 
 	std::string ms_str = std::to_string(ms);
 	ms_str = std::string(3 - ms_str.length(), '0') + ms_str;
 
-	// ƒ~ƒŠ•b‚ğ’Ç‰Á‚µ‚Ä•¶š—ñ‚ğ•\¦
+	// ãƒŸãƒªç§’ã‚’è¿½åŠ ã—ã¦æ–‡å­—åˆ—ã‚’è¡¨ç¤º
 	std::string datetime_str(buffer);
 	datetime_str += "." + ms_str;
 
@@ -1189,23 +1318,22 @@ void Game::AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2
 
 void Game::AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2, const sf::Vector2i& baggagePos1, const sf::Vector2i& baggagePos2, const Player::Direction& direction1, const Player::Direction& direction2)
 {
-	// Œ»İ‚Ì“ú•t‚Æ‚ğæ“¾
+	// ç¾åœ¨ã®æ—¥ä»˜ã¨æ™‚åˆ»ã‚’å–å¾—
 	auto now = std::chrono::system_clock::now();
 	auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
-	auto ms = now_ms.time_since_epoch().count() % 1000;  // ƒ~ƒŠ•b•”•ª‚ğæ“¾
+	auto ms = now_ms.time_since_epoch().count() % 1000;  // ãƒŸãƒªç§’éƒ¨åˆ†ã‚’å–å¾—
 
-	// ”NŒ“ú‚Æ‚ğ•¶š—ñ‚ÉƒtƒH[ƒ}ƒbƒg
+	// å¹´æœˆæ—¥ã¨æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆ
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-	std::tm timeinfo;
-	localtime_s(&timeinfo, &now_time);
+	std::tm timeinfo = PlatformTime::GetLocalTime(now_time);
 	char buffer[24];
 	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeinfo);
 
-	// ƒ~ƒŠ•b‚ğ3Œ…•\¦‚·‚é‚½‚ß‚ÉƒpƒfƒBƒ“ƒO‚ğ’Ç‰Á
+	// ãƒŸãƒªç§’ã‚’3æ¡è¡¨ç¤ºã™ã‚‹ãŸã‚ã«ãƒ‘ãƒ‡ã‚£ãƒ³ã‚°ã‚’è¿½åŠ 
 	std::string ms_str = std::to_string(ms);
 	ms_str = std::string(3 - ms_str.length(), '0') + ms_str;
 
-	// ƒ~ƒŠ•b‚ğ’Ç‰Á‚µ‚Ä•¶š—ñ‚ğ•\¦
+	// ãƒŸãƒªç§’ã‚’è¿½åŠ ã—ã¦æ–‡å­—åˆ—ã‚’è¡¨ç¤º
 	std::string datetime_str(buffer);
 	datetime_str += "." + ms_str;
 
@@ -1213,35 +1341,35 @@ void Game::AddLog(const sf::Vector2i& playerPos1, const sf::Vector2i& playerPos2
 	mLogs.push_back(tmpLog);
 }
 
+
 void Game::OutputLogs()
 {
-	std::string datetime_str = GetDateTime(), filename = "Assets/Logs/" + datetime_str + ".txt";
-
-	// ƒƒO‚ğo—Í
-	std::ofstream outFile(filename);
-
-	if (outFile.is_open())
+	try
 	{
-		for (const auto& row : mInitBoardData[mGameBoard->GetBoardName()])
-		{
-			outFile << row << std::endl;
-		}
-		outFile << ConvertLogToStr(mLogs, 0);
-		outFile.close();
+		std::string contents;
+		for (const auto& row : mInitBoardData.at(mGameBoard->GetBoardName()))
+			contents += row + "\n";
+		contents += ConvertLogToStr(mLogs, 0);
+		AppPaths::WriteFile(mPaths.NewLogPath(GetDateTime()), contents);
+	}
+	catch (const std::exception& error)
+	{
+		ShowFileError(error.what());
 	}
 }
 
 void Game::CallSaveLog()
 {
-	// •Û‘¶‚·‚éƒƒOƒf[ƒ^‚ğæ“¾
+	// ä¿å­˜ã™ã‚‹ãƒ­ã‚°ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
 	std::string logData = ConvertLogToStr(mLogs);
 
 	bool isDialogActive = true;
+	std::string saveError;
 
-	// ƒtƒ@ƒCƒ‹ƒ_ƒCƒAƒƒO‚Ìì¬iCallSave‚Æ“¯—l‚Ìİ’èj
+	// ãƒ•ã‚¡ã‚¤ãƒ«ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã®ä½œæˆï¼ˆCallSaveã¨åŒæ§˜ã®è¨­å®šï¼‰
 	auto fileDialog = tgui::FileDialog::create();
 	fileDialog->setRenderer(mTheme->getRenderer("FileDialog"));
-	fileDialog->setTitle(mLoc->Get("LOG_SAVE_DIALOG_TITLE")); // «‘‚ÉƒL[‚ğ’Ç‰Á‚µ‚Ä‚­‚¾‚³‚¢
+	fileDialog->setTitle(mLoc->Get("LOG_SAVE_DIALOG_TITLE")); // è¾æ›¸ã«ã‚­ãƒ¼ã‚’è¿½åŠ ã—ã¦ãã ã•ã„
 	fileDialog->setFileMustExist(false);
 	fileDialog->setConfirmButtonText(mLoc->Get("BTN_SAVE"));
 	fileDialog->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
@@ -1249,24 +1377,21 @@ void Game::CallSaveLog()
 	fileDialog->setFilenameLabelText(mLoc->Get("BOARD_SAVE_DIALOG_LBL_FILENAME"));
 	fileDialog->setAllowCreateFolder(true);
 	fileDialog->setCreateFolderButtonText(mLoc->Get("BOARD_SAVE_DIALOG_CREATE_FOLDER"));
-	fileDialog->setPath("Assets/Logs"); // ƒƒO—p‚ÌƒfƒtƒHƒ‹ƒgƒpƒX
+	fileDialog->setPath(mPaths.GetLogsDirectory().u8string()); // ãƒ­ã‚°ç”¨ã®ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆãƒ‘ã‚¹
 	fileDialog->setFilename("Log_" + GetDateTime() + ".txt");
 
-	// ƒVƒOƒiƒ‹İ’è
-	fileDialog->onFileSelect([&](const tgui::String& paths) {
-		std::string path = paths.toStdString();
+	// ã‚·ã‚°ãƒŠãƒ«è¨­å®š
 
-		// ƒtƒ@ƒCƒ‹‘‚«o‚µ
-		std::ofstream outputFile(path);
-		if (outputFile.is_open())
+	fileDialog->onFileSelect([&](const tgui::String& selectedPath) {
+		try
 		{
-			outputFile << logData; // æ“¾‚µ‚½ƒƒO•¶š—ñ‚ğ‘‚«‚Ş
-			outputFile.close();
+			const auto path = std::filesystem::u8path(selectedPath.toStdString());
+			AppPaths::WriteFile(path, logData);
 			std::cout << "Log saved to " << path << std::endl;
 		}
-		else
+		catch (const std::exception& error)
 		{
-			std::cerr << "Error: Unable to open file '" << path << "' for writing." << std::endl;
+			saveError = error.what();
 		}
 		isDialogActive = false;
 		});
@@ -1279,13 +1404,13 @@ void Game::CallSaveLog()
 
 	mGui->add(fileDialog);
 
-	// ƒuƒƒbƒLƒ“ƒOƒ‹[ƒv
+	// ãƒ–ãƒ­ãƒƒã‚­ãƒ³ã‚°ãƒ«ãƒ¼ãƒ—
 	mWindow->setActive(false);
 	sf::Time ticksCount = mClock.getElapsedTime();
 
 	while (isDialogActive)
 	{
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		WaitForNextFrame(ticksCount);
 		ticksCount = mClock.getElapsedTime();
 
 		sf::Event event;
@@ -1308,24 +1433,1116 @@ void Game::CallSaveLog()
 
 	mGui->remove(fileDialog);
 	mWindow->setActive(true);
+	if (!saveError.empty()) ShowFileError(saveError);
+}
+
+// =========================================================================
+// è§£æ‰‹é † (rludRLUD) é–¢é€£ã®å®Ÿè£…
+// =========================================================================
+
+std::string Game::GetCurrentLurdSolution(bool upToCurrentStep) const
+{
+	const std::size_t limit = upToCurrentStep
+		? std::min(static_cast<std::size_t>(mStep), mLogs.size())
+		: mLogs.size();
+
+	std::string lurd;
+	lurd.reserve(limit);
+	for (std::size_t i = 0; i < limit; ++i)
+	{
+		const auto& log = mLogs[i];
+		const int dx = log.pCoordinate.second.x - log.pCoordinate.first.x;
+		const int dy = log.pCoordinate.second.y - log.pCoordinate.first.y;
+		const char ch = SolutionCodec::EncodeMove(dx, dy, log.isBMoved);
+		if (ch != '\0')
+		{
+			lurd.push_back(ch);
+		}
+	}
+	return lurd;
+}
+
+bool Game::SaveLurdSolutionDialog(const std::string& lurd)
+{
+	const std::string textToSave = lurd.empty() ? GetCurrentLurdSolution(true) : lurd;
+	if (textToSave.empty())
+	{
+		return false;
+	}
+
+	bool isDialogActive = true;
+	bool saved = false;
+	std::string saveError;
+
+	auto fileDialog = tgui::FileDialog::create();
+	fileDialog->setRenderer(mTheme->getRenderer("FileDialog"));
+	fileDialog->setTitle(mLoc->Get("SOLUTION_SAVE_DIALOG_TITLE"));
+	fileDialog->setFileMustExist(false);
+	fileDialog->setConfirmButtonText(mLoc->Get("BTN_SAVE"));
+	fileDialog->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+	fileDialog->setListViewColumnCaptions(mLoc->Get("BOARD_SAVE_DIALOG_COL_NAME"), mLoc->Get("BOARD_SAVE_DIALOG_COL_SIZE"), mLoc->Get("BOARD_SAVE_DIALOG_COL_MODIFIED"));
+	fileDialog->setFilenameLabelText(mLoc->Get("BOARD_SAVE_DIALOG_LBL_FILENAME"));
+	fileDialog->setAllowCreateFolder(true);
+	fileDialog->setCreateFolderButtonText(mLoc->Get("BOARD_SAVE_DIALOG_CREATE_FOLDER"));
+	fileDialog->setPath(mPaths.GetLogsDirectory().u8string());
+	fileDialog->setFilename("Solution_" + GetDateTime() + ".txt");
+	fileDialog->setFileTypeFilters({
+		{ "Solution Text (*.txt, *.lurd)", { "*.txt", "*.lurd" } },
+		{ "All Files (*.*)", { "*" } }
+	});
+
+	fileDialog->onFileSelect([&](const tgui::String& selectedPath) {
+		try
+		{
+			const auto path = std::filesystem::u8path(selectedPath.toStdString());
+			AppPaths::WriteFile(path, textToSave + "\n");
+			saved = true;
+			std::cout << "LURD solution saved to " << path << std::endl;
+		}
+		catch (const std::exception& error)
+		{
+			saveError = error.what();
+		}
+		isDialogActive = false;
+		});
+
+	fileDialog->onCancel([&]() { isDialogActive = false; });
+	fileDialog->onClose([&]() { isDialogActive = false; });
+
+	fileDialog->setSize(600, 400);
+	fileDialog->setPosition((mWindowSize.x - 600) / 2, (mWindowSize.y - 400) / 2);
+	mGui->add(fileDialog);
+
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+	while (isDialogActive)
+	{
+		WaitForNextFrame(ticksCount);
+		ticksCount = mClock.getElapsedTime();
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				isDialogActive = false;
+				mGameState = GameState::EQuit;
+			}
+			mGui->handleEvent(event);
+		}
+
+		mWindow->clear();
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
+		mWindow->display();
+	}
+
+	mGui->remove(fileDialog);
+	mWindow->setActive(true);
+	if (!saveError.empty()) ShowFileError(saveError);
+	return saved;
+}
+
+void Game::StopSolutionPlayback()
+{
+	mIsPlayingSolution = false;
+	mSolutionPlaybackSteps.clear();
+	mSolutionPlaybackIndex = 0;
+	mSolutionPlaybackTimer = 0.0f;
+}
+
+void Game::ExecuteSolutionStep(const SolutionCodec::SolutionStep& step, bool animate)
+{
+	if (!mPlayer)
+	{
+		return;
+	}
+
+	const Player::Direction prevDir = mPlayer->GetDirection();
+	Player::Direction nextDir = prevDir;
+	const int dx = step.mToX - step.mFromX;
+	const int dy = step.mToY - step.mFromY;
+	if (dx > 0) nextDir = Player::EEast;
+	else if (dx < 0) nextDir = Player::EWest;
+	else if (dy > 0) nextDir = Player::ESouth;
+	else if (dy < 0) nextDir = Player::ENorth;
+
+	mPlayer->SetDirection(nextDir);
+
+	const sf::Vector2i pFrom{ step.mFromX, step.mFromY };
+	const sf::Vector2i pTo{ step.mToX, step.mToY };
+
+	if (step.mIsPush)
+	{
+		const sf::Vector2i bFrom{ step.mBaggageFromX, step.mBaggageFromY };
+		const sf::Vector2i bTo{ step.mBaggageToX, step.mBaggageToY };
+		Baggage* baggage = GetBaggageFromPos(bFrom);
+		if (baggage)
+		{
+			if (animate)
+			{
+				baggage->GetMoveAnimation()->Start(TileToScreenCoords(bFrom), TileToScreenCoords(bTo), SOLUTION_PLAYBACK_INTERVAL);
+				baggage->SetLogicalCoordinate(bTo);
+			}
+			else
+			{
+				baggage->SetBoardCoordinate(bTo);
+			}
+		}
+
+		if (animate)
+		{
+			mPlayer->GetMoveAnimation()->Start(mPlayer->GetPosition(), TileToScreenCoords(pTo), SOLUTION_PLAYBACK_INTERVAL);
+			mPlayer->SetLogicalCoordinate(pTo);
+		}
+		else
+		{
+			mPlayer->SetBoardCoordinate(pTo);
+		}
+
+		RemoveRedo();
+		AddStep();
+		AddLog(pFrom, pTo, bFrom, bTo, prevDir, nextDir);
+		if (animate)
+		{
+			PlaySound(mBoardState[bTo.y][bTo.x] == '.'
+				? SoundManager::SoundEffect::GoalIn
+				: SoundManager::SoundEffect::Push);
+		}
+	}
+	else
+	{
+		if (animate)
+		{
+			mPlayer->GetMoveAnimation()->Start(mPlayer->GetPosition(), TileToScreenCoords(pTo), SOLUTION_PLAYBACK_INTERVAL);
+			mPlayer->SetLogicalCoordinate(pTo);
+		}
+		else
+		{
+			mPlayer->SetBoardCoordinate(pTo);
+		}
+
+		RemoveRedo();
+		AddStep();
+		AddLog(pFrom, pTo, prevDir, nextDir);
+		if (animate)
+		{
+			PlaySound(SoundManager::SoundEffect::Move);
+		}
+	}
+
+	ClearMoveHighlights();
+	ClearPushHighlights();
+	ClearPushDirections();
+}
+
+void Game::UpdateSolutionPlayback(float deltaTime)
+{
+	if (!mIsPlayingSolution)
+	{
+		return;
+	}
+
+	// ç›´å‰ã®1æ‰‹ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯å®Œäº†ã‚’å¾…ã¤
+	if ((mPlayer && mPlayer->GetMoveAnimation()->IsAnimating()))
+	{
+		return;
+	}
+	for (auto* baggage : mBaggages)
+	{
+		if (baggage->GetMoveAnimation()->IsAnimating())
+		{
+			return;
+		}
+	}
+
+	mSolutionPlaybackTimer -= deltaTime;
+	if (mSolutionPlaybackTimer > 0.0f)
+	{
+		return;
+	}
+
+	if (mSolutionPlaybackIndex >= mSolutionPlaybackSteps.size())
+	{
+		StopSolutionPlayback();
+		return;
+	}
+
+	ExecuteSolutionStep(mSolutionPlaybackSteps[mSolutionPlaybackIndex], true);
+	++mSolutionPlaybackIndex;
+
+	if (mSolutionPlaybackIndex >= mSolutionPlaybackSteps.size())
+	{
+		StopSolutionPlayback();
+	}
+	else
+	{
+		mSolutionPlaybackTimer = SOLUTION_PLAYBACK_INTERVAL;
+	}
+}
+
+bool Game::ApplyLurdSolution(const std::string& rawLurd, bool fromInitialState, bool animate, std::string& outError)
+{
+	outError.clear();
+	StopSolutionPlayback();
+
+	const std::vector<std::string> baseBoard = fromInitialState
+		? mInitBoardData.at(mCurrentKey)
+		: GetBoardStateWithObjects();
+
+	// æ¨™æº–ã®å¯›å®¹ãƒ¢ãƒ¼ãƒ‰ã§äº‹å‰æ¤œè¨¼ï¼ˆé•æ³•æ‰‹ã®ã¿ã‚¨ãƒ©ãƒ¼ï¼‰
+	const auto sim = SolutionCodec::SimulateLurd(baseBoard, rawLurd, false);
+	if (!sim.mIsValid)
+	{
+		outError = sim.mErrorMessage;
+		return false;
+	}
+
+	if (sim.mSteps.empty())
+	{
+		outError = mLoc->Get("SOLUTION_MSG_EMPTY");
+		return false;
+	}
+
+	// åˆæœŸçŠ¶æ…‹ã‹ã‚‰é©ç”¨ã™ã‚‹å ´åˆã¯UndoçµŒç”±ã§åˆæœŸçŠ¶æ…‹ã¸æˆ»ã™
+	if (fromInitialState)
+	{
+		CallReset();
+	}
+
+	if (animate)
+	{
+		mSolutionPlaybackSteps = sim.mSteps;
+		mSolutionPlaybackIndex = 0;
+		mSolutionPlaybackTimer = 0.0f;
+		mIsPlayingSolution = true;
+	}
+	else
+	{
+		for (const auto& step : sim.mSteps)
+		{
+			ExecuteSolutionStep(step, false);
+		}
+	}
+
+	return true;
+}
+
+void Game::OpenSolutionDialog(const std::string& initialLurd)
+{
+	CancelAllUIHolds();
+	StopSolutionPlayback();
+
+	bool isDialogOpen = true;
+	bool shouldStartPlayback = false;
+	bool playbackFromInitial = true;
+	bool playbackAnimate = true;
+	std::string pendingLurd;
+
+	const std::string currentLurd = GetCurrentLurdSolution(true);
+
+	auto child = tgui::ChildWindow::create();
+	child->setRenderer(mTheme->getRenderer("ChildWindow"));
+	child->setClientSize({ 760, 520 });
+	child->setPosition((mWindowSize.x - 760) / 2.0f, (mWindowSize.y - 520) / 2.0f);
+	child->setTitle(mLoc->Get("SOLUTION_DIALOG_TITLE"));
+	child->onClose([&]() { isDialogOpen = false; });
+	mGui->add(child);
+
+	// ç¾åœ¨ã®æ‰‹é †ã‚»ã‚¯ã‚·ãƒ§ãƒ³
+	auto currentLabel = tgui::Label::create(mLoc->Get("SOLUTION_LBL_CURRENT"));
+	currentLabel->setRenderer(mTheme->getRenderer("Label"));
+	currentLabel->setPosition(16, 12);
+	currentLabel->setTextSize(16);
+	child->add(currentLabel);
+
+	auto currentArea = tgui::TextArea::create();
+	currentArea->setRenderer(mTheme->getRenderer("TextArea"));
+	currentArea->setPosition(16, 38);
+	currentArea->setSize(728, 110);
+	currentArea->setTextSize(15);
+	currentArea->setReadOnly(true);
+	currentArea->setText(currentLurd);
+	child->add(currentArea);
+
+	auto statusLabel = tgui::Label::create("");
+	statusLabel->setRenderer(mTheme->getRenderer("Label"));
+	statusLabel->setPosition(16, 442);
+	statusLabel->setSize(728, 28);
+	statusLabel->setTextSize(14);
+	child->add(statusLabel);
+
+	auto copyBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_COPY"));
+	copyBtn->setRenderer(mTheme->getRenderer("Button"));
+	copyBtn->setPosition(16, 156);
+	copyBtn->setSize(130, 32);
+	copyBtn->onPress([&]() {
+		if (currentLurd.empty())
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_EMPTY"));
+			return;
+		}
+		sf::Clipboard::setString(currentLurd);
+		statusLabel->setText(mLoc->Get("SOLUTION_MSG_COPIED"));
+		});
+	child->add(copyBtn);
+
+	auto saveBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_SAVE"));
+	saveBtn->setRenderer(mTheme->getRenderer("Button"));
+	saveBtn->setPosition(156, 156);
+	saveBtn->setSize(130, 32);
+	saveBtn->onPress([&]() {
+		if (currentLurd.empty())
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_EMPTY"));
+			return;
+		}
+		child->setVisible(false);
+		if (SaveLurdSolutionDialog(currentLurd))
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_SAVED"));
+		}
+		child->setVisible(true);
+		});
+	child->add(saveBtn);
+
+	// èª­ã¿è¾¼ã¿æ‰‹é †ã‚»ã‚¯ã‚·ãƒ§ãƒ³
+	auto inputLabel = tgui::Label::create(mLoc->Get("SOLUTION_LBL_INPUT"));
+	inputLabel->setRenderer(mTheme->getRenderer("Label"));
+	inputLabel->setPosition(16, 204);
+	inputLabel->setTextSize(16);
+	child->add(inputLabel);
+
+	auto inputArea = tgui::TextArea::create();
+	inputArea->setRenderer(mTheme->getRenderer("TextArea"));
+	inputArea->setPosition(16, 230);
+	inputArea->setSize(728, 120);
+	inputArea->setTextSize(15);
+	inputArea->setText(initialLurd);
+	child->add(inputArea);
+
+	auto pasteBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_PASTE"));
+	pasteBtn->setRenderer(mTheme->getRenderer("Button"));
+	pasteBtn->setPosition(16, 358);
+	pasteBtn->setSize(130, 32);
+	pasteBtn->onPress([&]() {
+		inputArea->setText(sf::Clipboard::getString().toAnsiString());
+		});
+	child->add(pasteBtn);
+
+	auto loadFileBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_LOAD_FILE"));
+	loadFileBtn->setRenderer(mTheme->getRenderer("Button"));
+	loadFileBtn->setPosition(156, 358);
+	loadFileBtn->setSize(140, 32);
+	loadFileBtn->onPress([&]() {
+		bool fileDialogOpen = true;
+		std::string loadError;
+		auto fd = tgui::FileDialog::create();
+		fd->setRenderer(mTheme->getRenderer("FileDialog"));
+		fd->setTitle(mLoc->Get("SOLUTION_LOAD_DIALOG_TITLE"));
+		fd->setFileMustExist(true);
+		fd->setConfirmButtonText(mLoc->Get("BTN_OK"));
+		fd->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+		fd->setPath(mPaths.GetLogsDirectory().u8string());
+		fd->setFileTypeFilters({
+			{ "Solution Text (*.txt, *.lurd, *.sok)", { "*.txt", "*.lurd", "*.sok" } },
+			{ "All Files (*.*)", { "*" } }
+		});
+		fd->onFileSelect([&](const tgui::String& selectedPath) {
+			try
+			{
+				const auto path = std::filesystem::u8path(selectedPath.toStdString());
+				const auto bytes = AppPaths::ReadFile(path);
+				inputArea->setText(std::string(bytes.begin(), bytes.end()));
+			}
+			catch (const std::exception& error)
+			{
+				loadError = error.what();
+			}
+			fileDialogOpen = false;
+			});
+		fd->onCancel([&]() { fileDialogOpen = false; });
+		fd->onClose([&]() { fileDialogOpen = false; });
+		fd->setSize(600, 400);
+		fd->setPosition((mWindowSize.x - 600) / 2.0f, (mWindowSize.y - 400) / 2.0f);
+
+		child->setVisible(false);
+		mGui->add(fd);
+		sf::Time fdTicks = mClock.getElapsedTime();
+		while (fileDialogOpen)
+		{
+			WaitForNextFrame(fdTicks);
+			fdTicks = mClock.getElapsedTime();
+			sf::Event ev;
+			while (mWindow->pollEvent(ev))
+			{
+				if (ev.type == sf::Event::Closed)
+				{
+					fileDialogOpen = false;
+					isDialogOpen = false;
+					mGameState = GameState::EQuit;
+				}
+				mGui->handleEvent(ev);
+			}
+			mWindow->clear();
+			DrawSprites();
+			DrawUI();
+			mGui->draw();
+			mWindow->display();
+		}
+		mGui->remove(fd);
+		child->setVisible(true);
+		if (!loadError.empty())
+		{
+			statusLabel->setText(loadError);
+		}
+		});
+	child->add(loadFileBtn);
+
+	if (!mCurrentLevelSolutions.empty())
+	{
+		auto embeddedBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_USE_EMBEDDED"));
+		embeddedBtn->setRenderer(mTheme->getRenderer("Button"));
+		embeddedBtn->setPosition(306, 358);
+		embeddedBtn->setSize(160, 32);
+		embeddedBtn->onPress([&]() {
+			inputArea->setText(mCurrentLevelSolutions.front());
+			});
+		child->add(embeddedBtn);
+	}
+
+	// é©ç”¨é–‹å§‹ä½ç½®ã®é¸æŠãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
+	auto radioGroup = tgui::RadioButtonGroup::create();
+	auto radioInitial = tgui::RadioButton::create();
+	radioInitial->setRenderer(mTheme->getRenderer("RadioButton"));
+	radioInitial->setText(mLoc->Get("SOLUTION_RADIO_FROM_INITIAL"));
+	radioInitial->setPosition(16, 404);
+	radioInitial->setChecked(true);
+	radioGroup->add(radioInitial);
+
+	auto radioCurrent = tgui::RadioButton::create();
+	radioCurrent->setRenderer(mTheme->getRenderer("RadioButton"));
+	radioCurrent->setText(mLoc->Get("SOLUTION_RADIO_FROM_CURRENT"));
+	radioCurrent->setPosition(260, 404);
+	radioGroup->add(radioCurrent);
+	child->add(radioGroup);
+
+	// å®Ÿè¡Œãƒ»é–‰ã˜ã‚‹ãƒœã‚¿ãƒ³
+	auto tryApply = [&](bool animate) {
+		const std::string raw = inputArea->getText().toStdString();
+		const bool fromInit = radioInitial->isChecked();
+		const std::vector<std::string> baseBoard = fromInit
+			? mInitBoardData.at(mCurrentKey)
+			: GetBoardStateWithObjects();
+		const auto sim = SolutionCodec::SimulateLurd(baseBoard, raw, false);
+		if (!sim.mIsValid)
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_INVALID") + sim.mErrorMessage);
+			return;
+		}
+		if (sim.mSteps.empty())
+		{
+			statusLabel->setText(mLoc->Get("SOLUTION_MSG_EMPTY"));
+			return;
+		}
+		pendingLurd = raw;
+		playbackFromInitial = fromInit;
+		playbackAnimate = animate;
+		shouldStartPlayback = true;
+		isDialogOpen = false;
+	};
+
+	auto playBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_PLAY"));
+	playBtn->setRenderer(mTheme->getRenderer("Button"));
+	playBtn->setPosition(344, 476);
+	playBtn->setSize(120, 32);
+	playBtn->onPress([&]() { tryApply(true); });
+	child->add(playBtn);
+
+	auto applyBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_APPLY_ALL"));
+	applyBtn->setRenderer(mTheme->getRenderer("Button"));
+	applyBtn->setPosition(474, 476);
+	applyBtn->setSize(130, 32);
+	applyBtn->onPress([&]() { tryApply(false); });
+	child->add(applyBtn);
+
+	auto closeBtn = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
+	closeBtn->setRenderer(mTheme->getRenderer("Button"));
+	closeBtn->setPosition(614, 476);
+	closeBtn->setSize(130, 32);
+	closeBtn->onPress([&]() { isDialogOpen = false; });
+	child->add(closeBtn);
+
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+	while (isDialogOpen)
+	{
+		WaitForNextFrame(ticksCount);
+		ticksCount = mClock.getElapsedTime();
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				isDialogOpen = false;
+				mGameState = GameState::EQuit;
+			}
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+			{
+				isDialogOpen = false;
+			}
+			mGui->handleEvent(event);
+		}
+
+		mWindow->clear();
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
+		mWindow->display();
+	}
+
+	mGui->remove(child);
+	mWindow->setActive(true);
+
+	if (shouldStartPlayback)
+	{
+		std::string err;
+		if (!ApplyLurdSolution(pendingLurd, playbackFromInitial, playbackAnimate, err))
+		{
+			ShowFileError(err);
+		}
+	}
+}
+
+// =========================================================================
+// åŠ¹æœéŸ³ãƒ»ãƒ©ã‚¤ã‚»ãƒ³ã‚¹è¡¨ç¤ºãƒ»Festival ã‚½ãƒ«ãƒãƒ¼é–¢é€£ã®å®Ÿè£…
+// =========================================================================
+
+void Game::PlaySound(SoundManager::SoundEffect effect)
+{
+	if (mSoundManager)
+	{
+		mSoundManager->Play(effect);
+	}
+}
+
+void Game::DisplayLicenseWindow()
+{
+	CancelAllUIHolds();
+
+	std::string licenseText;
+	try
+	{
+		const auto path = mPaths.Asset("Assets/licenses/THIRD_PARTY_LICENSES.txt");
+		const auto bytes = AppPaths::ReadFile(path);
+		licenseText.assign(bytes.begin(), bytes.end());
+	}
+	catch (const std::exception& error)
+	{
+		licenseText = std::string("Unable to load license file: ") + error.what();
+	}
+
+	bool isOpen = true;
+	auto child = tgui::ChildWindow::create();
+	child->setRenderer(mTheme->getRenderer("ChildWindow"));
+	child->setClientSize({ 820, 560 });
+	child->setPosition((mWindowSize.x - 820) / 2.0f, (mWindowSize.y - 560) / 2.0f);
+	child->setTitle(mLoc->Get("LICENSE_DIALOG_TITLE"));
+	child->onClose([&]() { isOpen = false; });
+	mGui->add(child);
+
+	auto textArea = tgui::TextArea::create();
+	textArea->setRenderer(mTheme->getRenderer("TextArea"));
+	textArea->setPosition(14, 14);
+	textArea->setSize(792, 490);
+	textArea->setTextSize(14);
+	textArea->setReadOnly(true);
+	textArea->setText(licenseText);
+	child->add(textArea);
+
+	auto closeBtn = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
+	closeBtn->setRenderer(mTheme->getRenderer("Button"));
+	closeBtn->setSize(120, 32);
+	closeBtn->setPosition(686, 514);
+	closeBtn->onPress([&]() { isOpen = false; });
+	child->add(closeBtn);
+
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+	while (isOpen)
+	{
+		WaitForNextFrame(ticksCount);
+		ticksCount = mClock.getElapsedTime();
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				isOpen = false;
+				mGameState = GameState::EQuit;
+			}
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+			{
+				isOpen = false;
+			}
+			mGui->handleEvent(event);
+		}
+
+		mWindow->clear();
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
+		mWindow->display();
+	}
+
+	mGui->remove(child);
+	mWindow->setActive(true);
+}
+
+void Game::OpenSolverDialog()
+{
+	CancelAllUIHolds();
+	StopSolutionPlayback();
+
+	SolverRunner runner;
+	bool isDialogOpen = true;
+	bool hasSolvedResult = false;
+	bool solvedFromInitial = false;
+	std::string solvedLurd;
+
+	bool shouldApplyAfterClose = false;
+	bool applyAnimate = true;
+	bool applyHintOnly = false;
+
+	auto child = tgui::ChildWindow::create();
+	child->setRenderer(mTheme->getRenderer("ChildWindow"));
+	child->setClientSize({ 780, 540 });
+	child->setPosition((mWindowSize.x - 780) / 2.0f, (mWindowSize.y - 540) / 2.0f);
+	child->setTitle(mLoc->Get("SOLVER_DIALOG_TITLE"));
+	child->onClose([&]() {
+		runner.Cancel();
+		isDialogOpen = false;
+		});
+	mGui->add(child);
+
+	// é–‹å§‹çŠ¶æ…‹ã®é¸æŠï¼ˆç¾åœ¨çŠ¶æ…‹ or åˆæœŸçŠ¶æ…‹ï¼‰
+	auto radioGroup = tgui::RadioButtonGroup::create();
+	auto radioCurrent = tgui::RadioButton::create();
+	radioCurrent->setRenderer(mTheme->getRenderer("RadioButton"));
+	radioCurrent->setText(mLoc->Get("SOLVER_RADIO_CURRENT"));
+	radioCurrent->setPosition(18, 18);
+	radioCurrent->setChecked(true);
+	radioGroup->add(radioCurrent);
+
+	auto radioInitial = tgui::RadioButton::create();
+	radioInitial->setRenderer(mTheme->getRenderer("RadioButton"));
+	radioInitial->setText(mLoc->Get("SOLVER_RADIO_INITIAL"));
+	radioInitial->setPosition(300, 18);
+	radioGroup->add(radioInitial);
+	child->add(radioGroup);
+
+	// åˆ¶é™æ™‚é–“é¸æŠ
+	auto timeLabel = tgui::Label::create(mLoc->Get("SOLVER_LBL_TIME_LIMIT"));
+	timeLabel->setRenderer(mTheme->getRenderer("Label"));
+	timeLabel->setPosition(18, 56);
+	timeLabel->setTextSize(15);
+	child->add(timeLabel);
+
+	auto timeCombo = tgui::ComboBox::create();
+	timeCombo->setRenderer(mTheme->getRenderer("ComboBox"));
+	timeCombo->setPosition(170, 52);
+	timeCombo->setSize(120, 28);
+	timeCombo->addItem("10", "10");
+	timeCombo->addItem("30", "30");
+	timeCombo->addItem("60", "60");
+	timeCombo->addItem("180", "180");
+	timeCombo->addItem("300", "300");
+	timeCombo->setSelectedItemById("30");
+	child->add(timeCombo);
+
+	// Festivalå®Ÿè¡Œãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹è¡¨ç¤º & é¸æŠãƒœã‚¿ãƒ³
+	auto exeLabel = tgui::Label::create(mLoc->Get("SOLVER_LBL_EXECUTABLE"));
+	exeLabel->setRenderer(mTheme->getRenderer("Label"));
+	exeLabel->setPosition(18, 96);
+	exeLabel->setTextSize(15);
+	child->add(exeLabel);
+
+	auto exeBox = tgui::EditBox::create();
+	exeBox->setRenderer(mTheme->getRenderer("EditBox"));
+	exeBox->setPosition(170, 92);
+	exeBox->setSize(470, 28);
+	exeBox->setReadOnly(true);
+	child->add(exeBox);
+
+	auto statusLabel = tgui::Label::create("");
+	statusLabel->setRenderer(mTheme->getRenderer("Label"));
+	statusLabel->setPosition(18, 174);
+	statusLabel->setSize(744, 30);
+	statusLabel->setTextSize(15);
+	child->add(statusLabel);
+
+	auto resultArea = tgui::TextArea::create();
+	resultArea->setRenderer(mTheme->getRenderer("TextArea"));
+	resultArea->setPosition(18, 210);
+	resultArea->setSize(744, 185);
+	resultArea->setTextSize(15);
+	resultArea->setReadOnly(true);
+	child->add(resultArea);
+
+	auto startStopBtn = tgui::Button::create(mLoc->Get("SOLVER_BTN_START"));
+	startStopBtn->setRenderer(mTheme->getRenderer("Button"));
+	startStopBtn->setPosition(18, 132);
+	startStopBtn->setSize(160, 34);
+	child->add(startStopBtn);
+
+	auto playBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_PLAY"));
+	playBtn->setRenderer(mTheme->getRenderer("Button"));
+	playBtn->setPosition(18, 408);
+	playBtn->setSize(120, 32);
+	playBtn->setEnabled(false);
+	child->add(playBtn);
+
+	auto hintBtn = tgui::Button::create(mLoc->Get("SOLVER_BTN_HINT"));
+	hintBtn->setRenderer(mTheme->getRenderer("Button"));
+	hintBtn->setPosition(148, 408);
+	hintBtn->setSize(130, 32);
+	hintBtn->setEnabled(false);
+	child->add(hintBtn);
+
+	auto applyAllBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_APPLY_ALL"));
+	applyAllBtn->setRenderer(mTheme->getRenderer("Button"));
+	applyAllBtn->setPosition(288, 408);
+	applyAllBtn->setSize(130, 32);
+	applyAllBtn->setEnabled(false);
+	child->add(applyAllBtn);
+
+	auto copyBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_COPY"));
+	copyBtn->setRenderer(mTheme->getRenderer("Button"));
+	copyBtn->setPosition(428, 408);
+	copyBtn->setSize(110, 32);
+	copyBtn->setEnabled(false);
+	child->add(copyBtn);
+
+	auto closeBtn = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
+	closeBtn->setRenderer(mTheme->getRenderer("Button"));
+	closeBtn->setPosition(642, 408);
+	closeBtn->setSize(120, 32);
+	closeBtn->onPress([&]() {
+		runner.Cancel();
+		isDialogOpen = false;
+		});
+	child->add(closeBtn);
+
+	// Festival ãƒ©ã‚¤ã‚»ãƒ³ã‚¹ãƒ»ã‚¯ãƒ¬ã‚¸ãƒƒãƒˆè¡¨è¨˜ï¼ˆå¿…é ˆè¡¨ç¤ºï¼‰
+	auto creditLabel = tgui::Label::create(mLoc->Get("SOLVER_CREDIT"));
+	creditLabel->setRenderer(mTheme->getRenderer("Label"));
+	creditLabel->setPosition(18, 494);
+	creditLabel->setSize(560, 28);
+	creditLabel->setTextSize(14);
+	child->add(creditLabel);
+
+	auto licenseBtn = tgui::Button::create(mLoc->Get("BTN_LICENSES"));
+	licenseBtn->setRenderer(mTheme->getRenderer("Button"));
+	licenseBtn->setPosition(612, 488);
+	licenseBtn->setSize(150, 32);
+	licenseBtn->onPress([&]() {
+		PlaySound(SoundManager::SoundEffect::ButtonClick);
+		child->setVisible(false);
+		DisplayLicenseWindow();
+		child->setVisible(true);
+		});
+	child->add(licenseBtn);
+
+	std::filesystem::path resolvedExe;
+	auto refreshExecutableStatus = [&]() {
+		resolvedExe = mPaths.FindFestivalExecutable(mCustomFestivalPath);
+		if (!resolvedExe.empty())
+		{
+			exeBox->setText(resolvedExe.u8string());
+			statusLabel->setText(mLoc->Get("SOLVER_STATUS_READY"));
+			startStopBtn->setEnabled(true);
+		}
+		else
+		{
+			exeBox->setText("");
+			statusLabel->setText(mLoc->Get("SOLVER_STATUS_NOT_FOUND"));
+			startStopBtn->setEnabled(false);
+		}
+	};
+	refreshExecutableStatus();
+
+	// ä»»æ„ã®Festivalå®Ÿè¡Œãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠã™ã‚‹ãƒœã‚¿ãƒ³
+	auto browseBtn = tgui::Button::create(mLoc->Get("SOLVER_BTN_BROWSE"));
+	browseBtn->setRenderer(mTheme->getRenderer("Button"));
+	browseBtn->setPosition(650, 92);
+	browseBtn->setSize(112, 28);
+	browseBtn->onPress([&]() {
+		if (runner.GetState() == SolverRunner::SolverState::Running)
+		{
+			return;
+		}
+		bool fdOpen = true;
+		auto fd = tgui::FileDialog::create();
+		fd->setRenderer(mTheme->getRenderer("FileDialog"));
+		fd->setTitle(mLoc->Get("SOLVER_BROWSE_TITLE"));
+		fd->setFileMustExist(true);
+		fd->setConfirmButtonText(mLoc->Get("BTN_OK"));
+		fd->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+		fd->onFileSelect([&](const tgui::String& selectedPath) {
+			mCustomFestivalPath = std::filesystem::u8path(selectedPath.toStdString());
+			fdOpen = false;
+			});
+		fd->onCancel([&]() { fdOpen = false; });
+		fd->onClose([&]() { fdOpen = false; });
+		fd->setSize(620, 420);
+		fd->setPosition((mWindowSize.x - 620) / 2.0f, (mWindowSize.y - 420) / 2.0f);
+
+		child->setVisible(false);
+		mGui->add(fd);
+		sf::Time fdTicks = mClock.getElapsedTime();
+		while (fdOpen)
+		{
+			WaitForNextFrame(fdTicks);
+			fdTicks = mClock.getElapsedTime();
+			sf::Event ev;
+			while (mWindow->pollEvent(ev))
+			{
+				if (ev.type == sf::Event::Closed)
+				{
+					fdOpen = false;
+					isDialogOpen = false;
+					mGameState = GameState::EQuit;
+				}
+				mGui->handleEvent(ev);
+			}
+			mWindow->clear();
+			DrawSprites();
+			DrawUI();
+			mGui->draw();
+			mWindow->display();
+		}
+		mGui->remove(fd);
+		child->setVisible(true);
+		refreshExecutableStatus();
+		});
+	child->add(browseBtn);
+
+	auto setActionButtonsEnabled = [&](bool enabled) {
+		playBtn->setEnabled(enabled);
+		hintBtn->setEnabled(enabled);
+		applyAllBtn->setEnabled(enabled);
+		copyBtn->setEnabled(enabled);
+	};
+
+	playBtn->onPress([&]() {
+		if (!hasSolvedResult || solvedLurd.empty()) return;
+		shouldApplyAfterClose = true;
+		applyAnimate = true;
+		applyHintOnly = false;
+		isDialogOpen = false;
+		});
+	hintBtn->onPress([&]() {
+		if (!hasSolvedResult || solvedLurd.empty()) return;
+		shouldApplyAfterClose = true;
+		applyAnimate = true;
+		applyHintOnly = true;
+		isDialogOpen = false;
+		});
+	applyAllBtn->onPress([&]() {
+		if (!hasSolvedResult || solvedLurd.empty()) return;
+		shouldApplyAfterClose = true;
+		applyAnimate = false;
+		applyHintOnly = false;
+		isDialogOpen = false;
+		});
+	copyBtn->onPress([&]() {
+		if (!hasSolvedResult || solvedLurd.empty()) return;
+		sf::Clipboard::setString(solvedLurd);
+		statusLabel->setText(mLoc->Get("SOLUTION_MSG_COPIED"));
+		});
+
+	bool wasRunning = false;
+	startStopBtn->onPress([&]() {
+		if (runner.GetState() == SolverRunner::SolverState::Running)
+		{
+			runner.Cancel();
+			return;
+		}
+		if (resolvedExe.empty())
+		{
+			refreshExecutableStatus();
+			return;
+		}
+
+		const bool useInitial = radioInitial->isChecked();
+		const std::vector<std::string> boardToSolve = useInitial
+			? mInitBoardData.at(mCurrentKey)
+			: GetBoardStateWithObjects();
+
+		// æ—¢ã«å…¨è·ç‰©ãŒã‚´ãƒ¼ãƒ«ä¸Šã«ã‚ã‚‹ã‹äº‹å‰ç¢ºèª
+		bool alreadyComplete = true;
+		for (const auto& row : boardToSolve)
+		{
+			if (row.find('$') != std::string::npos)
+			{
+				alreadyComplete = false;
+				break;
+			}
+		}
+		if (alreadyComplete)
+		{
+			statusLabel->setText(mLoc->Get("SOLVER_STATUS_ALREADY_COMPLETE"));
+			return;
+		}
+
+		int timeLimitSec = 30;
+		try
+		{
+			const std::string idStr = timeCombo->getSelectedItemId().toStdString();
+			if (!idStr.empty())
+			{
+				timeLimitSec = std::stoi(idStr);
+			}
+		}
+		catch (const std::exception&)
+		{
+			timeLimitSec = 30;
+		}
+
+		hasSolvedResult = false;
+		solvedLurd.clear();
+		solvedFromInitial = useInitial;
+		resultArea->setText("");
+		setActionButtonsEnabled(false);
+
+		SolverRunner::SolverRequest req{};
+		req.mExecutablePath = resolvedExe;
+		req.mStartBoard = boardToSolve;
+		req.mTimeLimitSeconds = timeLimitSec;
+		req.mCores = 1;
+
+		if (runner.Start(req))
+		{
+			wasRunning = true;
+			startStopBtn->setText(mLoc->Get("SOLVER_BTN_STOP"));
+			radioCurrent->setEnabled(false);
+			radioInitial->setEnabled(false);
+			timeCombo->setEnabled(false);
+			browseBtn->setEnabled(false);
+		}
+		});
+
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+	while (isDialogOpen)
+	{
+		WaitForNextFrame(ticksCount);
+		ticksCount = mClock.getElapsedTime();
+
+		const auto state = runner.GetState();
+		if (state == SolverRunner::SolverState::Running)
+		{
+			std::ostringstream oss;
+			oss << mLoc->Get("SOLVER_STATUS_RUNNING")
+				<< std::fixed << std::setprecision(1) << runner.GetElapsedSeconds() << "s";
+			statusLabel->setText(oss.str());
+		}
+		else if (wasRunning)
+		{
+			wasRunning = false;
+			startStopBtn->setText(mLoc->Get("SOLVER_BTN_START"));
+			radioCurrent->setEnabled(true);
+			radioInitial->setEnabled(true);
+			timeCombo->setEnabled(true);
+			browseBtn->setEnabled(true);
+
+			const auto res = runner.GetResult();
+			if (res.mState == SolverRunner::SolverState::Succeeded)
+			{
+				hasSolvedResult = true;
+				solvedLurd = res.mNormalizedLurd;
+				std::ostringstream summary;
+				summary << mLoc->Get("SOLVER_STATUS_SOLVED") << "  "
+					<< mLoc->Get("SOLVER_LBL_RESULT_MOVES") << res.mMoveCount << "  "
+					<< mLoc->Get("SOLVER_LBL_RESULT_PUSHES") << res.mPushCount << "  "
+					<< mLoc->Get("SOLVER_LBL_RESULT_TIME") << std::fixed << std::setprecision(2) << res.mElapsedSeconds << "s";
+				statusLabel->setText(summary.str());
+				resultArea->setText(solvedLurd);
+				setActionButtonsEnabled(true);
+				PlaySound(SoundManager::SoundEffect::GoalIn);
+			}
+			else if (res.mState == SolverRunner::SolverState::TimedOut)
+			{
+				statusLabel->setText(mLoc->Get("SOLVER_STATUS_TIMEOUT"));
+			}
+			else if (res.mState == SolverRunner::SolverState::Cancelled)
+			{
+				statusLabel->setText(mLoc->Get("SOLVER_STATUS_CANCELLED"));
+			}
+			else
+			{
+				statusLabel->setText(mLoc->Get("SOLVER_STATUS_FAILED") + res.mErrorMessage);
+			}
+		}
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				runner.Cancel();
+				isDialogOpen = false;
+				mGameState = GameState::EQuit;
+			}
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+			{
+				runner.Cancel();
+				isDialogOpen = false;
+			}
+			mGui->handleEvent(event);
+		}
+
+		mWindow->clear();
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
+		mWindow->display();
+	}
+
+	runner.Cancel();
+	mGui->remove(child);
+	mWindow->setActive(true);
+
+	if (shouldApplyAfterClose && !solvedLurd.empty())
+	{
+		const std::string toApply = applyHintOnly ? solvedLurd.substr(0, 1) : solvedLurd;
+		std::string err;
+		if (!ApplyLurdSolution(toApply, solvedFromInitial, applyAnimate, err))
+		{
+			ShowFileError(err);
+		}
+	}
 }
 
 void Game::AddSnapshot(const std::string& name, const std::string& comment)
 {
 	GameSnapshot snapshot;
 
-	// UI—pƒf[ƒ^‚ğİ’è
+	// UIç”¨ãƒ‡ãƒ¼ã‚¿ã‚’è¨­å®š
 	snapshot.snapshotName = name;
 	snapshot.snapshotComment = comment;
-	snapshot.timestamp = GetDateTime(); // Šù‘¶‚Ìƒwƒ‹ƒp[ŠÖ”‚ğ—˜—p
+	snapshot.timestamp = GetDateTime(); // æ—¢å­˜ã®ãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°ã‚’åˆ©ç”¨
 
-	// •œŒ³—pƒf[ƒ^‚ğ•Û‘¶
+	// å¾©å…ƒç”¨ãƒ‡ãƒ¼ã‚¿ã‚’ä¿å­˜
 	snapshot.playerPosition = mPlayer->GetBoardCoordinate();
 	snapshot.playerDirection = mPlayer->GetDirection();
 	snapshot.stepCount = mStep;
 	snapshot.logs = mLogs;
 
-	// ‰×•¨‚ÌÀ•W‚ğ•Û‘¶
+	// è·ç‰©ã®åº§æ¨™ã‚’ä¿å­˜
 	for (const auto& baggage : mBaggages)
 	{
 		snapshot.baggagePositions.emplace_back(baggage->GetBoardCoordinate());
@@ -1337,9 +2554,9 @@ void Game::AddSnapshot(const std::string& name, const std::string& comment)
 
 void Game::DisplaySnapshot()
 {
-	// V‚µ‚¢SnapshotScreen‚ÌƒCƒ“ƒXƒ^ƒ“ƒX‚ğì¬
-	// ƒRƒ“ƒXƒgƒ‰ƒNƒ^“à‚ÅAUIƒXƒ^ƒbƒN‚Ö‚ÌƒvƒbƒVƒ…‚Æ
-	// ƒQ[ƒ€ó‘Ô‚Ì EPaused ‚Ö‚Ìİ’è‚ªs‚í‚ê‚é
+	// æ–°ã—ã„SnapshotScreenã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã‚’ä½œæˆ
+	// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿å†…ã§ã€UIã‚¹ã‚¿ãƒƒã‚¯ã¸ã®ãƒ—ãƒƒã‚·ãƒ¥ã¨
+	// ã‚²ãƒ¼ãƒ çŠ¶æ…‹ã® EPaused ã¸ã®è¨­å®šãŒè¡Œã‚ã‚Œã‚‹
 	new SnapshotScreen(this, mWindow);
 
 	std::cout << "DisplaySnapshot called. Game state set to EPaused." << std::endl;
@@ -1347,9 +2564,9 @@ void Game::DisplaySnapshot()
 
 void Game::AddSnapshotDialog()
 {
-	// V‚µ‚¢AddSnapshotDialog‚ÌƒCƒ“ƒXƒ^ƒ“ƒX‚ğì¬
-	// ƒRƒ“ƒXƒgƒ‰ƒNƒ^“à‚ÅAƒ_ƒCƒAƒƒO©g‚ªUIƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…‚³‚êA
-	// ƒQ[ƒ€ó‘Ô‚ª EPaused ‚Éİ’è‚³‚ê‚é
+	// æ–°ã—ã„AddSnapshotDialogã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã‚’ä½œæˆ
+	// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿å†…ã§ã€ãƒ€ã‚¤ã‚¢ãƒ­ã‚°è‡ªèº«ãŒUIã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥ã•ã‚Œã€
+	// ã‚²ãƒ¼ãƒ çŠ¶æ…‹ãŒ EPaused ã«è¨­å®šã•ã‚Œã‚‹
 	new SnapshotDialog(this, mWindow);
 
 	std::cout << "DisplayAddSnapshotDialog called. Game state set to EPaused." << std::endl;
@@ -1359,16 +2576,16 @@ void Game::RestoreSnapshot(int snapshotIndex)
 {
 	if (snapshotIndex < 0 || snapshotIndex >= mSnapshots.size())
 	{
-		return; // –³Œø‚ÈƒCƒ“ƒfƒbƒNƒX
+		return; // ç„¡åŠ¹ãªã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
 	}
 
 	const auto& snapshot = mSnapshots[snapshotIndex];
 
-	// ƒvƒŒƒCƒ„[‚Ìó‘Ô‚ğ•œŒ³
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®çŠ¶æ…‹ã‚’å¾©å…ƒ
 	mPlayer->SetBoardCoordinate(snapshot.playerPosition);
 	mPlayer->SetDirection(snapshot.playerDirection);
 
-	// ‰×•¨‚Ìó‘Ô‚ğ•œŒ³ (mBaggages‚Ì‡˜‚ª•Ï‚í‚ç‚È‚¢‚±‚Æ‚ª‘O’ñ)
+	// è·ç‰©ã®çŠ¶æ…‹ã‚’å¾©å…ƒ (mBaggagesã®é †åºãŒå¤‰ã‚ã‚‰ãªã„ã“ã¨ãŒå‰æ)
 	for (int i = 0; i < mBaggages.size(); ++i)
 	{
 		if (i < snapshot.baggagePositions.size())
@@ -1377,11 +2594,11 @@ void Game::RestoreSnapshot(int snapshotIndex)
 		}
 	}
 
-	// ƒQ[ƒ€‚Ìó‘Ô‚ğ•œŒ³
+	// ã‚²ãƒ¼ãƒ ã®çŠ¶æ…‹ã‚’å¾©å…ƒ
 	mStep = snapshot.stepCount;
 	mLogs = snapshot.logs;
 
-	// ƒnƒCƒ‰ƒCƒg‚È‚Ç‚ğƒNƒŠƒA
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆãªã©ã‚’ã‚¯ãƒªã‚¢
 	ClearMoveHighlights();
 	ClearPushHighlights();
 	ClearPushDirections();
@@ -1398,7 +2615,7 @@ void Game::ClearSnapshots()
 
 sf::Texture* Game::GenerateThumbnail(const GameSnapshot& snapshotData)
 {
-	// ”Õ–ÊƒeƒNƒXƒ`ƒƒ‚ğæ“¾i‚±‚ê‚ª”wŒi‚É‚È‚éj
+	// ç›¤é¢ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’å–å¾—ï¼ˆã“ã‚ŒãŒèƒŒæ™¯ã«ãªã‚‹ï¼‰
 	sf::Texture* boardTexture = mGameBoard->GetBoardTexture();
 	if (!boardTexture)
 	{
@@ -1408,7 +2625,7 @@ sf::Texture* Game::GenerateThumbnail(const GameSnapshot& snapshotData)
 
 	sf::Vector2u texSize = boardTexture->getSize();
 
-	// 1. •`‰æƒ^[ƒQƒbƒg‚Æ‚µ‚Ä‚ÌRenderTexture‚ğì¬
+	// 1. æç”»ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã¨ã—ã¦ã®RenderTextureã‚’ä½œæˆ
 	sf::RenderTexture* rt = new sf::RenderTexture();
 	if (!rt->create(texSize.x, texSize.y))
 	{
@@ -1418,21 +2635,21 @@ sf::Texture* Game::GenerateThumbnail(const GameSnapshot& snapshotData)
 	}
 	rt->clear(sf::Color::Transparent);
 
-	// 2. ”wŒii”Õ–Êj‚ğ•`‰æ
+	// 2. èƒŒæ™¯ï¼ˆç›¤é¢ï¼‰ã‚’æç”»
 	sf::Sprite boardSprite(*boardTexture);
-	// ã‰º”½“]
+	// ä¸Šä¸‹åè»¢
 	boardSprite.setScale(1.f, -1.f);
-	// ‚»‚Ì‚Ü‚Ü‚¾‚Æã‰º‚ª‚¸‚ê‚é‚Ì‚ÅAŒ´“_‚ğ‰æ‘œ‚Ì‚‚³‚É‚·‚é
+	// ãã®ã¾ã¾ã ã¨ä¸Šä¸‹ãŒãšã‚Œã‚‹ã®ã§ã€åŸç‚¹ã‚’ç”»åƒã®é«˜ã•ã«ã™ã‚‹
 	boardSprite.setOrigin(0.0f, static_cast<float>(boardTexture->getSize().y));
 	rt->draw(boardSprite);
 
-	// 3. ‰×•¨‚ğ•`‰æ
-	// ‰×•¨‚Ì”‚ª0o‚È‚¯‚ê‚Î•`‰æ
+	// 3. è·ç‰©ã‚’æç”»
+	// è·ç‰©ã®æ•°ãŒ0å‡ºãªã‘ã‚Œã°æç”»
 	if (!mBaggages.empty())
 	{
 		for (const auto& pos : snapshotData.baggagePositions)
 		{
-			// BaggageƒNƒ‰ƒX‚©‚çƒeƒNƒXƒ`ƒƒ‚ğæ“¾
+			// Baggageã‚¯ãƒ©ã‚¹ã‹ã‚‰ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’å–å¾—
 			sf::Texture* baggageTex(nullptr);
 			if (std::find(mGoalPos.begin(), mGoalPos.end(), pos) == mGoalPos.end())
 			{
@@ -1444,14 +2661,14 @@ sf::Texture* Game::GenerateThumbnail(const GameSnapshot& snapshotData)
 			}
 			sf::Sprite baggageSprite(*baggageTex);
 
-			// ƒ^ƒCƒ‹À•W‚ğƒsƒNƒZƒ‹À•W‚É•ÏŠ·
+			// ã‚¿ã‚¤ãƒ«åº§æ¨™ã‚’ãƒ”ã‚¯ã‚»ãƒ«åº§æ¨™ã«å¤‰æ›
 			sf::Vector2f pixelPos(static_cast<float>(pos.x * baggageTex->getSize().x), static_cast<float>(pos.y * baggageTex->getSize().y));
 			baggageSprite.setPosition(pixelPos);
 			rt->draw(baggageSprite);
 		}
 	}
 
-	// 4. ƒvƒŒƒCƒ„[‚ğ•`‰æ
+	// 4. ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’æç”»
 	sf::Texture* playerTex = mPlayer->GetTextureForDirection(snapshotData.playerDirection);
 	if (playerTex)
 	{
@@ -1461,12 +2678,12 @@ sf::Texture* Game::GenerateThumbnail(const GameSnapshot& snapshotData)
 		rt->draw(playerSprite);
 	}
 
-	// 5. •`‰æ‚ğŠm’è
+	// 5. æç”»ã‚’ç¢ºå®š
 	rt->display();
 
-	// 6. RenderTexture‚©‚çTexture‚ğƒRƒs[‚µ‚Ä•Ô‚·
+	// 6. RenderTextureã‹ã‚‰Textureã‚’ã‚³ãƒ”ãƒ¼ã—ã¦è¿”ã™
 	sf::Texture* thumbnail = new sf::Texture(rt->getTexture());
-	delete rt; // RenderTexture‚Í•s—v‚É‚È‚Á‚½‚Ì‚Å”jŠü
+	delete rt; // RenderTextureã¯ä¸è¦ã«ãªã£ãŸã®ã§ç ´æ£„
 
 	std::cout << "Game::GenerateThumbnail: Created thumbnail texture!" << std::endl;
 	return thumbnail;
@@ -1474,7 +2691,7 @@ sf::Texture* Game::GenerateThumbnail(const GameSnapshot& snapshotData)
 
 sf::Texture* Game::GenerateCurrentThumbnail()
 {
-	// Œ»İ‚Ìó‘Ô‚©‚çƒ_ƒ~[‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğì‚Á‚ÄGenerateThumbnail‚É“n‚·
+	// ç¾åœ¨ã®çŠ¶æ…‹ã‹ã‚‰ãƒ€ãƒŸãƒ¼ã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’ä½œã£ã¦GenerateThumbnailã«æ¸¡ã™
 	GameSnapshot currentData;
 	currentData.playerPosition = mPlayer->GetBoardCoordinate();
 	currentData.playerDirection = mPlayer->GetDirection();
@@ -1487,7 +2704,7 @@ sf::Texture* Game::GenerateCurrentThumbnail()
 
 sf::Vector2u Game::GetThumbnailSize() const
 {
-	// ”Õ–ÊƒeƒNƒXƒ`ƒƒ‚ğæ“¾i‚±‚ê‚ª”wŒi‚É‚È‚éj
+	// ç›¤é¢ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’å–å¾—ï¼ˆã“ã‚ŒãŒèƒŒæ™¯ã«ãªã‚‹ï¼‰
 	sf::Texture* boardTexture = mGameBoard->GetBoardTexture();
 	if (!boardTexture)
 	{
@@ -1499,41 +2716,43 @@ sf::Vector2u Game::GetThumbnailSize() const
 
 void Game::CallEditorSetup()
 {
-	// ƒGƒfƒBƒ^‚Ì‰Šúİ’èƒ_ƒCƒAƒƒO‚ğ‹N“®
+	// ã‚¨ãƒ‡ã‚£ã‚¿ã®åˆæœŸè¨­å®šãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’èµ·å‹•
 	new EditorSetupDialog(this, mWindow);
 }
 
 void Game::DisplayEditorScreen(const int mode)
 {
-	// ƒGƒfƒBƒ^‚ğ‹N“®
+	// ã‚¨ãƒ‡ã‚£ã‚¿ã‚’èµ·å‹•
 	new EditorScreen(this, mWindow, mode);
 	std::cout << "Display EditorScreen from Game::DisplayEditorScreen()!" << std::endl;
 }
 
 void Game::ApplyEditedBoard(const std::vector<std::string>& newBoardData)
 {
-	// ˆê“I‚È–¼‘O‚Å”Õ–ÊƒŠƒXƒg‚É’Ç‰Á
+	StopSolutionPlayback();
+	mCurrentLevelSolutions.clear();
+	// ä¸€æ™‚çš„ãªåå‰ã§ç›¤é¢ãƒªã‚¹ãƒˆã«è¿½åŠ 
 	std::string tempName = "Applied_" + GetDateTime();
 	AddBoard(tempName, newBoardData);
 
-	// ƒJƒŒƒ“ƒgƒL[‚ğXV
+	// ã‚«ãƒ¬ãƒ³ãƒˆã‚­ãƒ¼ã‚’æ›´æ–°
 	mCurrentKey = tempName;
 
-	// ƒƒO‚ğƒtƒ@ƒCƒ‹o—Í‚µ‚Ä‚©‚ç‘S‚ÄÁ‚·
+	// ãƒ­ã‚°ã‚’ãƒ•ã‚¡ã‚¤ãƒ«å‡ºåŠ›ã—ã¦ã‹ã‚‰å…¨ã¦æ¶ˆã™
 	OutputLogs();
 	ClearParameters();
 
-	// ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚àƒŠƒZƒbƒg
+	// ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚‚ãƒªã‚»ãƒƒãƒˆ
 	ClearSnapshots();
 
-	// ¶¬‚³‚ê‚½”Õ–Ê‚ÌƒL[‚Í‚ğ•¶š—ñ‚É•ÏŠ·‚µ‚½‚à‚Ì‚É‚·‚é
+	// ç”Ÿæˆã•ã‚ŒãŸç›¤é¢ã®ã‚­ãƒ¼ã¯æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«å¤‰æ›ã—ãŸã‚‚ã®ã«ã™ã‚‹
 	mCurrentKey = GetDateTime();
 	mFilenames.emplace_back(mCurrentKey);
 	mBoardData.emplace(mCurrentKey, newBoardData);
 	mInitBoardData.emplace(mCurrentKey, newBoardData);
 	mBaggageLimit = GetBaggageNumLimit(mGenParams.boardSize, mGenParams.wallRate);
 
-	// ”Õ–Ê‚Ì‰Šúó‘Ô‚ğƒZƒbƒg
+	// ç›¤é¢ã®åˆæœŸçŠ¶æ…‹ã‚’ã‚»ãƒƒãƒˆ
 	mGenParams.boardSize = sf::Vector2i{ static_cast<int>(newBoardData.front().length()), static_cast<int>(newBoardData.size()) };
 	std::vector<sf::Vector2i> mBoxesPos;
 	{
@@ -1586,13 +2805,13 @@ void Game::ApplyEditedBoard(const std::vector<std::string>& newBoardData)
 		}
 	}
 
-	// ƒ{[ƒh‚ğÄ\’z
+	// ãƒœãƒ¼ãƒ‰ã‚’å†æ§‹ç¯‰
 	mGameBoard->Reload();
 
-	// ƒvƒŒƒCƒ„[‚ğÄ\’z
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’å†æ§‹ç¯‰
 	mPlayer->Reload();
 
-	// ‰×•¨‚ğÄ\’z
+	// è·ç‰©ã‚’å†æ§‹ç¯‰
 	while (!mBaggages.empty())
 	{
 		delete mBaggages.back();
@@ -1605,7 +2824,7 @@ void Game::ApplyEditedBoard(const std::vector<std::string>& newBoardData)
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
 
-	// HUDHelper‚ğÄ\’z
+	// HUDHelperã‚’å†æ§‹ç¯‰
 	mHUDHelper = new HUDHelper(this);
 
 	mStart = std::chrono::system_clock::now();
@@ -1615,14 +2834,13 @@ void Game::ApplyEditedBoard(const std::vector<std::string>& newBoardData)
 
 std::string Game::GetDateTime()
 {
-	// “ú•t‚Æ‚ğæ“¾
-	// Œ»İ‚Ì“ú•t‚Æ‚ğæ“¾
+	// æ—¥ä»˜ã¨æ™‚åˆ»ã‚’å–å¾—
+	// ç¾åœ¨ã®æ—¥ä»˜ã¨æ™‚åˆ»ã‚’å–å¾—
 	auto now = std::chrono::system_clock::now();
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
 
-	// ”NŒ“ú‚Æ‚ğ•¶š—ñ‚ÉƒtƒH[ƒ}ƒbƒg
-	std::tm timeinfo;
-	localtime_s(&timeinfo, &now_time);
+	// å¹´æœˆæ—¥ã¨æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆ
+	std::tm timeinfo = PlatformTime::GetLocalTime(now_time);
 	char buffer[20];
 	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeinfo);
 	std::string datetime_str(buffer);
@@ -1632,7 +2850,7 @@ std::string Game::GetDateTime()
 
 std::string Game::ConvertLogToStr(const std::vector<Log>& logs, const unsigned long long& current)
 {
-	// current‚ÍŒ»İ‚ÌƒXƒeƒbƒv”
+	// currentã¯ç¾åœ¨ã®ã‚¹ãƒ†ãƒƒãƒ—æ•°
 	std::string result = "";
 
 	result += "( ";
@@ -1646,7 +2864,7 @@ std::string Game::ConvertLogToStr(const std::vector<Log>& logs, const unsigned l
 			result += "[" + std::to_string(logs[i].bCoordinate.second.x) + ", " + std::to_string(logs[i].bCoordinate.second.y) + "] ";
 		}
 
-		// •ªŠò‚µ‚½•”•ª‚ÍA•ªŠò’n“_‚ÅƒJƒbƒg‚µA‘S‚Ä‚Ì•ªŠò‚ğŠÛŠ‡ŒÊ‚ÅˆÍ‚Á‚ÄƒJƒ“ƒ}‹æØ‚è‚Å•À‚×‚é
+		// åˆ†å²ã—ãŸéƒ¨åˆ†ã¯ã€åˆ†å²åœ°ç‚¹ã§ã‚«ãƒƒãƒˆã—ã€å…¨ã¦ã®åˆ†å²ã‚’ä¸¸æ‹¬å¼§ã§å›²ã£ã¦ã‚«ãƒ³ãƒåŒºåˆ‡ã‚Šã§ä¸¦ã¹ã‚‹
 		if (!logs[i].thread.empty())
 		{
 			for (const auto& log : logs[i].thread)
@@ -1662,8 +2880,8 @@ std::string Game::ConvertLogToStr(const std::vector<Log>& logs, const unsigned l
 
 void Game::HasComplete()
 {
-	// ‘S‚Ä‚Ì‰×•¨‚ªƒS[ƒ‹ã‚É‚ ‚é‚©’²‚×‚é
-	// 1‚Â‚Å‚àƒS[ƒ‹ã‚É‚È‚¢‚à‚Ì‚ª‚ ‚ê‚ÎAƒQ[ƒ€‚ğŒp‘±‚·‚é
+	// å…¨ã¦ã®è·ç‰©ãŒã‚´ãƒ¼ãƒ«ä¸Šã«ã‚ã‚‹ã‹èª¿ã¹ã‚‹
+	// 1ã¤ã§ã‚‚ã‚´ãƒ¼ãƒ«ä¸Šã«ãªã„ã‚‚ã®ãŒã‚ã‚Œã°ã€ã‚²ãƒ¼ãƒ ã‚’ç¶™ç¶šã™ã‚‹
 	mIsComplete = true;
 	for (const auto& item : mBaggages)
 	{
@@ -1675,18 +2893,24 @@ void Game::HasComplete()
 			break;
 		}
 	}
+
+	if (mIsComplete && !mWasComplete)
+	{
+		PlaySound(SoundManager::SoundEffect::Clear);
+	}
+	mWasComplete = mIsComplete;
 }
 
 void Game::DisplayResult()
 {
-	// ƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µ‚ğ‰ğœ
+	// ãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ã‚’è§£é™¤
 	CancelAllUIHolds();
 
 	bool isChildWindowOpened = true;
 	bool isPlayLog = false;
-	bool isSelectStage = false; // ƒXƒe[ƒW‘I‘ğ‚Ös‚­‚©‚Ç‚¤‚©‚Ìƒtƒ‰ƒO
+	bool isSelectStage = false; // ã‚¹ãƒ†ãƒ¼ã‚¸é¸æŠã¸è¡Œãã‹ã©ã†ã‹ã®ãƒ•ãƒ©ã‚°
 
-	// •\¦—p‚ÌƒEƒBƒ“ƒhƒE‚ğì¬
+	// è¡¨ç¤ºç”¨ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
 	child->setClientSize({ 960, 540 });
@@ -1697,7 +2921,7 @@ void Game::DisplayResult()
 		});
 	mGui->add(child);
 
-	// ListBox‚ÅƒeƒLƒXƒg‚ğ•\¦
+	// ListBoxã§ãƒ†ã‚­ã‚¹ãƒˆã‚’è¡¨ç¤º
 	auto listBox = tgui::ListBox::create();
 	listBox->setRenderer(mTheme->getRenderer("ListBox"));
 	listBox->setSize(960, 500);
@@ -1715,7 +2939,7 @@ void Game::DisplayResult()
 	listBox->addItem("");
 	child->add(listBox);
 
-	// “ü—ÍI—¹—pƒ{ƒ^ƒ“
+	// å…¥åŠ›çµ‚äº†ç”¨ãƒœã‚¿ãƒ³
 	auto exitButton = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
 	exitButton->setSize(120, 30);
@@ -1726,11 +2950,11 @@ void Game::DisplayResult()
 		});
 	child->add(exitButton);
 
-	// ƒvƒŒƒC—š—ğ‚ğÄ¶‚·‚éƒ‚[ƒh‚ÉˆÚ‚éƒ{ƒ^ƒ“
+	// ãƒ—ãƒ¬ã‚¤å±¥æ­´ã‚’å†ç”Ÿã™ã‚‹ãƒ¢ãƒ¼ãƒ‰ã«ç§»ã‚‹ãƒœã‚¿ãƒ³
 	auto playLogButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_PLAY_LOG"));
 	playLogButton->setRenderer(mTheme->getRenderer("Button"));
 	playLogButton->setSize(120, 30);
-	playLogButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 2.0f) - 30, static_cast<int>(listBox->getSize().y) + 5);
+	playLogButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 2.0f) - 25, static_cast<int>(listBox->getSize().y) + 5);
 	playLogButton->onPress([&]() {
 		std::cout << "Play Log action triggered!" << std::endl;
 		isChildWindowOpened = false;
@@ -1738,30 +2962,63 @@ void Game::DisplayResult()
 		});
 	child->add(playLogButton);
 
-	// ƒXƒe[ƒW‘I‘ğ‰æ–Ê‚ğŒÄ‚Ño‚·ƒ{ƒ^ƒ“
+	// ã‚¹ãƒ†ãƒ¼ã‚¸é¸æŠç”»é¢ã‚’å‘¼ã³å‡ºã™ãƒœã‚¿ãƒ³
 	auto boardSelectButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_BOARD_SELECT"));
 	boardSelectButton->setRenderer(mTheme->getRenderer("Button"));
-	boardSelectButton->setSize(120, 30);
-	boardSelectButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x * 3.0f) - 50, static_cast<int>(listBox->getSize().y) + 5);
+	boardSelectButton->setSize(140, 30);
+	boardSelectButton->setPosition(static_cast<int>(child->getSize().x - 120 * 2 - 140) - 40, static_cast<int>(listBox->getSize().y) + 5);
 	boardSelectButton->onPress([&]() {
 		std::cout << "Call board select window triggered!" << std::endl;
-		isChildWindowOpened = false;	// ƒXƒe[ƒW‘I‘ğƒEƒBƒ“ƒhƒE‚ğo‚·‘O‚ÉƒŠƒUƒ‹ƒg‰æ–Ê‚ğÁ‚·‚½‚ß
+		isChildWindowOpened = false;	// ã‚¹ãƒ†ãƒ¼ã‚¸é¸æŠã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’å‡ºã™å‰ã«ãƒªã‚¶ãƒ«ãƒˆç”»é¢ã‚’æ¶ˆã™ãŸã‚
 		isSelectStage = true;
 		});
 	child->add(boardSelectButton);
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğ’â~
+	// è§£æ‰‹é † (rludRLUD) ã‚’ã‚¯ãƒªãƒƒãƒ—ãƒœãƒ¼ãƒ‰ã¸ã‚³ãƒ”ãƒ¼ã™ã‚‹ãƒœã‚¿ãƒ³
+	const std::string clearLurd = GetCurrentLurdSolution(true);
+	auto copyLurdButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_COPY_LURD"));
+	copyLurdButton->setRenderer(mTheme->getRenderer("Button"));
+	copyLurdButton->setSize(130, 30);
+	copyLurdButton->setPosition(10, static_cast<int>(listBox->getSize().y) + 5);
+	copyLurdButton->onPress([&]() {
+		if (!clearLurd.empty())
+		{
+			sf::Clipboard::setString(clearLurd);
+			listBox->addItem(mLoc->Get("SOLUTION_MSG_COPIED"));
+		}
+		});
+	child->add(copyLurdButton);
+
+	// è§£æ‰‹é † (rludRLUD) ã‚’ãƒ•ã‚¡ã‚¤ãƒ«ã¸ä¿å­˜ã™ã‚‹ãƒœã‚¿ãƒ³
+	auto saveLurdButton = tgui::Button::create(mLoc->Get("RESULT_WINDOW_BTN_SAVE_LURD"));
+	saveLurdButton->setRenderer(mTheme->getRenderer("Button"));
+	saveLurdButton->setSize(130, 30);
+	saveLurdButton->setPosition(150, static_cast<int>(listBox->getSize().y) + 5);
+	saveLurdButton->onPress([&]() {
+		if (!clearLurd.empty())
+		{
+			child->setVisible(false);
+			if (SaveLurdSolutionDialog(clearLurd))
+			{
+				listBox->addItem(mLoc->Get("SOLUTION_MSG_SAVED"));
+			}
+			child->setVisible(true);
+		}
+		});
+	child->add(saveLurdButton);
+
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’åœæ­¢
 	mWindow->setActive(false);
 
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€ŠÖ˜A
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ é–¢é€£
 	sf::Time ticksCount = mClock.getElapsedTime();
 
-	// “ü—Í‚ÆXV‚ÆƒEƒBƒ“ƒhƒE‚ÌI—¹ˆ—
-	// ƒEƒBƒ“ƒhƒE‚ª•Â‚¶‚é‚Ü‚Åƒ‹[ƒv
+	// å…¥åŠ›ã¨æ›´æ–°ã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®çµ‚äº†å‡¦ç†
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‰ã˜ã‚‹ã¾ã§ãƒ«ãƒ¼ãƒ—
 	while (isChildWindowOpened)
 	{
-		// 60FPS‚É‡‚í‚¹‚Ä’x‰„‚ğ‚©‚¯‚é
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		// 60FPSã«åˆã‚ã›ã¦é…å»¶ã‚’ã‹ã‘ã‚‹
+		WaitForNextFrame(ticksCount);
 
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
 		if (deltaTime > 0.05f)
@@ -1770,7 +3027,7 @@ void Game::DisplayResult()
 		}
 		ticksCount = mClock.getElapsedTime();
 
-		// ƒCƒxƒ“ƒgƒLƒ…[‚ª‘¶İ‚·‚éê‡A‚»‚ê‚É‰‚¶‚½ˆ—‚ğ‘S‚Äs‚¤
+		// ã‚¤ãƒ™ãƒ³ãƒˆã‚­ãƒ¥ãƒ¼ãŒå­˜åœ¨ã™ã‚‹å ´åˆã€ãã‚Œã«å¿œã˜ãŸå‡¦ç†ã‚’å…¨ã¦è¡Œã†
 		sf::Event event;
 		while (mWindow->pollEvent(event))
 		{
@@ -1786,19 +3043,19 @@ void Game::DisplayResult()
 
 		mWindow->clear();
 
-		// ”w–Ê‚©‚ç•`‰æ
+		// èƒŒé¢ã‹ã‚‰æç”»
 		for (auto& sprite : mSprites)
 		{
 			sprite->Draw(mWindow);
 		}
 
-		// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+		// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 		for (const auto& ui : mUIStack)
 		{
 			ui->Draw(mWindow);
 		}
 
-		mGui->draw(); // TGUI‚Ì•`‰æ
+		mGui->draw(); // TGUIã®æç”»
 		mWindow->display();
 	}
 
@@ -1813,10 +3070,10 @@ void Game::DisplayResult()
 		SelectBoards();
 	}
 
-	// 1è–ß‚·
+	// 1æ‰‹æˆ»ã™
 	CallUndo();
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğÄŠJ
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’å†é–‹
 	mWindow->setActive(true);
 }
 
@@ -1828,7 +3085,7 @@ bool Game::InputBoardData()
 
 	if (result == BoardConfigDialog::Result::Apply)
 	{
-		mGenParams = newParams; // \‘¢‘Ì‚ğˆêŠ‡XV
+		mGenParams = newParams; // æ§‹é€ ä½“ã‚’ä¸€æ‹¬æ›´æ–°
 		return true;
 	}
 
@@ -1849,20 +3106,20 @@ void Game::SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr ed
 			{
 				try
 				{
-					int value = std::stoi(editBox->getText().toStdString()); // ƒeƒLƒXƒg‚ğ®”‚É•ÏŠ·
+					int value = std::stoi(editBox->getText().toStdString()); // ãƒ†ã‚­ã‚¹ãƒˆã‚’æ•´æ•°ã«å¤‰æ›
 					if (value >= static_cast<int>(slider->getMinimum()) && value <= static_cast<int>(slider->getMaximum()))
 					{
-						slider->setValue(static_cast<float>(value)); // ’l‚ğSlider‚É”½‰f
+						slider->setValue(static_cast<float>(value)); // å€¤ã‚’Sliderã«åæ˜ 
 					}
 					else
 					{
-						// ”ÍˆÍŠO‚Ìê‡AŒ³‚ÌSlider‚Ì’l‚ğ•\¦
+						// ç¯„å›²å¤–ã®å ´åˆã€å…ƒã®Sliderã®å€¤ã‚’è¡¨ç¤º
 						editBox->setText(std::to_string(static_cast<int>(slider->getValue())));
 					}
 				}
 				catch (const std::exception&)
 				{
-					// ”’lˆÈŠO‚Ì“ü—Í‚ª‚ ‚Á‚½ê‡AŒ³‚ÌSlider‚Ì’l‚ğ•\¦
+					// æ•°å€¤ä»¥å¤–ã®å…¥åŠ›ãŒã‚ã£ãŸå ´åˆã€å…ƒã®Sliderã®å€¤ã‚’è¡¨ç¤º
 					editBox->setText(std::to_string(static_cast<int>(slider->getValue())));
 				}
 			});
@@ -1878,20 +3135,20 @@ void Game::SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr ed
 			{
 				try
 				{
-					float value = std::stof(editBox->getText().toStdString()); // ƒeƒLƒXƒg‚ğ®”‚É•ÏŠ·
+					float value = std::stof(editBox->getText().toStdString()); // ãƒ†ã‚­ã‚¹ãƒˆã‚’æ•´æ•°ã«å¤‰æ›
 					if (value >= slider->getMinimum() && value <= slider->getMaximum())
 					{
-						slider->setValue(value); // ’l‚ğSlider‚É”½‰f
+						slider->setValue(value); // å€¤ã‚’Sliderã«åæ˜ 
 					}
 					else 
 					{
-						// ”ÍˆÍŠO‚Ìê‡AŒ³‚ÌSlider‚Ì’l‚ğ•\¦
+						// ç¯„å›²å¤–ã®å ´åˆã€å…ƒã®Sliderã®å€¤ã‚’è¡¨ç¤º
 						editBox->setText(std::to_string(slider->getValue()));
 					}
 				}
 				catch (const std::exception&)
 				{
-					// ”’lˆÈŠO‚Ì“ü—Í‚ª‚ ‚Á‚½ê‡AŒ³‚ÌSlider‚Ì’l‚ğ•\¦
+					// æ•°å€¤ä»¥å¤–ã®å…¥åŠ›ãŒã‚ã£ãŸå ´åˆã€å…ƒã®Sliderã®å€¤ã‚’è¡¨ç¤º
 					editBox->setText(std::to_string(slider->getValue()));
 				}
 			});
@@ -1901,22 +3158,22 @@ void Game::SyncSliderWithEditBox(tgui::Slider::Ptr slider, tgui::EditBox::Ptr ed
 void Game::CancelAllUIHolds()
 {
 
-	// UIƒXƒ^ƒbƒN‚Ì’†‚©‚çTHUD‚ğ’T‚µ‚ÄA’·‰Ÿ‚µó‘Ô‚ğ‰ğœ‚·‚é
+	// UIã‚¹ã‚¿ãƒƒã‚¯ã®ä¸­ã‹ã‚‰THUDã‚’æ¢ã—ã¦ã€é•·æŠ¼ã—çŠ¶æ…‹ã‚’è§£é™¤ã™ã‚‹
 	for (auto uiScreen : mUIStack)
 	{
-		// dynamic_cast‚ğg‚Á‚ÄAIUIScreen*‚ªTHUD*‚É•ÏŠ·‚Å‚«‚é‚©‚·
+		// dynamic_castã‚’ä½¿ã£ã¦ã€IUIScreen*ãŒTHUD*ã«å¤‰æ›ã§ãã‚‹ã‹è©¦ã™
 		if (THUD* thud = dynamic_cast<THUD*>(uiScreen))
 		{
 			thud->CancelButtonHolds();
-			break; // THUD‚Íˆê‚Â‚µ‚©‚È‚¢‚Ì‚ÅŒ©‚Â‚¯‚½‚çƒ‹[ƒv‚ğ”²‚¯‚é
+			break; // THUDã¯ä¸€ã¤ã—ã‹ãªã„ã®ã§è¦‹ã¤ã‘ãŸã‚‰ãƒ«ãƒ¼ãƒ—ã‚’æŠœã‘ã‚‹
 		}
 	}
 }
 
 void Game::DisplayHelpWindow()
 {
-	// ƒeƒLƒXƒgƒf[ƒ^‚Ì“Ç‚İ‚İ
-	std::string filename = mLoc->Get("PATH_HELP");
+	// ãƒ†ã‚­ã‚¹ãƒˆãƒ‡ãƒ¼ã‚¿ã®èª­ã¿è¾¼ã¿
+	const auto filename = mPaths.Asset(mLoc->Get("PATH_HELP"));
 	std::ifstream file(filename);
 	if (!file.is_open())
 	{
@@ -1933,7 +3190,7 @@ void Game::DisplayHelpWindow()
 	file.close();
 
 	bool isChildWindowOpened = true;
-	// •\¦—p‚ÌƒEƒBƒ“ƒhƒE‚ğì¬
+	// è¡¨ç¤ºç”¨ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
 	child->setClientSize({ 960, 540 });
@@ -1944,7 +3201,7 @@ void Game::DisplayHelpWindow()
 		});
 	mGui->add(child);
 
-	// ListBox‚ÅƒeƒLƒXƒg‚ğ•\¦
+	// ListBoxã§ãƒ†ã‚­ã‚¹ãƒˆã‚’è¡¨ç¤º
 	auto listBox = tgui::ListBox::create();
 	listBox->setRenderer(mTheme->getRenderer("ListBox"));
 	listBox->setSize(960, 500);
@@ -1958,7 +3215,7 @@ void Game::DisplayHelpWindow()
 	}
 	child->add(listBox);
 
-	// “ü—ÍI—¹—pƒ{ƒ^ƒ“
+	// å…¥åŠ›çµ‚äº†ç”¨ãƒœã‚¿ãƒ³
 	auto exitButton = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
 	exitButton->setSize(120, 30);
@@ -1969,18 +3226,18 @@ void Game::DisplayHelpWindow()
 		});
 	child->add(exitButton);
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğ’â~
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’åœæ­¢
 	mWindow->setActive(false);
 
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€ŠÖ˜A
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ é–¢é€£
 	sf::Time ticksCount = mClock.getElapsedTime();
 
-	// “ü—Í‚ÆXV‚ÆƒEƒBƒ“ƒhƒE‚ÌI—¹ˆ—
-	// ƒEƒBƒ“ƒhƒE‚ª•Â‚¶‚é‚Ü‚Åƒ‹[ƒv
+	// å…¥åŠ›ã¨æ›´æ–°ã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®çµ‚äº†å‡¦ç†
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‰ã˜ã‚‹ã¾ã§ãƒ«ãƒ¼ãƒ—
 	while (isChildWindowOpened)
 	{
-		// 60FPS‚É‡‚í‚¹‚Ä’x‰„‚ğ‚©‚¯‚é
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+		// 60FPSã«åˆã‚ã›ã¦é…å»¶ã‚’ã‹ã‘ã‚‹
+		WaitForNextFrame(ticksCount);
 
 		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
 		if (deltaTime > 0.05f)
@@ -1989,7 +3246,7 @@ void Game::DisplayHelpWindow()
 		}
 		ticksCount = mClock.getElapsedTime();
 
-		// ƒCƒxƒ“ƒgƒLƒ…[‚ª‘¶İ‚·‚éê‡A‚»‚ê‚É‰‚¶‚½ˆ—‚ğ‘S‚Äs‚¤
+		// ã‚¤ãƒ™ãƒ³ãƒˆã‚­ãƒ¥ãƒ¼ãŒå­˜åœ¨ã™ã‚‹å ´åˆã€ãã‚Œã«å¿œã˜ãŸå‡¦ç†ã‚’å…¨ã¦è¡Œã†
 		sf::Event event;
 		while (mWindow->pollEvent(event))
 		{
@@ -2005,265 +3262,468 @@ void Game::DisplayHelpWindow()
 
 		mWindow->clear();
 
-		// ”w–Ê‚©‚ç•`‰æ
+		// èƒŒé¢ã‹ã‚‰æç”»
 		for (auto& sprite : mSprites)
 		{
 			sprite->Draw(mWindow);
 		}
 
-		// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+		// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 		for (const auto& ui : mUIStack)
 		{
 			ui->Draw(mWindow);
 		}
 
-		mGui->draw(); // TGUI‚Ì•`‰æ
+		mGui->draw(); // TGUIã®æç”»
 		mWindow->display();
 	}
 
 	child->close();
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğÄŠJ
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’å†é–‹
 	mWindow->setActive(true);
+}
+
+sf::Texture Game::GenerateBoardPreviewTexture(const std::vector<std::string>& lines) const
+{
+	sf::Vector2u tileSize = mTextures.at("Assets/Floor.png")->getSize();
+	sf::Vector2u totalSize{ 0, static_cast<unsigned int>(lines.size()) };
+	for (const auto& line : lines)
+	{
+		if (totalSize.x < static_cast<unsigned int>(line.length()))
+		{
+			totalSize.x = static_cast<unsigned int>(line.length());
+		}
+	}
+	if (totalSize.x == 0 || totalSize.y == 0)
+	{
+		throw std::runtime_error("Cannot generate preview for empty board");
+	}
+
+	sf::RenderTexture renderTexture{};
+	if (!renderTexture.create(totalSize.x * tileSize.x, totalSize.y * tileSize.y))
+	{
+		throw std::runtime_error("Failed to create board preview texture");
+	}
+	renderTexture.clear(sf::Color::Transparent);
+
+	for (int y = 0; y < static_cast<int>(lines.size()); ++y)
+	{
+		for (int x = 0; x < static_cast<int>(lines[y].length()); ++x)
+		{
+			std::vector<sf::Texture*> currentTex{};
+			switch (lines[y][x])
+			{
+			case ' ':
+				currentTex.emplace_back(mTextures.at("Assets/Floor.png"));
+				break;
+			case '#':
+				currentTex.emplace_back(mTextures.at("Assets/Wall.png"));
+				break;
+			case '.':
+				currentTex.emplace_back(mTextures.at("Assets/Goal.png"));
+				break;
+			case '$':
+				currentTex.emplace_back(mTextures.at("Assets/Floor.png"));
+				currentTex.emplace_back(mTextures.at("Assets/Box.png"));
+				break;
+			case '*':
+				currentTex.emplace_back(mTextures.at("Assets/Goal.png"));
+				currentTex.emplace_back(mTextures.at("Assets/ShinyBox.png"));
+				break;
+			case '@':
+				currentTex.emplace_back(mTextures.at("Assets/Floor.png"));
+				currentTex.emplace_back(mTextures.at("Assets/playerN.png"));
+				break;
+			case '+':
+				currentTex.emplace_back(mTextures.at("Assets/Goal.png"));
+				currentTex.emplace_back(mTextures.at("Assets/playerN.png"));
+				break;
+			default:
+				break;
+			}
+
+			for (auto* tmpTex : currentTex)
+			{
+				sf::Sprite tmpSprite(*tmpTex);
+				tmpSprite.setPosition(static_cast<float>(x * tileSize.x), static_cast<float>(y * tileSize.y));
+				renderTexture.draw(tmpSprite);
+			}
+		}
+	}
+
+	renderTexture.display();
+	return renderTexture.getTexture();
 }
 
 void Game::SelectBoards()
 {
-	// ”Õ–ÊƒŠƒXƒg‚Ì“Ç‚İ‚İ‚ğs‚¤
-	struct Contents
-	{
-		std::vector<std::string> mBoard;
-		sf::Texture mTexture;
-	};
-	std::map<std::string, Contents> fileContents{};
+	CancelAllUIHolds();
 
-	// QÆ‚·‚é”Õ–ÊƒŠƒXƒg‚ÌƒfƒBƒŒƒNƒgƒŠ‚ğw’è
-	std::filesystem::directory_iterator iter("Assets/Boards"), end;
-	sf::Vector2i tileSize{ mTextures["Assets/Floor.png"]->getSize() };
-	std::error_code err;
+	// æ¡ˆAï¼ˆ2æ®µéšé¸æŠï¼‰: ãƒ•ã‚¡ã‚¤ãƒ«ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ä¸€è¦§ -> åéŒ²ãƒ¬ãƒ™ãƒ«ä¸€è¦§ -> ã‚ªãƒ³ãƒ‡ãƒãƒ³ãƒ‰ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼
+	struct FileEntry
+	{
+		std::string mFileKey;
+		std::string mLabel;
+		LevelFormat::LevelCollection mCollection;
+	};
+	std::map<std::string, FileEntry> fileEntries{};
+	std::unordered_map<std::string, sf::Texture> previewCache{};
+
+	auto addCollectionEntry = [&](const std::string& fileKey, const std::string& baseLabel, const std::filesystem::path& path, bool reportError) -> bool {
+		try
+		{
+			LevelFormat::LevelCollection col = LevelFormat::LoadCollectionFromFile(path);
+			std::string displayLabel = baseLabel;
+			if (col.mLevels.size() > 1)
+			{
+				displayLabel += " (" + std::to_string(col.mLevels.size()) + ")";
+			}
+			fileEntries[fileKey] = FileEntry{ fileKey, displayLabel, std::move(col) };
+			return true;
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Skipped unreadable level file '" << path.u8string() << "': " << e.what() << std::endl;
+			if (reportError)
+			{
+				ShowFileError(e.what());
+			}
+			return false;
+		}
+	};
 
 	try
 	{
-		// ƒfƒBƒŒƒNƒgƒŠ“à‚Ì‚·‚×‚Ä‚ÌƒGƒ“ƒgƒŠ‚ğƒ`ƒFƒbƒN
-		for (; iter != end && !err; iter.increment(err))
+		for (const auto& boardFile : mPaths.GetBoardFiles())
 		{
-			// ƒGƒ“ƒgƒŠ‚ªƒtƒ@ƒCƒ‹‚Å‚ ‚èAŠg’£q‚ª.txt‚Ìê‡
-			const std::filesystem::directory_entry entry = *iter;
-			if (entry.is_regular_file() && entry.path().extension() == ".txt")
-			{
-				std::ifstream file(entry.path());
-				if (file)
-				{
-					std::vector<std::string> lines;
-					std::string line;
-					sf::Vector2u totalSize{ 0, 0 };
-
-					// ƒtƒ@ƒCƒ‹‚ğ1s‚¸‚Â“Ç‚İ‚Ş
-					while (std::getline(file, line))
-					{
-						lines.push_back(line);
-						if (totalSize.x < static_cast<unsigned int>(line.length()))
-						{
-							totalSize.x = static_cast<unsigned int>(line.length());
-						}
-					}
-					totalSize.y = static_cast<unsigned int>(lines.size());
-
-					// “Ç‚İ‚±‚ñ‚¾“à—e‚©‚çA”Õ–Ê‚ÌƒeƒNƒXƒ`ƒƒ‚ğì¬
-					sf::Texture tmpBoardTex{};
-
-					// RenderTexture‚ğì¬
-					sf::RenderTexture renderTexture{};
-					if (!renderTexture.create(totalSize.x * tileSize.x, totalSize.y * tileSize.y))
-					{
-						std::cerr << "Failed to create render texture: " << entry.path() << "\n";
-					}
-					renderTexture.clear(sf::Color::Transparent); // ”wŒi‚ğ“§–¾‚É
-
-					// ƒXƒvƒ‰ƒCƒg‚ğrender texture‚É“\‚è•t‚¯‚Ä‚¢‚«Aƒ^ƒCƒ‹‰æ‘œ‚ğ”z’u
-					for (int y = 0; y < static_cast<int>(totalSize.y); ++y)
-					{
-						for (int x = 0; x < line.length(); ++x)
-						{
-							std::vector<sf::Texture*> currentTex{};
-							switch (lines[y][x])
-							{
-							case ' ':
-								currentTex.emplace_back(mTextures["Assets/Floor.png"]);
-								break;
-							case '#':
-								currentTex.emplace_back(mTextures["Assets/Wall.png"]);
-								break;
-							case '.':
-								currentTex.emplace_back(mTextures["Assets/Goal.png"]);
-								break;
-							case '$':
-								currentTex.emplace_back(mTextures["Assets/Floor.png"]);
-								currentTex.emplace_back(mTextures["Assets/Box.png"]);
-								break;
-							case '*':
-								currentTex.emplace_back(mTextures["Assets/Goal.png"]);
-								currentTex.emplace_back(mTextures["Assets/ShinyBox.png"]);
-								break;
-							case '@':
-								currentTex.emplace_back(mTextures["Assets/Floor.png"]);
-								currentTex.emplace_back(mTextures["Assets/playerN.png"]);
-								break;
-							case '+':
-								currentTex.emplace_back(mTextures["Assets/Goal.png"]);
-								currentTex.emplace_back(mTextures["Assets/playerN.png"]);
-								break;
-							default:
-								break;
-							}
-
-							for (auto& tmpTex : currentTex)
-							{
-								sf::Sprite tmpSprite(*tmpTex);
-								tmpSprite.setPosition(static_cast<float>(x * tileSize.x), static_cast<float>(y * tileSize.y));
-								renderTexture.draw(tmpSprite);
-							}
-						}
-					}
-					// “\‚è•t‚¯‚½ƒXƒvƒ‰ƒCƒg‚ğrender texture‚É“K—p
-					renderTexture.display();
-
-					// Š®¬‚µ‚½ƒeƒNƒXƒ`ƒƒ‚ğæ“¾
-					const sf::Texture& combinedTexture = renderTexture.getTexture();
-
-					// ƒtƒ@ƒCƒ‹–¼iŠg’£q‚È‚µj‚ğƒL[‚Æ‚µ‚ÄŠi”[
-					fileContents[entry.path().stem().string()] = Contents{ lines, combinedTexture };
-
-					// ‚à‚µƒQ[ƒ€ƒNƒ‰ƒX‚É‘¶İ‚µ‚È‚¢”Õ–Ê‚Ìê‡A’Ç‰Áˆ—‚ğs‚¤
-					if (!mInitBoardData.count(entry.path().stem().string()))
-					{
-						mInitBoardData.emplace(entry.path().stem().string(), lines);
-						mBoardData.emplace(entry.path().stem().string(), lines);
-						mFilenames.emplace_back(entry.path().stem().string());
-					}
-				}
-				else 
-				{
-					std::cerr << "Failed to open file: " << entry.path() << "\n";
-				}
-			}
+			const std::string baseLabel = mLoc->Get(boardFile.saved ? "BOARD_SOURCE_SAVED" : "BOARD_SOURCE_BUNDLED")
+				+ " " + boardFile.path.filename().u8string();
+			addCollectionEntry(boardFile.key, baseLabel, boardFile.path, false);
 		}
 	}
-	catch (const std::exception& e) 
+	catch (const std::exception& e)
 	{
-		std::cerr << "Error while accessing directory: " << e.what() << "\n";
+		ShowFileError(e.what());
+		return;
 	}
 
-	std::string selectedBoardName{};
+	std::string selectedFileKey{};
+	std::size_t selectedLevelIndex = 0;
+	bool hasValidSelection = false;
 	bool isChildWindowOpened = true;
-	// •\¦—p‚ÌƒEƒBƒ“ƒhƒE‚ğì¬
+
+	// è¡¨ç¤ºç”¨ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
 	auto child = tgui::ChildWindow::create();
 	child->setRenderer(mTheme->getRenderer("ChildWindow"));
-	child->setClientSize({ 960, 540 });
-	child->setPosition(420, 80);
+	child->setClientSize({ 1020, 560 });
+	child->setPosition((mWindowSize.x - 1020) / 2.0f, (mWindowSize.y - 560) / 2.0f);
 	child->setTitle(mLoc->Get("BOARD_SELECT_WINDOW_TITLE"));
 	child->onClose([&isChildWindowOpened]() {
 		isChildWindowOpened = false;
 		});
 	mGui->add(child);
 
-	// ListBox‚ÅƒeƒLƒXƒg‚ğ•\¦
-	auto listBox = tgui::ListBox::create();
-	listBox->setRenderer(mTheme->getRenderer("ListBox"));
-	listBox->setSize(240, 500);
-	listBox->setItemHeight(24);
-	listBox->setPosition(0, 0);
-	listBox->setTextSize(20);
-	listBox->setAutoScroll(false);
-	for (const auto& item : fileContents)
-	{
-		listBox->addItem(item.first, item.first);
-	}
-	child->add(listBox);
+	// å·¦ãƒšã‚¤ãƒ³: ãƒ•ã‚¡ã‚¤ãƒ«ä¸€è¦§ãƒ©ãƒ™ãƒ«ã¨ListBox
+	auto filesLabel = tgui::Label::create(mLoc->Get("BOARD_SELECT_LBL_FILES"));
+	filesLabel->setRenderer(mTheme->getRenderer("Label"));
+	filesLabel->setPosition(10, 6);
+	filesLabel->setTextSize(15);
+	child->add(filesLabel);
 
-	// PictureƒEƒBƒWƒFƒbƒg‚ğì¬‚µ‚Ä‰æ‘œ•\¦—p‚É’Ç‰Á
-	BoundingBox childPictureBB{ sf::Vector2i{ static_cast<int>(listBox->getPosition().x + listBox->getSize().x), static_cast<int>(listBox->getPosition().y) },
-		sf::Vector2i{ static_cast<int>(child->getSize().x), static_cast<int>(listBox->getPosition().y + listBox->getSize().y)}};
+	auto fileListBox = tgui::ListBox::create();
+	fileListBox->setRenderer(mTheme->getRenderer("ListBox"));
+	fileListBox->setSize(260, 476);
+	fileListBox->setItemHeight(24);
+	fileListBox->setPosition(10, 30);
+	fileListBox->setTextSize(16);
+	fileListBox->setAutoScroll(false);
+	for (const auto& item : fileEntries)
+	{
+		fileListBox->addItem(item.second.mLabel, item.first);
+	}
+	child->add(fileListBox);
+
+	// ä¸­ãƒšã‚¤ãƒ³: åéŒ²ãƒ¬ãƒ™ãƒ«ä¸€è¦§ãƒ©ãƒ™ãƒ«ã¨ListBoxï¼ˆè¤‡æ•°ãƒ¬ãƒ™ãƒ«åéŒ²ãƒ•ã‚¡ã‚¤ãƒ«å¯¾å¿œï¼‰
+	auto levelsLabel = tgui::Label::create(mLoc->Get("BOARD_SELECT_LBL_LEVELS"));
+	levelsLabel->setRenderer(mTheme->getRenderer("Label"));
+	levelsLabel->setPosition(280, 6);
+	levelsLabel->setTextSize(15);
+	child->add(levelsLabel);
+
+	auto levelListBox = tgui::ListBox::create();
+	levelListBox->setRenderer(mTheme->getRenderer("ListBox"));
+	levelListBox->setSize(220, 476);
+	levelListBox->setItemHeight(24);
+	levelListBox->setPosition(280, 30);
+	levelListBox->setTextSize(16);
+	levelListBox->setAutoScroll(false);
+	child->add(levelListBox);
+
+	// å³ãƒšã‚¤ãƒ³: ç›¤é¢ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã¨è©³ç´°æƒ…å ±ãƒ©ãƒ™ãƒ«
+	const BoundingBox previewArea{
+		sf::Vector2f{ 510.0f, 30.0f },
+		sf::Vector2f{ 1010.0f, 470.0f }
+	};
 	auto picture = tgui::Picture::create();
-	picture->setSize(childPictureBB.second.x - childPictureBB.first.x, childPictureBB.second.y - childPictureBB.first.y);
-	picture->setPosition(childPictureBB.first.x, childPictureBB.first.y);
+	picture->setSize(previewArea.second.x - previewArea.first.x, previewArea.second.y - previewArea.first.y);
+	picture->setPosition(previewArea.first.x, previewArea.first.y);
 	child->add(picture);
 
-	// ListBox‚Ì—v‘f‚ª‘I‘ğ‚³‚ê‚½‚çA‘Î‰‚·‚é”Õ–Ê‚ğƒEƒBƒ“ƒhƒE‰E‘¤‚É•\¦
-	listBox->onItemSelect([&](const tgui::String& selectedItem) {
-		std::cout << "Select board on listbox action triggered!" << std::endl;
-		selectedBoardName = "";
-		if (fileContents.count(selectedItem.toStdString()))
+	auto infoLabel = tgui::Label::create("");
+	infoLabel->setRenderer(mTheme->getRenderer("Label"));
+	infoLabel->setPosition(510, 478);
+	infoLabel->setSize(500, 28);
+	infoLabel->setTextSize(15);
+	child->add(infoLabel);
+
+	auto updatePreview = [&](const std::string& fileKey, std::size_t levelIdx) {
+		hasValidSelection = false;
+		auto it = fileEntries.find(fileKey);
+		if (it == fileEntries.end() || levelIdx >= it->second.mCollection.mLevels.size())
 		{
-			selectedBoardName = selectedItem.toStdString();
-			// picture‚ÌƒTƒCƒY‚ÆˆÊ’u‚ğƒŠƒZƒbƒg
-			picture->setSize(childPictureBB.second.x - childPictureBB.first.x, childPictureBB.second.y - childPictureBB.first.y);
-			picture->setPosition(childPictureBB.first.x, childPictureBB.first.y);
-			// sf::Texture‚©‚çtgui::texture‚Ö‚Ì•ÏŠ·
-			sf::Image tmpImage = fileContents[selectedItem.toStdString()].mTexture.copyToImage();
+			infoLabel->setText("");
+			return;
+		}
+
+		const auto& level = it->second.mCollection.mLevels[levelIdx];
+		const std::string cacheKey = fileKey + "#" + std::to_string(levelIdx);
+		try
+		{
+			if (!previewCache.count(cacheKey))
+			{
+				previewCache.emplace(cacheKey, GenerateBoardPreviewTexture(level.mBoard));
+			}
+			const sf::Texture& tex = previewCache.at(cacheKey);
+			sf::Image tmpImage = tex.copyToImage();
 			tgui::Texture tmpTGuiTex{};
 			tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 			picture->getRenderer()->setTexture(tmpTGuiTex);
-			// ‰æ‘œ‚ÌƒXƒP[ƒŠƒ“ƒO‚ÆƒIƒtƒZƒbƒg‚Ìİ’è
-			float scaleFactor = std::min(picture->getSize().x / static_cast<float>(tmpImage.getSize().x), picture->getSize().y / static_cast<float>(tmpImage.getSize().y));
-			picture->setSize(tgui::Layout2d{ static_cast<float>(tmpImage.getSize().x) * scaleFactor, static_cast<float>(tmpImage.getSize().y) * scaleFactor });
-			picture->setPosition({ childPictureBB.first.x + (child->getSize().x - childPictureBB.first.x - static_cast<float>(tmpImage.getSize().x) * scaleFactor) / 2.0f, childPictureBB.first.y + (childPictureBB.second.y - childPictureBB.first.y - static_cast<float>(tmpImage.getSize().y) * scaleFactor) / 2.0f });
+
+			const float areaW = previewArea.second.x - previewArea.first.x;
+			const float areaH = previewArea.second.y - previewArea.first.y;
+			const float scaleFactor = std::min(areaW / static_cast<float>(tmpImage.getSize().x),
+				areaH / static_cast<float>(tmpImage.getSize().y));
+			const float drawW = static_cast<float>(tmpImage.getSize().x) * scaleFactor;
+			const float drawH = static_cast<float>(tmpImage.getSize().y) * scaleFactor;
+			picture->setSize(drawW, drawH);
+			picture->setPosition(previewArea.first.x + (areaW - drawW) / 2.0f,
+				previewArea.first.y + (areaH - drawH) / 2.0f);
+
+			const std::size_t w = level.mBoard.empty() ? 0 : level.mBoard.front().size();
+			const std::size_t h = level.mBoard.size();
+			std::string info = level.mTitle + "  |  "
+				+ mLoc->Get("BOARD_SELECT_LBL_INFO_SIZE") + std::to_string(w) + "x" + std::to_string(h);
+			if (!level.mSolutions.empty())
+			{
+				info += "  |  " + mLoc->Get("BOARD_SELECT_LBL_HAS_SOLUTIONS") + std::to_string(level.mSolutions.size());
+			}
+			infoLabel->setText(info);
+
+			selectedFileKey = fileKey;
+			selectedLevelIndex = levelIdx;
+			hasValidSelection = true;
+		}
+		catch (const std::exception& error)
+		{
+			infoLabel->setText(error.what());
+		}
+	};
+
+	auto populateLevelsForFile = [&](const std::string& fileKey) {
+		levelListBox->removeAllItems();
+		hasValidSelection = false;
+		auto it = fileEntries.find(fileKey);
+		if (it == fileEntries.end())
+		{
+			return;
+		}
+		const auto& levels = it->second.mCollection.mLevels;
+		for (std::size_t i = 0; i < levels.size(); ++i)
+		{
+			const std::string itemLabel = (levels.size() > 1)
+				? ("#" + std::to_string(i + 1) + " " + levels[i].mTitle)
+				: levels[i].mTitle;
+			levelListBox->addItem(itemLabel, std::to_string(i));
+		}
+		if (!levels.empty())
+		{
+			levelListBox->setSelectedItemByIndex(0);
+			updatePreview(fileKey, 0);
+		}
+	};
+
+	// ãƒ•ã‚¡ã‚¤ãƒ«é¸æŠã‚¤ãƒ™ãƒ³ãƒˆï¼ˆå·¦ãƒšã‚¤ãƒ³ï¼‰
+	fileListBox->onItemSelect([&](const tgui::String&, const tgui::String& fileId) {
+		const std::string key = fileId.toStdString();
+		if (!key.empty())
+		{
+			selectedFileKey = key;
+			populateLevelsForFile(key);
 		}
 		});
 
-	// “ü—ÍI—¹—pƒ{ƒ^ƒ“
+	// åéŒ²ãƒ¬ãƒ™ãƒ«é¸æŠã‚¤ãƒ™ãƒ³ãƒˆï¼ˆä¸­ãƒšã‚¤ãƒ³ï¼‰
+	levelListBox->onItemSelect([&](const tgui::String&, const tgui::String& levelId) {
+		if (selectedFileKey.empty() || levelId.empty())
+		{
+			return;
+		}
+		try
+		{
+			const std::size_t idx = static_cast<std::size_t>(std::stoul(levelId.toStdString()));
+			updatePreview(selectedFileKey, idx);
+		}
+		catch (const std::exception&)
+		{
+		}
+		});
+
+	// å¤–éƒ¨ã® .sok / .xsb / .txt ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ç›´æ¥é–‹ããƒœã‚¿ãƒ³
+	auto openExternalButton = tgui::Button::create(mLoc->Get("BTN_OPEN_EXTERNAL_FILE"));
+	openExternalButton->setRenderer(mTheme->getRenderer("Button"));
+	openExternalButton->setSize(180, 32);
+	openExternalButton->setPosition(10, 518);
+	openExternalButton->onPress([&]() {
+		bool fdOpen = true;
+		std::filesystem::path chosenPath;
+		auto fd = tgui::FileDialog::create();
+		fd->setRenderer(mTheme->getRenderer("FileDialog"));
+		fd->setTitle(mLoc->Get("BOARD_OPEN_DIALOG_TITLE"));
+		fd->setFileMustExist(true);
+		fd->setConfirmButtonText(mLoc->Get("BTN_OK"));
+		fd->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+		fd->setPath(mPaths.GetBoardsDirectory().u8string());
+		fd->setFileTypeFilters({
+			{ "Sokoban Levels (*.sok, *.xsb, *.txt)", { "*.sok", "*.xsb", "*.txt" } },
+			{ "SOK (*.sok)", { "*.sok" } },
+			{ "XSB (*.xsb)", { "*.xsb" } },
+			{ "Text (*.txt)", { "*.txt" } }
+		});
+		fd->onFileSelect([&](const tgui::String& selectedPath) {
+			chosenPath = std::filesystem::u8path(selectedPath.toStdString());
+			fdOpen = false;
+			});
+		fd->onCancel([&]() { fdOpen = false; });
+		fd->onClose([&]() { fdOpen = false; });
+		fd->setSize(620, 420);
+		fd->setPosition((mWindowSize.x - 620) / 2.0f, (mWindowSize.y - 420) / 2.0f);
+
+		child->setVisible(false);
+		mGui->add(fd);
+		sf::Time fdTicks = mClock.getElapsedTime();
+		while (fdOpen)
+		{
+			WaitForNextFrame(fdTicks);
+			fdTicks = mClock.getElapsedTime();
+			sf::Event ev;
+			while (mWindow->pollEvent(ev))
+			{
+				if (ev.type == sf::Event::Closed)
+				{
+					fdOpen = false;
+					isChildWindowOpened = false;
+					mGameState = GameState::EQuit;
+				}
+				mGui->handleEvent(ev);
+			}
+			mWindow->clear();
+			DrawSprites();
+			DrawUI();
+			mGui->draw();
+			mWindow->display();
+		}
+		mGui->remove(fd);
+		child->setVisible(true);
+
+		if (!chosenPath.empty())
+		{
+			const std::string extKey = "external:" + chosenPath.u8string();
+			const std::string baseLabel = "[File] " + chosenPath.filename().u8string();
+			if (addCollectionEntry(extKey, baseLabel, chosenPath, true))
+			{
+				if (!fileListBox->containsId(extKey))
+				{
+					fileListBox->addItem(fileEntries.at(extKey).mLabel, extKey);
+				}
+				fileListBox->setSelectedItemById(extKey);
+				selectedFileKey = extKey;
+				populateLevelsForFile(extKey);
+			}
+		}
+		});
+	child->add(openExternalButton);
+
+	// é©ç”¨ãƒœã‚¿ãƒ³
 	auto applyButton = tgui::Button::create(mLoc->Get("BTN_APPLY"));
 	applyButton->setRenderer(mTheme->getRenderer("Button"));
-	applyButton->setSize(120, 30);
-	applyButton->setPosition(static_cast<int>(child->getSize().x - applyButton->getSize().x * 2.0f) - 30, static_cast<int>(listBox->getSize().y) + 5);
+	applyButton->setSize(120, 32);
+	applyButton->setPosition(760, 518);
 	applyButton->onPress([&]() {
-		std::cout << "Apply board action triggered!" << std::endl;
-		if (std::find(mFilenames.begin(), mFilenames.end(), selectedBoardName) != mFilenames.end())
+		if (!hasValidSelection)
 		{
-			mCurrentKey = selectedBoardName;
-			ChangeBoard();
-			isChildWindowOpened = false;
+			return;
 		}
+		auto it = fileEntries.find(selectedFileKey);
+		if (it == fileEntries.end() || selectedLevelIndex >= it->second.mCollection.mLevels.size())
+		{
+			return;
+		}
+		const auto& level = it->second.mCollection.mLevels[selectedLevelIndex];
+		const std::string boardKey = (it->second.mCollection.mLevels.size() > 1)
+			? (selectedFileKey + "#" + std::to_string(selectedLevelIndex))
+			: selectedFileKey;
+
+		mInitBoardData[boardKey] = level.mBoard;
+		mBoardData[boardKey] = level.mBoard;
+		mBoardSolutions[boardKey] = level.mSolutions;
+		if (std::find(mFilenames.begin(), mFilenames.end(), boardKey) == mFilenames.end())
+		{
+			mFilenames.emplace_back(boardKey);
+		}
+		mCurrentKey = boardKey;
+		ChangeBoard();
+		isChildWindowOpened = false;
 		});
 	child->add(applyButton);
 
+	// ã‚­ãƒ£ãƒ³ã‚»ãƒ«ãƒœã‚¿ãƒ³
 	auto exitButton = tgui::Button::create(mLoc->Get("BTN_CANCEL"));
 	exitButton->setRenderer(mTheme->getRenderer("Button"));
-	exitButton->setSize(120, 30);
-	exitButton->setPosition(static_cast<int>(child->getSize().x - exitButton->getSize().x) - 10, static_cast<int>(listBox->getSize().y) + 5);
+	exitButton->setSize(120, 32);
+	exitButton->setPosition(890, 518);
 	exitButton->onPress([&]() {
-		std::cout << "Cansel selection action triggered!" << std::endl;
 		isChildWindowOpened = false;
 		});
 	child->add(exitButton);
 
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğ’â~
-	mWindow->setActive(false);
+	// åˆæœŸé¸æŠï¼ˆä¸€è¦§ãŒç©ºã§ãªã‘ã‚Œã°å…ˆé ­ã‚’é¸æŠï¼‰
+	if (!fileEntries.empty())
+	{
+		const std::string firstKey = fileEntries.begin()->first;
+		fileListBox->setSelectedItemById(firstKey);
+		selectedFileKey = firstKey;
+		populateLevelsForFile(firstKey);
+	}
 
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€ŠÖ˜A
+	// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’åœæ­¢
+	mWindow->setActive(false);
 	sf::Time ticksCount = mClock.getElapsedTime();
 
-	// “ü—Í‚ÆXV‚ÆƒEƒBƒ“ƒhƒE‚ÌI—¹ˆ—
-	// ƒEƒBƒ“ƒhƒE‚ª•Â‚¶‚é‚Ü‚Åƒ‹[ƒv
 	while (isChildWindowOpened)
 	{
-		// 60FPS‚É‡‚í‚¹‚Ä’x‰„‚ğ‚©‚¯‚é
-		while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
-
-		float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
-		if (deltaTime > 0.05f)
-		{
-			deltaTime = 0.05f;
-		}
+		WaitForNextFrame(ticksCount);
 		ticksCount = mClock.getElapsedTime();
 
-		// ƒCƒxƒ“ƒgƒLƒ…[‚ª‘¶İ‚·‚éê‡A‚»‚ê‚É‰‚¶‚½ˆ—‚ğ‘S‚Äs‚¤
 		sf::Event event;
 		while (mWindow->pollEvent(event))
 		{
-			if (event.type == sf::Event::Closed ||
-				event.key.code == sf::Keyboard::Escape ||
-				event.key.code == sf::Keyboard::Enter)
+			if (event.type == sf::Event::Closed)
+			{
+				isChildWindowOpened = false;
+				mGameState = GameState::EQuit;
+			}
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
 			{
 				isChildWindowOpened = false;
 			}
@@ -2272,46 +3732,46 @@ void Game::SelectBoards()
 		}
 
 		mWindow->clear();
-
-		// ”w–Ê‚©‚ç•`‰æ
-		for (auto& sprite : mSprites)
-		{
-			sprite->Draw(mWindow);
-		}
-
-		// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
-		for (const auto& ui : mUIStack)
-		{
-			ui->Draw(mWindow);
-		}
-
-		mGui->draw(); // TGUI‚Ì•`‰æ
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
 		mWindow->display();
 	}
 
-	// ƒEƒBƒ“ƒhƒE‚Ìƒƒ‚ƒŠ‰ğ•ú
-	child->close();
-
-	// ƒQ[ƒ€ƒ‹[ƒv‚ğÄŠJ
+	mGui->remove(child);
 	mWindow->setActive(true);
 }
 
 void Game::ChangeBoard()
 {
-	// ƒƒO‚ğƒtƒ@ƒCƒ‹o—Í‚µ‚Ä‚©‚ç‘S‚ÄÁ‚·
-	// TODO ”Õ–Ê‚ª•Ï‚í‚Á‚½Œã‚Ì‚à‚Ì‚É‚È‚Á‚Ä‚µ‚Ü‚Á‚Ä‚¢‚é
+	StopSolutionPlayback();
+	mWasDeadlocked = false;
+	mWasComplete = false;
+	// ãƒ­ã‚°ã‚’ãƒ•ã‚¡ã‚¤ãƒ«å‡ºåŠ›ã—ã¦ã‹ã‚‰å…¨ã¦æ¶ˆã™
+	// TODO ç›¤é¢ãŒå¤‰ã‚ã£ãŸå¾Œã®ã‚‚ã®ã«ãªã£ã¦ã—ã¾ã£ã¦ã„ã‚‹
 	OutputLogs();
 	mLogs.clear();
 
-	// ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğÁ‹
+	// ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’æ¶ˆå»
 	ClearSnapshots();
 
-	// XV‚³‚ê‚½GameƒNƒ‰ƒX‚Ìƒƒ“ƒo•Ï”‚ğQÆ‚µ‚Ä”Õ–Ê‚ğ¶¬
+	// ç›¤é¢ã®åŒæ¢±è§£æ‰‹é †ã‚’åŒæœŸ
+	auto solIt = mBoardSolutions.find(mCurrentKey);
+	if (solIt != mBoardSolutions.end())
+	{
+		mCurrentLevelSolutions = solIt->second;
+	}
+	else
+	{
+		mCurrentLevelSolutions.clear();
+	}
+
+	// æ›´æ–°ã•ã‚ŒãŸGameã‚¯ãƒ©ã‚¹ã®ãƒ¡ãƒ³ãƒå¤‰æ•°ã‚’å‚ç…§ã—ã¦ç›¤é¢ã‚’ç”Ÿæˆ
 	std::vector<std::string> lines{ mInitBoardData[mCurrentKey] };
 
-	// Šù‘¶‚Ìó‘Ô‚ğƒŠƒZƒbƒg‚µ‚Â‚ÂAmGenParams‚ğƒ[ƒh‚µ‚½”Õ–Ê‚É“¯Šú‚³‚¹‚é€”õ
+	// æ—¢å­˜ã®çŠ¶æ…‹ã‚’ãƒªã‚»ãƒƒãƒˆã—ã¤ã¤ã€mGenParamsã‚’ãƒ­ãƒ¼ãƒ‰ã—ãŸç›¤é¢ã«åŒæœŸã•ã›ã‚‹æº–å‚™
 	mGenParams.boardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
-	mGenParams.baggageNum = 0; // ‰º‹L‚Ìƒ‹[ƒv‚ÅƒJƒEƒ“ƒg
+	mGenParams.baggageNum = 0; // ä¸‹è¨˜ã®ãƒ«ãƒ¼ãƒ—ã§ã‚«ã‚¦ãƒ³ãƒˆ
 
 	mInitialPlayerPos = sf::Vector2i{ -1, -1 };
 	mInitialBaggagePos.clear();
@@ -2320,11 +3780,11 @@ void Game::ChangeBoard()
 	mStep = 0;
 	delete  mHUDHelper;
 
-	// ¶¬‚³‚ê‚½”Õ–Ê‚ÌƒL[‚Í‚ğ•¶š—ñ‚É•ÏŠ·‚µ‚½‚à‚Ì‚É‚·‚é
+	// ç”Ÿæˆã•ã‚ŒãŸç›¤é¢ã®ã‚­ãƒ¼ã¯æ™‚åˆ»ã‚’æ–‡å­—åˆ—ã«å¤‰æ›ã—ãŸã‚‚ã®ã«ã™ã‚‹
 	mGenParams.boardSize = sf::Vector2i{ static_cast<int>(lines.front().length()), static_cast<int>(lines.size()) };
 	mBaggageLimit = GetBaggageNumLimit(mGenParams.boardSize);
 
-	// ”Õ–Ê‚Ì‰Šúó‘Ô‚ğƒZƒbƒg
+	// ç›¤é¢ã®åˆæœŸçŠ¶æ…‹ã‚’ã‚»ãƒƒãƒˆ
 	std::vector<sf::Vector2i> mBoxesPos;
 	{
 		int i = 0, j = 0;
@@ -2378,13 +3838,13 @@ void Game::ChangeBoard()
 		}
 	}
 
-	// ƒ{[ƒh‚ğÄ\’z
+	// ãƒœãƒ¼ãƒ‰ã‚’å†æ§‹ç¯‰
 	mGameBoard->Reload();
 
-	// ƒvƒŒƒCƒ„[‚ğÄ\’z
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’å†æ§‹ç¯‰
 	mPlayer->Reload();
 
-	// ‰×•¨‚ğÄ\’z
+	// è·ç‰©ã‚’å†æ§‹ç¯‰
 	while (!mBaggages.empty())
 	{
 		delete mBaggages.back();
@@ -2397,7 +3857,7 @@ void Game::ChangeBoard()
 		mInitialBaggagePos.emplace(mBaggages.back(), item);
 	}
 
-	// HUDHelper‚ğÄ\’z
+	// HUDHelperã‚’å†æ§‹ç¯‰
 	mHUDHelper = new HUDHelper(this);
 
 	mStart = std::chrono::system_clock::now();
@@ -2405,8 +3865,8 @@ void Game::ChangeBoard()
 
 void Game::DisplayPlayLogs(const std::string& boardKey)
 {
-	// —š—ğƒf[ƒ^‚ğ“Ç‚İ‚±‚Ş
-	// ‹ó‚Å‚È‚¯‚ê‚ÎƒƒOƒf[ƒ^‚ğ‚»‚Ì‚Ü‚Ü‚Á‚Ä‚­‚é
+	// å±¥æ­´ãƒ‡ãƒ¼ã‚¿ã‚’èª­ã¿ã“ã‚€
+	// ç©ºã§ãªã‘ã‚Œã°ãƒ­ã‚°ãƒ‡ãƒ¼ã‚¿ã‚’ãã®ã¾ã¾æŒã£ã¦ãã‚‹
 	std::map<std::string, std::pair<Board, std::vector<Log>>> loadedPlayLogs{};
 	if (!boardKey.empty())
 	{
@@ -2414,12 +3874,12 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 	}
 	else
 	{
-		// TODO ƒtƒHƒ‹ƒ_‚©‚ç“Ç‚İ‚±‚Ş
+		// TODO ãƒ•ã‚©ãƒ«ãƒ€ã‹ã‚‰èª­ã¿ã“ã‚€
 	}
 
 	if (!loadedPlayLogs.empty())
 	{
-		// •\¦—p‚ÌƒEƒBƒ“ƒhƒE‚ğì¬
+		// è¡¨ç¤ºç”¨ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
 		bool isChildWindowOpened = true;
 		auto child = tgui::ChildWindow::create();
 		child->setRenderer(mTheme->getRenderer("ChildWindow"));
@@ -2431,7 +3891,7 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 			});
 		mGui->add(child);
 
-		// ListBox‚ÅƒƒO‚ÌƒŠƒXƒg‚ğ•\¦
+		// ListBoxã§ãƒ­ã‚°ã®ãƒªã‚¹ãƒˆã‚’è¡¨ç¤º
 		auto logListBox = tgui::ListBox::create();
 		logListBox->setRenderer(mTheme->getRenderer("ListBox"));
 		logListBox->setSize(240, 260);
@@ -2445,7 +3905,7 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 		}
 		child->add(logListBox);
 
-		// ListBox‚ÅÄ¶’†‚ÌƒƒO‚Ìî•ñ‚ğ•\¦
+		// ListBoxã§å†ç”Ÿä¸­ã®ãƒ­ã‚°ã®æƒ…å ±ã‚’è¡¨ç¤º
 		auto infoListBox = tgui::ListBox::create();
 		infoListBox->setRenderer(mTheme->getRenderer("ListBox"));
 		infoListBox->setSize(240, 240);
@@ -2455,7 +3915,7 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 		infoListBox->setAutoScroll(false);
 		child->add(infoListBox);
 
-		// ƒvƒŒƒCƒ„[I—¹—pƒ{ƒ^ƒ“
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼çµ‚äº†ç”¨ãƒœã‚¿ãƒ³
 		auto exitButton = tgui::Button::create("exit");
 		exitButton->setRenderer(mTheme->getRenderer("Button"));
 		exitButton->setSize(120, 30);
@@ -2466,20 +3926,20 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 			});
 		child->add(exitButton);
 
-		// TODO ‚»‚Ì‘¼‚Ì
+		// TODO ãã®ä»–ã®
 
-		// ƒQ[ƒ€ƒ‹[ƒv‚ğ’â~
+		// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’åœæ­¢
 		mWindow->setActive(false);
 
-		// ƒfƒ‹ƒ^ƒ^ƒCƒ€ŠÖ˜A
+		// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ é–¢é€£
 		sf::Time ticksCount = mClock.getElapsedTime();
 
-		// “ü—Í‚ÆXV‚ÆƒEƒBƒ“ƒhƒE‚ÌI—¹ˆ—
-		// ƒEƒBƒ“ƒhƒE‚ª•Â‚¶‚é‚Ü‚Åƒ‹[ƒv
+		// å…¥åŠ›ã¨æ›´æ–°ã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®çµ‚äº†å‡¦ç†
+		// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‰ã˜ã‚‹ã¾ã§ãƒ«ãƒ¼ãƒ—
 		while (isChildWindowOpened)
 		{
-			// 60FPS‚É‡‚í‚¹‚Ä’x‰„‚ğ‚©‚¯‚é
-			while (mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds() < 16);
+			// 60FPSã«åˆã‚ã›ã¦é…å»¶ã‚’ã‹ã‘ã‚‹
+			WaitForNextFrame(ticksCount);
 
 			float deltaTime = static_cast<float>(mClock.getElapsedTime().asMilliseconds() - ticksCount.asMilliseconds()) / 1000.0f;
 			if (deltaTime > 0.05f)
@@ -2488,7 +3948,7 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 			}
 			ticksCount = mClock.getElapsedTime();
 
-			// ƒCƒxƒ“ƒgƒLƒ…[‚ª‘¶İ‚·‚éê‡A‚»‚ê‚É‰‚¶‚½ˆ—‚ğ‘S‚Äs‚¤
+			// ã‚¤ãƒ™ãƒ³ãƒˆã‚­ãƒ¥ãƒ¼ãŒå­˜åœ¨ã™ã‚‹å ´åˆã€ãã‚Œã«å¿œã˜ãŸå‡¦ç†ã‚’å…¨ã¦è¡Œã†
 			sf::Event event;
 			while (mWindow->pollEvent(event))
 			{
@@ -2504,26 +3964,26 @@ void Game::DisplayPlayLogs(const std::string& boardKey)
 
 			mWindow->clear();
 
-			// ”w–Ê‚©‚ç•`‰æ
+			// èƒŒé¢ã‹ã‚‰æç”»
 			for (auto& sprite : mSprites)
 			{
 				sprite->Draw(mWindow);
 			}
 
-			// UI‚ÍƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚Ìã‚É•`‰æ‚·‚é‚Ì‚Å‚±‚±‚Éˆ—‚ğ‘‚­
+			// UIã¯ã‚²ãƒ¼ãƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¸Šã«æç”»ã™ã‚‹ã®ã§ã“ã“ã«å‡¦ç†ã‚’æ›¸ã
 			for (const auto& ui : mUIStack)
 			{
 				ui->Draw(mWindow);
 			}
 
-			mGui->draw(); // TGUI‚Ì•`‰æ
+			mGui->draw(); // TGUIã®æç”»
 			mWindow->display();
 		}
 
-		// ƒEƒBƒ“ƒhƒE‚Ìƒƒ‚ƒŠ‰ğ•ú
+		// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ¡ãƒ¢ãƒªè§£æ”¾
 		child->close();
 
-		// ƒQ[ƒ€ƒ‹[ƒv‚ğÄŠJ
+		// ã‚²ãƒ¼ãƒ ãƒ«ãƒ¼ãƒ—ã‚’å†é–‹
 		mWindow->setActive(true);
 	}
 }
@@ -2574,23 +4034,23 @@ int Game::GetBaggageNumLimit(const sf::Vector2i& size, const double& wallRate) c
 
 void Game::ResetParameters()
 {
-	// ƒƒO‚ğƒNƒŠƒA
+	// ãƒ­ã‚°ã‚’ã‚¯ãƒªã‚¢
 	mLogs.clear();
 
-	// ‰Šú‰»ˆ—
+	// åˆæœŸåŒ–å‡¦ç†
 	mStep = 0;
 
-	// HUDHelper‚ğíœ
+	// HUDHelperã‚’å‰Šé™¤
 	delete mHUDHelper;
 	mHUDHelper = nullptr;
 }
 
 void Game::ClearParameters()
 {
-	// ƒƒO‚ğƒNƒŠƒA
+	// ãƒ­ã‚°ã‚’ã‚¯ãƒªã‚¢
 	mLogs.clear();
 
-	// ‰Šú‰»ˆ—
+	// åˆæœŸåŒ–å‡¦ç†
 	mInitialPlayerPos = sf::Vector2i{ -1, -1 };
 	mInitialBaggagePos.clear();
 	mGoalPos.clear();
@@ -2598,30 +4058,30 @@ void Game::ClearParameters()
 	mCurrentKey.clear();
 	mStep = 0;
 
-	// HUDHelper‚ğíœ
+	// HUDHelperã‚’å‰Šé™¤
 	delete mHUDHelper;
 	mHUDHelper = nullptr;
 }
 
 std::vector<std::string> Game::GetBoardStateWithObjects() const
 {
-	// mBoardState (’nŒ`‚Ì‚İ) ‚ğƒRƒs[‚µAŒ»İ‚ÌƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚ğ‘‚«‚Ş
+	// mBoardState (åœ°å½¢ã®ã¿) ã‚’ã‚³ãƒ”ãƒ¼ã—ã€ç¾åœ¨ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã‚’æ›¸ãè¾¼ã‚€
 	std::vector<std::string> currentData = mBoardState;
 
-	// ‰×•¨
+	// è·ç‰©
 	for (const auto& baggage : mBaggages)
 	{
 		sf::Vector2i pos = baggage->GetBoardCoordinate();
 		char& c = currentData[pos.y][pos.x];
-		if (c == '.') c = '*'; // ƒS[ƒ‹ã
-		else c = '$';          // °ã
+		if (c == '.') c = '*'; // ã‚´ãƒ¼ãƒ«ä¸Š
+		else c = '$';          // åºŠä¸Š
 	}
 
-	// ƒvƒŒƒCƒ„[
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼
 	sf::Vector2i pPos = mPlayer->GetBoardCoordinate();
 	char& c = currentData[pPos.y][pPos.x];
-	if (c == '.') c = '+'; // ƒS[ƒ‹ã
-	else c = '@';          // °ã
+	if (c == '.') c = '+'; // ã‚´ãƒ¼ãƒ«ä¸Š
+	else c = '@';          // åºŠä¸Š
 
 	return currentData;
 }
@@ -2726,12 +4186,12 @@ std::vector<std::string> EditorScreen::GetTrimmedBoardData() const
 	int minY = mEditorCanvasSize.y;
 	int maxY = -1;
 
-	// 1. ƒIƒuƒWƒFƒNƒg‚ª‘¶İ‚·‚é”ÍˆÍ(Bounding Box)‚ğŒŸo
+	// 1. ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆãŒå­˜åœ¨ã™ã‚‹ç¯„å›²(Bounding Box)ã‚’æ¤œå‡º
 	for (int y = 0; y < mEditorCanvasSize.y; ++y)
 	{
 		for (int x = 0; x < mEditorCanvasSize.x; ++x)
 		{
-			// °(' ')ˆÈŠO‚Ì•¶š‚ª‚ ‚ê‚ÎA—LŒø‚È”ÍˆÍ‚Æ‚µ‚Ä‹L˜^
+			// åºŠ(' ')ä»¥å¤–ã®æ–‡å­—ãŒã‚ã‚Œã°ã€æœ‰åŠ¹ãªç¯„å›²ã¨ã—ã¦è¨˜éŒ²
 			if (mEditorBoardData[y][x] != ' ')
 			{
 				if (x < minX) minX = x;
@@ -2742,20 +4202,20 @@ std::vector<std::string> EditorScreen::GetTrimmedBoardData() const
 		}
 	}
 
-	// ”Õ–Ê‚ª‹ó‚Á‚ÛA‚Ü‚½‚Í°‚µ‚©‚È‚¢ê‡
+	// ç›¤é¢ãŒç©ºã£ã½ã€ã¾ãŸã¯åºŠã—ã‹ãªã„å ´åˆ
 	if (maxX == -1)
 	{
-		// ‹ó‚Ìƒf[ƒ^‚ğ•Ô‚·‚©AÅ¬ŒÀ‚Ì°‚ğ•Ô‚·
+		// ç©ºã®ãƒ‡ãƒ¼ã‚¿ã‚’è¿”ã™ã‹ã€æœ€å°é™ã®åºŠã‚’è¿”ã™
 		return std::vector<std::string>();
 	}
 
-	// 2. ŒŸo‚µ‚½”ÍˆÍ‚¾‚¯‚ğØ‚èo‚·
+	// 2. æ¤œå‡ºã—ãŸç¯„å›²ã ã‘ã‚’åˆ‡ã‚Šå‡ºã™
 	std::vector<std::string> trimmedData;
 	int width = maxX - minX + 1;
 
 	for (int y = minY; y <= maxY; ++y)
 	{
-		// substr(ŠJnˆÊ’u, ’·‚³) ‚Ås‚ğØ‚èo‚·
+		// substr(é–‹å§‹ä½ç½®, é•·ã•) ã§è¡Œã‚’åˆ‡ã‚Šå‡ºã™
 		trimmedData.push_back(mEditorBoardData[y].substr(minX, width));
 	}
 
@@ -2764,7 +4224,7 @@ std::vector<std::string> EditorScreen::GetTrimmedBoardData() const
 
 void Game::NotifyLanguageChanged()
 {
-	// ‘S‚Ä‚ÌUIƒXƒNƒŠ[ƒ“‚É‘Î‚µ‚ÄŒ¾Œê•ÏXƒCƒxƒ“ƒg‚ğ”­‰Î‚³‚¹‚é
+	// å…¨ã¦ã®UIã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã«å¯¾ã—ã¦è¨€èªå¤‰æ›´ã‚¤ãƒ™ãƒ³ãƒˆã‚’ç™ºç«ã•ã›ã‚‹
 	for (auto ui : mUIStack)
 	{
 		ui->OnLanguageChanged();

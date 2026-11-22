@@ -12,35 +12,35 @@ class Game;
 class EditorSetupDialog : public IUIScreen
 {
 public:
-    // ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+    // ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
     EditorSetupDialog(Game* game, sf::RenderWindow* window);
 
-    // ƒfƒXƒgƒ‰ƒNƒ^
-    // ƒQ[ƒ€‚Ìˆê’â~‚ğ‰ğœ‚·‚é
+    // ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+    // ã‚²ãƒ¼ãƒ ã®ä¸€æ™‚åœæ­¢ã‚’è§£é™¤ã™ã‚‹
     virtual ~EditorSetupDialog();
 
-    // IUIScreenƒCƒ“ƒ^[ƒtƒF[ƒX‚ÌƒI[ƒo[ƒ‰ƒCƒh
+    // IUIScreenã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ã®ã‚ªãƒ¼ãƒãƒ¼ãƒ©ã‚¤ãƒ‰
     void Update(float deltaTime) override;
     void Draw(sf::RenderWindow* window) override;
     void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) override;
     UIState GetState() override { return mState; }
     void OnLanguageChanged() override {}
 
-    // ‚±‚ÌUIƒXƒNƒŠ[ƒ“‚ğ•Â‚¶‚é
+    // ã“ã®UIã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚’é–‰ã˜ã‚‹
     void Close();
 
 private:
     Game* mGame;
-    std::unique_ptr<tgui::Gui> mGui;     // ‚±‚Ìƒ_ƒCƒAƒƒOê—p‚ÌGUIƒCƒ“ƒXƒ^ƒ“ƒX
-    std::unique_ptr<tgui::Theme> mTheme; // Black.txtƒe[ƒ}
-    UIState mState;                      // UI‚Ìó‘Ô (Active, Closing)
+    std::unique_ptr<tgui::Gui> mGui;     // ã“ã®ãƒ€ã‚¤ã‚¢ãƒ­ã‚°å°‚ç”¨ã®GUIã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹
+    std::unique_ptr<tgui::Theme> mTheme; // Black.txtãƒ†ãƒ¼ãƒ
+    UIState mState;                      // UIã®çŠ¶æ…‹ (Active, Closing)
 
-    // ƒƒ“ƒo•Ï”‚Æ‚µ‚Ä•Û‚µ‚Ä‚¨‚­TGUIƒEƒBƒWƒFƒbƒg‚Í“Á‚É‚È‚µ
+    // ãƒ¡ãƒ³ãƒå¤‰æ•°ã¨ã—ã¦ä¿æŒã—ã¦ãŠãTGUIã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã¯ç‰¹ã«ãªã—
 
-    // EditorScreen‚É“n‚·ƒ‚[ƒh‚Ìí—Ş
-    // 0. ‹ó‚Ì”Õ–Ê
-    // 1. Œ»İ‚Ì”Õ–Ê‚Ì‰Šúó‘Ô
-    // 2. Œ»İ‚Ì”Õ–Ê‚ÌŒ»“_‚Ìó‘Ô
+    // EditorScreenã«æ¸¡ã™ãƒ¢ãƒ¼ãƒ‰ã®ç¨®é¡
+    // 0. ç©ºã®ç›¤é¢
+    // 1. ç¾åœ¨ã®ç›¤é¢ã®åˆæœŸçŠ¶æ…‹
+    // 2. ç¾åœ¨ã®ç›¤é¢ã®ç¾æ™‚ç‚¹ã®çŠ¶æ…‹
     int mMode;
 };
 

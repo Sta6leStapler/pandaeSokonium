@@ -11,10 +11,10 @@
 using Board = std::vector<std::string>;
 struct BoardStates
 {
-	std::vector<sf::Vector2i> mMovableArea;	// ƒvƒŒƒCƒ„[‚ÌˆÚ“®‰Â”\‚ÈÀ•W‚ÌƒŠƒXƒg
-	std::unordered_map<int, sf::Vector2i> mDeadlockedBaggages;	// ‹l‚İó‘Ô‚ªŠm’è‚µ‚Ä‚¢‚é‰×•¨
-	std::unordered_map<int, sf::Vector2i> mGoaledBaggages;	// ƒS[ƒ‹ó‘Ô‚Ì‰×•¨
-	std::unordered_map<int, sf::Vector2i> mNonGoaledBaggages;	// ƒS[ƒ‹ó‘Ô‚Å‚È‚¢‰×•¨
+	std::vector<sf::Vector2i> mMovableArea;	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•å¯èƒ½ãªåº§æ¨™ã®ãƒªã‚¹ãƒˆ
+	std::unordered_map<int, sf::Vector2i> mDeadlockedBaggages;	// è©°ã¿çŠ¶æ…‹ãŒç¢ºå®šã—ã¦ã„ã‚‹è·ç‰©
+	std::unordered_map<int, sf::Vector2i> mGoaledBaggages;	// ã‚´ãƒ¼ãƒ«çŠ¶æ…‹ã®è·ç‰©
+	std::unordered_map<int, sf::Vector2i> mNonGoaledBaggages;	// ã‚´ãƒ¼ãƒ«çŠ¶æ…‹ã§ãªã„è·ç‰©
 };
 
 class HUDHelper
@@ -23,30 +23,30 @@ public:
 	HUDHelper(class Game* game);
 	~HUDHelper();
 
-	// ”Õ–Ê‚ÌXVˆ—
+	// ç›¤é¢ã®æ›´æ–°å‡¦ç†
 	void Update();
 
-	// ‹l‚İ‚Ì‰×•¨‚Ì”z’u‚ª‚È‚¢‚±‚Æ‚ğŠm”F‚·‚éŠÖ”
-	// 1‚Â‚Å‚à‹l‚İó‘Ô‚Ì‰×•¨‚ª‚ ‚ê‚Îfalse‚ğ•Ô‚·
+	// è©°ã¿ã®è·ç‰©ã®é…ç½®ãŒãªã„ã“ã¨ã‚’ç¢ºèªã™ã‚‹é–¢æ•°
+	// 1ã¤ã§ã‚‚è©°ã¿çŠ¶æ…‹ã®è·ç‰©ãŒã‚ã‚Œã°falseã‚’è¿”ã™
 	// 
 	bool isArrangementValid();
 
-	// ‹l‚İ‚Ì‰×•¨‚ÌÀ•W‚ÌƒŠƒXƒg‚ğ•Ô‚·ŠÖ”
+	// è©°ã¿ã®è·ç‰©ã®åº§æ¨™ã®ãƒªã‚¹ãƒˆã‚’è¿”ã™é–¢æ•°
 	std::unordered_map<int, sf::Vector2i> GetDeadlockedBaggages() const { return mBoardStates.mDeadlockedBaggages; }
 
-	// ƒvƒŒƒCƒ„[‚ªˆÚ“®‰Â”\‚ÈÀ•W‚ÌƒŠƒXƒg‚ğ•Ô‚·ŠÖ”
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•å¯èƒ½ãªåº§æ¨™ã®ãƒªã‚¹ãƒˆã‚’è¿”ã™é–¢æ•°
 	std::vector<sf::Vector2i> GetMovableArea() const { return mBoardStates.mMovableArea; }
 
-	// ƒS[ƒ‹ó‘Ô‚Ì‰×•¨‚ğ•Ô‚·ŠÖ”
+	// ã‚´ãƒ¼ãƒ«çŠ¶æ…‹ã®è·ç‰©ã‚’è¿”ã™é–¢æ•°
 	std::unordered_map<int, sf::Vector2i> GetGoaledBaggages() const { return mBoardStates.mGoaledBaggages; }
 
-	// ƒS[ƒ‹ó‘Ô‚Å‚È‚¢‰×•¨‚ğ•Ô‚·ŠÖ”
+	// ã‚´ãƒ¼ãƒ«çŠ¶æ…‹ã§ãªã„è·ç‰©ã‚’è¿”ã™é–¢æ•°
 	std::unordered_map<int, sf::Vector2i> GetNonGoaledBaggages() const { return mBoardStates.mNonGoaledBaggages; }
 
-	// w’è‚³‚ê‚½‰×•¨‚ª‹l‚İ‚©‚Ç‚¤‚©‚ğ•Ô‚·ŠÖ”
+	// æŒ‡å®šã•ã‚ŒãŸè·ç‰©ãŒè©°ã¿ã‹ã©ã†ã‹ã‚’è¿”ã™é–¢æ•°
 	bool isDeadlockedBaggage(const sf::Vector2i& pos);
 
-	// ‰Ÿ‚¹‚é‰×•¨‚ÌŒó•â‚ğ‹‚ß‚éŠÖ”
+	// æŠ¼ã›ã‚‹è·ç‰©ã®å€™è£œã‚’æ±‚ã‚ã‚‹é–¢æ•°
 	std::vector<sf::Vector2i> GetCandidates();
 
 private:
@@ -58,7 +58,7 @@ private:
 		EWest
 	};
 
-	// ƒ‰ƒ“ƒ_ƒ€‚Èƒpƒ‰ƒ[ƒ^‚ğæ“¾‚·‚éŠÖ”
+	// ãƒ©ãƒ³ãƒ€ãƒ ãªãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’å–å¾—ã™ã‚‹é–¢æ•°
 	Direction RollDirection();
 	sf::Vector2i RollCoordinate();
 	sf::Vector2i RollCoordinate(const int& xMin, const int& xMax, const int& yMin, const int& yMax);
@@ -72,8 +72,8 @@ private:
 	std::pair<T, U> GetRandomElement(const std::unordered_map<T, U>& map);
 	std::vector<sf::Vector2i> GetRandomDirections();
 
-	// ƒpƒuƒŠƒbƒN‚Èƒƒ“ƒoŠÖ”“à‚Åg‚¤ƒwƒ‹ƒp[ŠÖ”
-	// •ûŒü‚ğƒCƒ“ƒfƒbƒNƒX‚É•ÏŠ·‚·‚éŠÖ”
+	// ãƒ‘ãƒ–ãƒªãƒƒã‚¯ãªãƒ¡ãƒ³ãƒé–¢æ•°å†…ã§ä½¿ã†ãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°
+	// æ–¹å‘ã‚’ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã«å¤‰æ›ã™ã‚‹é–¢æ•°
 	int GetDirectionIndex(const sf::Vector2i& dir)
 	{
 		if (dir == sf::Vector2i{ 1, 0 })
@@ -95,51 +95,51 @@ private:
 
 		return -1;
 	}
-	// w’è‚³‚ê‚½‰×•¨‚ª‹l‚İó‘Ô‚©‚Ç‚¤‚©
+	// æŒ‡å®šã•ã‚ŒãŸè·ç‰©ãŒè©°ã¿çŠ¶æ…‹ã‹ã©ã†ã‹
 	bool isFreezeBaggage(const sf::Vector2i& baggagePos);
-	// 2‚Â‚ÌÀ•W‚ª“¯‚¶°ƒGƒŠƒA‚É‚ ‚é‚©‚ğ”»’è‚·‚éŠÖ”
+	// 2ã¤ã®åº§æ¨™ãŒåŒã˜åºŠã‚¨ãƒªã‚¢ã«ã‚ã‚‹ã‹ã‚’åˆ¤å®šã™ã‚‹é–¢æ•°
 	bool isMovableArea(const sf::Vector2i& pos1, const sf::Vector2i& pos2);
 	bool isMovableArea(const sf::Vector2i& pos1, const sf::Vector2i& pos2, const Board& board);
-	// ƒvƒŒƒCƒ„[‚ÌˆÚ“®‰Â”\‚È”ÍˆÍ‚ğæ“¾‚·‚éŠÖ”
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•å¯èƒ½ãªç¯„å›²ã‚’å–å¾—ã™ã‚‹é–¢æ•°
 	std::vector<sf::Vector2i> GetMovableArea();
-	// ƒfƒbƒhƒƒbƒNó‘Ô‚Ì‰×•¨‚ğXV‚·‚éŠÖ”
+	// ãƒ‡ãƒƒãƒ‰ãƒ­ãƒƒã‚¯çŠ¶æ…‹ã®è·ç‰©ã‚’æ›´æ–°ã™ã‚‹é–¢æ•°
 	std::unordered_map<int, sf::Vector2i> UpdateFreezeBaggagesMap();
-	// XV‚µ‚½ƒvƒŒƒCƒ„[‚ÌÀ•W‚Æ‰×•¨‚ÌÀ•W‚©‚çA”Õ–Ê‚ğÄ\¬
+	// æ›´æ–°ã—ãŸãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åº§æ¨™ã¨è·ç‰©ã®åº§æ¨™ã‹ã‚‰ã€ç›¤é¢ã‚’å†æ§‹æˆ
 	void UpdateBoardStr();
 
-	// ˆÈ‰ºƒƒ“ƒo•Ï”
-	// GameƒNƒ‰ƒX
+	// ä»¥ä¸‹ãƒ¡ãƒ³ãƒå¤‰æ•°
+	// Gameã‚¯ãƒ©ã‚¹
 	class Game* mGame;
 	
-	// ’TõŠÖ˜A‚Ì•Ï”
+	// æ¢ç´¢é–¢é€£ã®å¤‰æ•°
 	const std::vector<sf::Vector2i> directions =
 	{
-		sf::Vector2i(1, 0),   // ‰E
-		sf::Vector2i(0, 1),  // ‰º
-		sf::Vector2i(-1, 0),   // ¶
-		sf::Vector2i(0, -1)   // ã
+		sf::Vector2i(1, 0),   // å³
+		sf::Vector2i(0, 1),  // ä¸‹
+		sf::Vector2i(-1, 0),   // å·¦
+		sf::Vector2i(0, -1)   // ä¸Š
 	};
 
-	// —”ŠÖ˜A‚Ì•Ï”
+	// ä¹±æ•°é–¢é€£ã®å¤‰æ•°
 	std::random_device rd;
 	std::mt19937 mt;
 
-	// ”Õ–Ê\‘¢‚Ì•Ï”
+	// ç›¤é¢æ§‹é€ ã®å¤‰æ•°
 	BoardStates mBoardStates;
 	std::map<std::pair<std::pair<int, int>, std::set<std::pair<int, int>>>, BoardStates> mHistory;
 
-	// ”Õ–ÊŠÖ˜A‚Ì•Ï”
+	// ç›¤é¢é–¢é€£ã®å¤‰æ•°
 	sf::Vector2i mSize;
-	Board mBoardStr;	// ”Õ–Ê‚Ìî•ñ‚ğ•\‚·
-	Board mInitialBoardStr;	//‰Šú”Õ–Ê
-	Board mBoardMapStr;	// ”Õ–Ê‚Ì’nŒ` (ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğ”rœ‚µ‚½”Õ–Ê)
-	int mBaggageNum;	// ‰×•¨‚Ì”
-	sf::Vector2i mPlayerPos;	// ƒvƒŒƒCƒ„[‚ÌÀ•W
-	sf::Vector2i mInitialPlayerPos;	//ƒvƒŒƒCƒ„[‚Ì‰ŠúˆÊ’u
-	std::vector<sf::Vector2i> mGoals;	// ƒS[ƒ‹À•W
-	// TODO ƒCƒ“ƒfƒbƒNƒX‚ğ•t‚¯‚é——R
-	std::unordered_map<int, sf::Vector2i> mBaggagesPos;	// ‰×•¨‚Ì’u‚¢‚Ä‚ ‚éÀ•W‚ÌƒŠƒXƒg
+	Board mBoardStr;	// ç›¤é¢ã®æƒ…å ±ã‚’è¡¨ã™
+	Board mInitialBoardStr;	//åˆæœŸç›¤é¢
+	Board mBoardMapStr;	// ç›¤é¢ã®åœ°å½¢ (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’æ’é™¤ã—ãŸç›¤é¢)
+	int mBaggageNum;	// è·ç‰©ã®æ•°
+	sf::Vector2i mPlayerPos;	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åº§æ¨™
+	sf::Vector2i mInitialPlayerPos;	//ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸä½ç½®
+	std::vector<sf::Vector2i> mGoals;	// ã‚´ãƒ¼ãƒ«åº§æ¨™
+	// TODO ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ä»˜ã‘ã‚‹ç†ç”±
+	std::unordered_map<int, sf::Vector2i> mBaggagesPos;	// è·ç‰©ã®ç½®ã„ã¦ã‚ã‚‹åº§æ¨™ã®ãƒªã‚¹ãƒˆ
 	std::unordered_map<int, sf::Vector2i> mGoaledBaggages;
 	std::unordered_map<int, sf::Vector2i> mNonGoaledBaggages;
-	std::unordered_map<int, sf::Vector2i> mInitialBaggagesPos;	// ‰×•¨‚Ì‰ŠúˆÊ’u
+	std::unordered_map<int, sf::Vector2i> mInitialBaggagesPos;	// è·ç‰©ã®åˆæœŸä½ç½®
 };

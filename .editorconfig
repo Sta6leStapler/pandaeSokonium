@@ -1,0 +1,25 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = false
+trim_trailing_whitespace = false
+
+[*.{h,hpp,cpp}]
+indent_style = tab
+indent_size = 4
+
+[{CMakeLists.txt,*.cmake}]
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,py}]
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_size = 4
+
+[*.{sln,vcxproj,vcxproj.filters,bat,cmd}]
+end_of_line = crlf

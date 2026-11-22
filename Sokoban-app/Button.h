@@ -7,22 +7,22 @@
 class Button
 {
 public:
-	// ƒRƒ“ƒXƒgƒ‰ƒNƒ^‚ÍAƒ{ƒ^ƒ“–¼Ì‚ÆAƒtƒHƒ“ƒg‚ÆAƒR[ƒ‹ƒoƒbƒNŠÖ”‚ÆA
-	// ƒ{ƒ^ƒ“‚ÌˆÊ’u‚¨‚æ‚Ñ¡–@‚ğó‚¯æ‚é
+	// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿ã¯ã€ãƒœã‚¿ãƒ³åç§°ã¨ã€ãƒ•ã‚©ãƒ³ãƒˆã¨ã€ã‚³ãƒ¼ãƒ«ãƒãƒƒã‚¯é–¢æ•°ã¨ã€
+	// ãƒœã‚¿ãƒ³ã®ä½ç½®ãŠã‚ˆã³å¯¸æ³•ã‚’å—ã‘å–ã‚‹
 	Button(const std::string& name, class Font* font, std::function<void()> onClick, const sf::Vector2f& pos, const sf::Vector2f& dims);
 	~Button();
 
-	// •\¦ƒeƒLƒXƒg‚ğİ’è‚µAƒeƒNƒXƒ`ƒƒ‚ğ¶¬‚·‚é
+	// è¡¨ç¤ºãƒ†ã‚­ã‚¹ãƒˆã‚’è¨­å®šã—ã€ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ç”Ÿæˆã™ã‚‹
 	void SetName(const std::string& name, const sf::Color& color = sf::Color::White, int pointSize = 30);
 	void SetNameCenter(const std::string& name, const sf::Vector2f& boundingBox, const sf::Color& color = sf::Color::White, int pointSize = 30);
 
-	// À•W‚ªƒ{ƒ^ƒ“‚Ì”ÍˆÍ“à‚È‚çtrue‚ğ•Ô‚·
+	// åº§æ¨™ãŒãƒœã‚¿ãƒ³ã®ç¯„å›²å†…ãªã‚‰trueã‚’è¿”ã™
 	bool ContainsPoint(const sf::Vector2f& pt) const;
 
-	// ƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½‚Æ‚«‚ÉŒÄ‚Ño‚³‚ê‚é
+	// ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸã¨ãã«å‘¼ã³å‡ºã•ã‚Œã‚‹
 	void OnClick();
 
-	// ƒQƒbƒ^[ƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã‚»ãƒƒã‚¿ãƒ¼
 	sf::Texture* GetNameTex() const { return mNameTex; }
 	sf::Vector2f GetPosition() const { return mPosition; }
 	bool GetHighlighted() const { return mHighlighted; }
@@ -34,6 +34,6 @@ private:
 	class sf::Texture* mNameTex;
 	class Font* mFont;
 	sf::Vector2f mPosition;
-	sf::Vector2f mDimensions;	// ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
+	sf::Vector2f mDimensions;	// ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
 	bool mHighlighted;
 };

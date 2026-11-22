@@ -4,6 +4,7 @@
 #include "SpriteComponent.h"
 #include "MoveAnimationComponent.h"
 
+#include <algorithm>
 #include <fstream>
 
 #include <iostream>
@@ -31,13 +32,13 @@ Player::Player(Game* game)
 {
 	mGame->AddActor(this);
 
-	// MoveAnimationComponent ‚ğ¶¬iupdateOrder ‚Í“K‹X’²®j
+	// MoveAnimationComponent ã‚’ç”Ÿæˆï¼ˆupdateOrder ã¯é©å®œèª¿æ•´ï¼‰
 	mMoveAnimation = new MoveAnimationComponent(this, 10);
 
-	// ”Õ–Êƒf[ƒ^‚ğGameƒNƒ‰ƒX‚©‚çæ“¾‚·‚é
+	// ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å–å¾—ã™ã‚‹
 	std::vector<std::string> lines = game->GetBoardData()[mBoardName];
 	
-	// ”Õ–Ê‚Ì‰¡•‚ğ“¾‚é
+	// ç›¤é¢ã®æ¨ªå¹…ã‚’å¾—ã‚‹
 	int maxX = 0;
 	for (const auto& item : lines)
 	{
@@ -47,7 +48,7 @@ Player::Player(Game* game)
 		}
 	}
 
-	// ƒvƒŒƒCƒ„[‚Ì‰ŠúÀ•W‚ğ“¾‚é
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸåº§æ¨™ã‚’å¾—ã‚‹
 	{
 		int i = 0, j = 0;
 		for (const auto& line : lines)
@@ -71,42 +72,37 @@ Player::Player(Game* game)
 		}
 	}
 
-	// ƒEƒBƒ“ƒhƒEƒTƒCƒY
-	// 2024_09_05 •`‰æ”ÍˆÍ‚ÉC³
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚º
+	// 2024_09_05 æç”»ç¯„å›²ã«ä¿®æ­£
 	BoundingBox viewArea = mGame->GetBoardViewArea();
 
-	// ƒvƒŒƒCƒ„[‚Ìƒ^ƒCƒ‹‚ğ—pˆÓ
-	// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒ|[ƒlƒ“ƒg‚ğì¬
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¿ã‚¤ãƒ«ã‚’ç”¨æ„
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’ä½œæˆ
 	mSpriteComponent = new SpriteComponent(this, 100, 150);
 	
-	// ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚Ş
+	// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚€
 	std::string filename = "Assets/playerE.png";
-	sf::Image image;
-	image.loadFromFile(filename);
 	mTextures.emplace(Direction::EEast, game->LoadTexture(filename));
 	filename = "Assets/playerN.png";
-	image.loadFromFile(filename);
 	mTextures.emplace(Direction::ENorth, game->LoadTexture(filename));
 	filename = "Assets/playerW.png";
-	image.loadFromFile(filename);
 	mTextures.emplace(Direction::EWest, game->LoadTexture(filename));
 	filename = "Assets/playerS.png";
-	image.loadFromFile(filename);
 	mTextures.emplace(Direction::ESouth, game->LoadTexture(filename));
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ÉƒeƒNƒXƒ`ƒƒ‚ğƒZƒbƒg
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚»ãƒƒãƒˆ
 	mSpriteComponent->SetTexture(mTextures[Direction::ESouth]);
 
-	// ƒXƒP[ƒŠƒ“ƒO‚ÆˆÊ’u‚Ì‰Šú‰»‚ğs‚¤
-	// •\¦ƒGƒŠƒA‚ÌƒTƒCƒY@/ ”Õ–Ê‚ÌƒTƒCƒY ‚ğ‹‚ß‚é
-	// •\¦ƒGƒŠƒA‚Ì•û‚ª¬‚³‚¯‚ê‚Îƒ^ƒCƒ‹‚Ík¬‚·‚×‚«‚ÅA‹t‚È‚çŠg‘å‚·‚é‚×‚«
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ä½ç½®ã®åˆæœŸåŒ–ã‚’è¡Œã†
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®ã‚µã‚¤ã‚ºã€€/ ç›¤é¢ã®ã‚µã‚¤ã‚º ã‚’æ±‚ã‚ã‚‹
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®æ–¹ãŒå°ã•ã‘ã‚Œã°ã‚¿ã‚¤ãƒ«ã¯ç¸®å°ã™ã¹ãã§ã€é€†ãªã‚‰æ‹¡å¤§ã™ã‚‹ã¹ã
 	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[Direction::EEast]->getSize().x * mGame->GetBoardSize().x),
 		(viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[Direction::EEast]->getSize().y * mGame->GetBoardSize().y));
 
 	mScale = sf::Vector2f(minScale, minScale);
 
-	// —]”’‚Ì•ª’†‰›‘µ‚¦‚·‚é
-	// *ƒƒ‚ UI“™‚Å‚¸‚ê‚éê‡‚ÍƒIƒtƒZƒbƒg‚ğ‰Á‚¦‚Ä‚¨‚­
+	// ä½™ç™½ã®åˆ†ä¸­å¤®æƒãˆã™ã‚‹
+	// *ãƒ¡ãƒ¢ UIç­‰ã§ãšã‚Œã‚‹å ´åˆã¯ã‚ªãƒ•ã‚»ãƒƒãƒˆã‚’åŠ ãˆã¦ãŠã
 	mPosition = sf::Vector2f
 	{
 		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(mTextures[Direction::EEast]->getSize().x * mGame->GetBoardSize().x) * mScale.x) / 2.0f + static_cast<float>(mTextures[Direction::EEast]->getSize().x * mBoardCoordinate.x) * mScale.x,
@@ -117,7 +113,7 @@ Player::Player(Game* game)
 Player::~Player()
 {
 	mGame->RemoveActor(this);
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğíœ‚·‚é
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’å‰Šé™¤ã™ã‚‹
 	while (!mComponents.empty())
 	{
 		delete mComponents.back();
@@ -130,11 +126,11 @@ void Player::Update(float deltaTime)
 	{
 		UpdateComponents(deltaTime);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌXVˆ—‚ª‚ ‚ê‚Î‘‚­
-		// Œü‚«‚ÌXV‚ª“ü‚Á‚½‚çƒRƒ“ƒ|[ƒlƒ“ƒg‚ÌƒXƒvƒ‰ƒCƒg‚ğØ‚è‘Ö‚¦‚é
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æ›´æ–°å‡¦ç†ãŒã‚ã‚Œã°æ›¸ã
+		// å‘ãã®æ›´æ–°ãŒå…¥ã£ãŸã‚‰ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’åˆ‡ã‚Šæ›¿ãˆã‚‹
 		mSpriteComponent->SetTexture(mTextures[mDirection]);
 
-		// ©“®ˆÚ“®‚Ìˆ—’†‚©‚Ç‚¤‚©‚ğ”»’è
+		// è‡ªå‹•ç§»å‹•ã®å‡¦ç†ä¸­ã‹ã©ã†ã‹ã‚’åˆ¤å®š
 		if (mCurrentHighlightState == HighlightState::MovingOnPath)
 		{
 			mPathMoveTimer -= deltaTime;
@@ -143,21 +139,21 @@ void Player::Update(float deltaTime)
 				sf::Vector2i currentPos = mBoardCoordinate;
 				sf::Vector2i nextPos = mMovementPath.front();
 
-				// ˆÚ“®•ûŒü‚ÌƒxƒNƒgƒ‹‚ğŒvZ
+				// ç§»å‹•æ–¹å‘ã®ãƒ™ã‚¯ãƒˆãƒ«ã‚’è¨ˆç®—
 				sf::Vector2i moveDir = nextPos - currentPos;
 
-				// Œü‚«‚ğXV
+				// å‘ãã‚’æ›´æ–°
 				if (moveDir.x > 0) mDirection = Direction::EEast;
 				else if (moveDir.x < 0) mDirection = Direction::EWest;
 				else if (moveDir.y > 0) mDirection = Direction::ESouth;
 				else if (moveDir.y < 0) mDirection = Direction::ENorth;
 
-				// --- ‰×•¨‚ğ‰Ÿ‚·ƒƒWƒbƒN‚ğ‚±‚±‚É’Ç‰Á ---
+				// --- è·ç‰©ã‚’æŠ¼ã™ãƒ­ã‚¸ãƒƒã‚¯ã‚’ã“ã“ã«è¿½åŠ  ---
 				const auto& boardState = mGame->GetBoardState();
 				const auto& baggages = mGame->GetBaggages();
 				Baggage* baggageToPush = nullptr;
 
-				// 1. ˆÚ“®æ‚É‰×•¨‚ª‚ ‚é‚©ƒ`ƒFƒbƒN
+				// 1. ç§»å‹•å…ˆã«è·ç‰©ãŒã‚ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
 				for (auto baggage : baggages)
 				{
 					if (baggage->GetBoardCoordinate() == nextPos)
@@ -167,28 +163,29 @@ void Player::Update(float deltaTime)
 					}
 				}
 
-				if (baggageToPush == nullptr) // ƒP[ƒXA: ˆÚ“®æ‚É‰×•¨‚ª‚È‚¢
+				if (baggageToPush == nullptr) // ã‚±ãƒ¼ã‚¹A: ç§»å‹•å…ˆã«è·ç‰©ãŒãªã„
 				{
-					// ƒAƒjƒ[ƒVƒ‡ƒ“ŠJniƒ[ƒv‚Ì‘ã‚í‚è‚ÉStart‚ğŒÄ‚Ôj
+					// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³é–‹å§‹ï¼ˆãƒ¯ãƒ¼ãƒ—ã®ä»£ã‚ã‚Šã«Startã‚’å‘¼ã¶ï¼‰
 					mMoveAnimation->Start(this->mPosition, mGame->TileToScreenCoords(nextPos), PATH_MOVE_INTERVAL);
 
-					// ƒvƒŒƒCƒ„[‚Ì˜_—À•W‚Ì‚İXViSetBoardCoordinate‚Í“à•”‚ÅmPosition‚ğ‘‚«Š·‚¦‚é‚½‚ßAmBoardCoordinate‚Ö‚Ì‘ã“ü‚Ì‚İ‚É‚·‚éj
+					// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®è«–ç†åº§æ¨™ã®ã¿æ›´æ–°ï¼ˆSetBoardCoordinateã¯å†…éƒ¨ã§mPositionã‚’æ›¸ãæ›ãˆã‚‹ãŸã‚ã€mBoardCoordinateã¸ã®ä»£å…¥ã®ã¿ã«ã™ã‚‹ï¼‰
 					mBoardCoordinate = nextPos;
 
-					// ƒƒO‚ğ’Ç‰Á (ƒvƒŒƒCƒ„[‚Ì‚İ)
+					// ãƒ­ã‚°ã‚’è¿½åŠ  (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã¿)
 					mGame->RemoveRedo();
 					mGame->AddStep();
 					mGame->AddLog(currentPos, nextPos, prevDirection, mDirection);
+					mGame->PlaySound(SoundManager::SoundEffect::Move);
 				}
-				else // ƒP[ƒXB: ˆÚ“®æ‚É‰×•¨‚ª‚ ‚é
+				else // ã‚±ãƒ¼ã‚¹B: ç§»å‹•å…ˆã«è·ç‰©ãŒã‚ã‚‹
 				{
-					// ‰×•¨‚Ì‚³‚ç‚Éæ‚ÌÀ•W
+					// è·ç‰©ã®ã•ã‚‰ã«å…ˆã®åº§æ¨™
 					sf::Vector2i baggageDest = nextPos + moveDir;
 
-					// ‰×•¨‚Ìæ‚ª•Ç‚Å‚Í‚È‚¢‚©ƒ`ƒFƒbƒN
+					// è·ç‰©ã®å…ˆãŒå£ã§ã¯ãªã„ã‹ãƒã‚§ãƒƒã‚¯
 					if (boardState[baggageDest.y][baggageDest.x] != '#')
 					{
-						// ‰×•¨‚Ìæ‚É•Ê‚Ì‰×•¨‚ª‚È‚¢‚©ƒ`ƒFƒbƒN
+						// è·ç‰©ã®å…ˆã«åˆ¥ã®è·ç‰©ãŒãªã„ã‹ãƒã‚§ãƒƒã‚¯
 						bool isAnotherBaggage = false;
 						for (auto baggage : baggages)
 						{
@@ -201,30 +198,41 @@ void Player::Update(float deltaTime)
 
 						if (!isAnotherBaggage)
 						{
-							// ‰Ÿ‚¹‚éê‡FƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğ—¼•ûuƒAƒjƒ[ƒVƒ‡ƒ“vˆÚ“®
+							// æŠ¼ã›ã‚‹å ´åˆï¼šãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’ä¸¡æ–¹ã€Œã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã€ç§»å‹•
 							sf::Vector2i baggageLastPos = baggageToPush->GetBoardCoordinate();
 
-							// 1. ‰×•¨‚ÌƒAƒjƒ[ƒVƒ‡ƒ“ŠJn
+							// 1. è·ç‰©ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³é–‹å§‹
 							sf::Vector2f bStart = mGame->TileToScreenCoords(baggageLastPos);
 							sf::Vector2f bEnd = mGame->TileToScreenCoords(baggageDest);
 							baggageToPush->GetMoveAnimation()->Start(bStart, bEnd, PATH_MOVE_INTERVAL);
-							baggageToPush->SetLogicalCoordinate(baggageDest); // ˜_—À•W‚Ì‚İXV
+							baggageToPush->SetLogicalCoordinate(baggageDest); // è«–ç†åº§æ¨™ã®ã¿æ›´æ–°
 
-							// 2. ƒvƒŒƒCƒ„[‚ÌƒAƒjƒ[ƒVƒ‡ƒ“ŠJn
+							// 2. ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³é–‹å§‹
 							mMoveAnimation->Start(this->mPosition, mGame->TileToScreenCoords(nextPos), PATH_MOVE_INTERVAL);
-							mBoardCoordinate = nextPos; // ˜_—À•W‚Ì‚İXV
+							mBoardCoordinate = nextPos; // è«–ç†åº§æ¨™ã®ã¿æ›´æ–°
 
-							// ƒƒO‚ğ’Ç‰Á (ƒvƒŒƒCƒ„[‚Æ‰×•¨)
+							// ãƒ­ã‚°ã‚’è¿½åŠ  (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©)
 							mGame->RemoveRedo();
 							mGame->AddStep();
 							mGame->AddLog(currentPos, nextPos, baggageLastPos, baggageDest, prevDirection, mDirection);
+							mGame->PlaySound(boardState[baggageDest.y][baggageDest.x] == '.'
+								? SoundManager::SoundEffect::GoalIn
+								: SoundManager::SoundEffect::Push);
+						}
+						else
+						{
+							mGame->PlaySound(SoundManager::SoundEffect::Blocked);
 						}
 					}
+					else
+					{
+						mGame->PlaySound(SoundManager::SoundEffect::Blocked);
+					}
 				}
-				// --- ‰×•¨ƒƒWƒbƒN‚±‚±‚Ü‚Å ---
+				// --- è·ç‰©ãƒ­ã‚¸ãƒƒã‚¯ã“ã“ã¾ã§ ---
 
 				prevDirection = mDirection;
-				mMovementPath.erase(mMovementPath.begin()); // ˆÚ“®‚µ‚½ƒ}ƒX‚ğŒo˜HƒŠƒXƒg‚©‚çíœ
+				mMovementPath.erase(mMovementPath.begin()); // ç§»å‹•ã—ãŸãƒã‚¹ã‚’çµŒè·¯ãƒªã‚¹ãƒˆã‹ã‚‰å‰Šé™¤
 
 				if (mMovementPath.empty())
 				{
@@ -233,38 +241,38 @@ void Player::Update(float deltaTime)
 				}
 				else
 				{
-					mPathMoveTimer = PATH_MOVE_INTERVAL; // ƒ^ƒCƒ}[‚ğƒŠƒZƒbƒg
+					mPathMoveTimer = PATH_MOVE_INTERVAL; // ã‚¿ã‚¤ãƒãƒ¼ã‚’ãƒªã‚»ãƒƒãƒˆ
 				}
 			}
-			return; // ©“®ˆÚ“®’†‚ÍƒL[ƒ{[ƒhˆÚ“®ˆ—‚ğƒXƒLƒbƒv
+			return; // è‡ªå‹•ç§»å‹•ä¸­ã¯ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ç§»å‹•å‡¦ç†ã‚’ã‚¹ã‚­ãƒƒãƒ—
 		}
 
-		// ƒvƒŒƒCƒ„[‚â‰×•¨‚ğ”²‚¢‚½”Õ–Ê‚Ìî•ñ
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚„è·ç‰©ã‚’æŠœã„ãŸç›¤é¢ã®æƒ…å ±
 		std::vector<std::string> boardState = mGame->GetBoardState();
 
-		// æs“ü—Í‚Ì“K—pƒƒWƒbƒN
-		// ƒAƒjƒ[ƒVƒ‡ƒ“‚ª90%Š®—¹‚µ‚Ä‚¢‚é‚ÉA—­‚Ü‚Á‚Ä‚¢‚½“ü—Í‚ğuŒ»İ‚ÌˆÓuv‚Æ‚µ‚Ä”½‰f‚·‚é
+		// å…ˆè¡Œå…¥åŠ›ã®é©ç”¨ãƒ­ã‚¸ãƒƒã‚¯
+		// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ãŒ90%å®Œäº†ã—ã¦ã„ã‚‹æ™‚ã«ã€æºœã¾ã£ã¦ã„ãŸå…¥åŠ›ã‚’ã€Œç¾åœ¨ã®æ„å¿—ã€ã¨ã—ã¦åæ˜ ã™ã‚‹
 		if (mHasQueuedInput && mMoveAnimation->CanAcceptNextInput(0.9f))
 		{
-			mDirection = mQueuedDirection; // ‚±‚±‚Å‰‚ß‚ÄŒ©‚½–Ú‚ÌŒü‚«‚ğ•Ï‚¦‚é
+			mDirection = mQueuedDirection; // ã“ã“ã§åˆã‚ã¦è¦‹ãŸç›®ã®å‘ãã‚’å¤‰ãˆã‚‹
 			mRotation = mQueuedRotation;
-			mDetection = true;             // ˆÚ“®”»’è‚ğ—LŒø‰»
-			mHasQueuedInput = false;       // ƒLƒ…[‚ğ‹ó‚É‚·‚é
+			mDetection = true;             // ç§»å‹•åˆ¤å®šã‚’æœ‰åŠ¹åŒ–
+			mHasQueuedInput = false;       // ã‚­ãƒ¥ãƒ¼ã‚’ç©ºã«ã™ã‚‹
 		}
 
-		// ƒAƒjƒ[ƒVƒ‡ƒ“‚ª90%Š®—¹‚µ‚Ä‚¢‚é‚Ì‚İAV‚µ‚¢ˆÚ“®‚ğó‚¯•t‚¯‚é
+		// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ãŒ90%å®Œäº†ã—ã¦ã„ã‚‹æ™‚ã®ã¿ã€æ–°ã—ã„ç§»å‹•ã‚’å—ã‘ä»˜ã‘ã‚‹
 		if (mDetection && mMoveAnimation->CanAcceptNextInput(0.9f))
 		{
-			// ˆÚ“®æ‚ÌÀ•W
+			// ç§»å‹•å…ˆã®åº§æ¨™
 			sf::Vector2i destination = sf::Vector2i(mBoardCoordinate.x + static_cast<int>(std::cos(mRotation)), mBoardCoordinate.y + static_cast<int>(std::sin(mRotation)));
 
-			// ˆÚ“®‚·‚é‚©‚Ç‚¤‚©‚Ìƒ`ƒFƒbƒN‚ÍI‚í‚Á‚½‚½‚ßAfalse‚É–ß‚µ‚Ä‚¨‚­
+			// ç§»å‹•ã™ã‚‹ã‹ã©ã†ã‹ã®ãƒã‚§ãƒƒã‚¯ã¯çµ‚ã‚ã£ãŸãŸã‚ã€falseã«æˆ»ã—ã¦ãŠã
 			mDetection = false;
 
-			// ‚Ü‚¸ˆÚ“®æ‚ª•Ç‚Å‚È‚¢‚©Šm”F‚·‚é
+			// ã¾ãšç§»å‹•å…ˆãŒå£ã§ãªã„ã‹ç¢ºèªã™ã‚‹
 			if (boardState[destination.y][destination.x] != '#')
 			{
-				// ˆÚ“®æ‚É‰×•¨‚ª‚ ‚é‚©ƒ`ƒFƒbƒN
+				// ç§»å‹•å…ˆã«è·ç‰©ãŒã‚ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
 				const auto boxes = mGame->GetBaggages();
 				std::vector<sf::Vector2i> boxesPos;
 				for (const auto& item : boxes)
@@ -283,27 +291,28 @@ void Player::Update(float deltaTime)
 
 				if (iter == boxesPos.end())
 				{
-					// ‰×•¨‚ª‚È‚©‚Á‚½ê‡
-					// ˆÚ“®‘O‚ÌÀ•W
+					// è·ç‰©ãŒãªã‹ã£ãŸå ´åˆ
+					// ç§»å‹•å‰ã®åº§æ¨™
 					sf::Vector2i lastPos = mBoardCoordinate;
 
-					// ƒAƒjƒ[ƒVƒ‡ƒ“ŠJniŒÅ’è‚Ì•b”‚Å‚Í‚È‚­AƒŠƒs[ƒgŠÔŠu‚É‡‚í‚¹‚éj
+					// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³é–‹å§‹ï¼ˆå›ºå®šã®ç§’æ•°ã§ã¯ãªãã€ãƒªãƒ”ãƒ¼ãƒˆé–“éš”ã«åˆã‚ã›ã‚‹ï¼‰
 					float interval = PATH_MOVE_INTERVAL;//mGame->GetAutoRepeatInterval();
 					mMoveAnimation->Start(this->mPosition, mGame->TileToScreenCoords(destination), interval);
 
-					// ˜_—À•W‚ÌXV
+					// è«–ç†åº§æ¨™ã®æ›´æ–°
 					mBoardCoordinate = destination;
 
-					// ƒQ[ƒ€ƒNƒ‰ƒX‚©‚çƒƒO‚ğ‘‚«‚ŞŠÖ”‚ğŒÄ‚Ño‚·
+					// ã‚²ãƒ¼ãƒ ã‚¯ãƒ©ã‚¹ã‹ã‚‰ãƒ­ã‚°ã‚’æ›¸ãè¾¼ã‚€é–¢æ•°ã‚’å‘¼ã³å‡ºã™
 					mGame->RemoveRedo();
 					mGame->AddStep();
 					mGame->AddLog(lastPos, destination, prevDirection, mDirection);
+					mGame->PlaySound(SoundManager::SoundEffect::Move);
 					prevDirection = mDirection;
 				}
 				else
 				{
-					// ‰×•¨‚ª‚ ‚Á‚½ê‡
-					// X‚É‚à‚¤ˆêƒ}ƒXæ‚É‰×•¨‚ª‚ ‚é‚©ƒ`ƒFƒbƒN
+					// è·ç‰©ãŒã‚ã£ãŸå ´åˆ
+					// æ›´ã«ã‚‚ã†ä¸€ãƒã‚¹å…ˆã«è·ç‰©ãŒã‚ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
 					iter = boxesPos.end();
 					for (auto it = boxesPos.begin(); it != boxesPos.end(); ++it)
 					{
@@ -313,13 +322,13 @@ void Player::Update(float deltaTime)
 							break;
 						}
 					}
-					// ‰×•¨‚ª2ŒÂ•À‚ñ‚Å‚¨‚ç‚¸A•Ç‚É“Ë‚«“–‚½‚ç‚È‚¯‚ê‚Î‰×•¨‚²‚ÆˆÚ“®
+					// è·ç‰©ãŒ2å€‹ä¸¦ã‚“ã§ãŠã‚‰ãšã€å£ã«çªãå½“ãŸã‚‰ãªã‘ã‚Œã°è·ç‰©ã”ã¨ç§»å‹•
 					if (iter == boxesPos.end() && boardState[destination.y + static_cast<int>(std::sin(mRotation))][destination.x + static_cast<int>(std::cos(mRotation))] != '#')
 					{
 						sf::Vector2i lastPos = mBoardCoordinate;
 						float interval = PATH_MOVE_INTERVAL;//mGame->GetAutoRepeatInterval();
 
-						// ƒvƒŒƒCƒ„[‚ÌƒAƒjƒ[ƒVƒ‡ƒ“ŠJn
+						// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³é–‹å§‹
 						mMoveAnimation->Start(this->mPosition, mGame->TileToScreenCoords(destination), interval);
 						mBoardCoordinate = destination;
 
@@ -331,24 +340,35 @@ void Player::Update(float deltaTime)
 								baggageLastPos = item->GetBoardCoordinate();
 								baggageDestination = sf::Vector2i(baggageLastPos.x + static_cast<int>(std::cos(mRotation)), baggageLastPos.y + static_cast<int>(std::sin(mRotation)));
 
-								// ‰×•¨‚ÌƒAƒjƒ[ƒVƒ‡ƒ“ŠJn
+								// è·ç‰©ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³é–‹å§‹
 								sf::Vector2f bStart = mGame->TileToScreenCoords(baggageLastPos);
 								sf::Vector2f bEnd = mGame->TileToScreenCoords(baggageDestination);
 								item->GetMoveAnimation()->Start(bStart, bEnd, interval);
 
-								// ‰×•¨‚Ì˜_—À•W‚ÌXViuŠÔˆÚ“®‚³‚¹‚È‚¢‚æ‚¤’¼Ú‘ã“üj
+								// è·ç‰©ã®è«–ç†åº§æ¨™ã®æ›´æ–°ï¼ˆç¬é–“ç§»å‹•ã•ã›ãªã„ã‚ˆã†ç›´æ¥ä»£å…¥ï¼‰
 								item->SetLogicalCoordinate(baggageDestination);
 								break;
 							}
 						}
 
-						// ƒQ[ƒ€ƒNƒ‰ƒX‚©‚çƒƒO‚ğ‘‚«‚ŞŠÖ”‚ğŒÄ‚Ño‚·
+						// ã‚²ãƒ¼ãƒ ã‚¯ãƒ©ã‚¹ã‹ã‚‰ãƒ­ã‚°ã‚’æ›¸ãè¾¼ã‚€é–¢æ•°ã‚’å‘¼ã³å‡ºã™
 						mGame->RemoveRedo();
 						mGame->AddStep();
 						mGame->AddLog(lastPos, destination, baggageLastPos, baggageDestination, prevDirection, mDirection);
+						mGame->PlaySound(boardState[baggageDestination.y][baggageDestination.x] == '.'
+							? SoundManager::SoundEffect::GoalIn
+							: SoundManager::SoundEffect::Push);
 						prevDirection = mDirection;
 					}
+					else
+					{
+						mGame->PlaySound(SoundManager::SoundEffect::Blocked);
+					}
 				}
+			}
+			else
+			{
+				mGame->PlaySound(SoundManager::SoundEffect::Blocked);
 			}
 		}
 	}
@@ -366,20 +386,20 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 {
 	if (mState == IActor::ActorState::EActive)
 	{
-		// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌComponent‚Ì“ü—Íˆ—‚ğs‚¤
-		// ‚Ç‚ÌComponent‚à“Á‚É“Æ©‚Ìˆ—‚ğÀ‘•‚µ‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+		// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®Componentã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
+		// ã©ã®Componentã‚‚ç‰¹ã«ç‹¬è‡ªã®å‡¦ç†ã‚’å®Ÿè£…ã—ã¦ã„ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 		ProcessInputComponents(event, key_held_duration, auto_repeat_timer);
 		
 		if (mCurrentHighlightState == HighlightState::Idle || mCurrentHighlightState == HighlightState::Highlighting)
 		{
-			// ’Z‰Ÿ‚µ‚Ìˆ—
+			// çŸ­æŠ¼ã—ã®å‡¦ç†
 			if (event && event->type == sf::Event::KeyPressed)
 			{
-				// ‚±‚ÌƒL[‚ª‰Ÿ‚³‚ê‚Ä‚©‚çŒo‰ß‚µ‚½ŠÔ‚ğŠm”F
+				// ã“ã®ã‚­ãƒ¼ãŒæŠ¼ã•ã‚Œã¦ã‹ã‚‰çµŒéã—ãŸæ™‚é–“ã‚’ç¢ºèª
 				float duration = key_held_duration.count(event->key.code) ? key_held_duration.at(event->key.code) : 0.0f;
 
-				// ‰Ÿ‚³‚ê‚½Å‰‚ÌƒtƒŒ[ƒ€i‰Ÿ‰ºŠÔ‚ª”ñí‚É’Z‚¢j‚©‚ğ”»’è
-				// deltaTimeˆÈ‰ºA‚È‚Ç‚Å‚à—Ç‚¢
+				// æŠ¼ã•ã‚ŒãŸæœ€åˆã®ãƒ•ãƒ¬ãƒ¼ãƒ ï¼ˆæŠ¼ä¸‹æ™‚é–“ãŒéå¸¸ã«çŸ­ã„ï¼‰ã‹ã‚’åˆ¤å®š
+				// deltaTimeä»¥ä¸‹ã€ãªã©ã§ã‚‚è‰¯ã„
 				if (duration < mGame->GetTapThresHold())
 				{
 					if (event->key.code == sf::Keyboard::Key::Right)
@@ -410,12 +430,12 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 			}
 
 
-			// ’·‰Ÿ‚µ‚Ìˆ—
-			// ƒCƒxƒ“ƒg‚Æ‚ÍŠÖŒW‚È‚­AŒ»İ‚ÌƒL[‰Ÿ‰ºó‘Ô‚Æƒ^ƒCƒ}[‚©‚ç”»’f
+			// é•·æŠ¼ã—ã®å‡¦ç†
+			// ã‚¤ãƒ™ãƒ³ãƒˆã¨ã¯é–¢ä¿‚ãªãã€ç¾åœ¨ã®ã‚­ãƒ¼æŠ¼ä¸‹çŠ¶æ…‹ã¨ã‚¿ã‚¤ãƒãƒ¼ã‹ã‚‰åˆ¤æ–­
 			switch (event->key.code)
 			{
 			case sf::Keyboard::Right:
-				// ’·‰Ÿ‚µó‘Ô‚É‚ ‚èA‚©‚ÂƒŠƒs[ƒgƒ^ƒCƒ}[‚ª0ˆÈ‰º‚©H
+				// é•·æŠ¼ã—çŠ¶æ…‹ã«ã‚ã‚Šã€ã‹ã¤ãƒªãƒ”ãƒ¼ãƒˆã‚¿ã‚¤ãƒãƒ¼ãŒ0ä»¥ä¸‹ã‹ï¼Ÿ
 				if (key_held_duration.at(sf::Keyboard::Right) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Right) <= 0.0f)
 				{
 					mQueuedDirection = Direction::EEast;
@@ -424,7 +444,7 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 				}
 				break;
 			case sf::Keyboard::Up:
-				// ’·‰Ÿ‚µó‘Ô‚É‚ ‚èA‚©‚ÂƒŠƒs[ƒgƒ^ƒCƒ}[‚ª0ˆÈ‰º‚©H
+				// é•·æŠ¼ã—çŠ¶æ…‹ã«ã‚ã‚Šã€ã‹ã¤ãƒªãƒ”ãƒ¼ãƒˆã‚¿ã‚¤ãƒãƒ¼ãŒ0ä»¥ä¸‹ã‹ï¼Ÿ
 				if (key_held_duration.at(sf::Keyboard::Up) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Up) <= 0.0f)
 				{
 					mQueuedDirection = Direction::ENorth;
@@ -433,7 +453,7 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 				}
 				break;
 			case sf::Keyboard::Left:
-				// ’·‰Ÿ‚µó‘Ô‚É‚ ‚èA‚©‚ÂƒŠƒs[ƒgƒ^ƒCƒ}[‚ª0ˆÈ‰º‚©H
+				// é•·æŠ¼ã—çŠ¶æ…‹ã«ã‚ã‚Šã€ã‹ã¤ãƒªãƒ”ãƒ¼ãƒˆã‚¿ã‚¤ãƒãƒ¼ãŒ0ä»¥ä¸‹ã‹ï¼Ÿ
 				if (key_held_duration.at(sf::Keyboard::Left) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Left) <= 0.0f)
 				{
 					mQueuedDirection = Direction::EWest;
@@ -442,7 +462,7 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 				}
 				break;
 			case sf::Keyboard::Down:
-				// ’·‰Ÿ‚µó‘Ô‚É‚ ‚èA‚©‚ÂƒŠƒs[ƒgƒ^ƒCƒ}[‚ª0ˆÈ‰º‚©H
+				// é•·æŠ¼ã—çŠ¶æ…‹ã«ã‚ã‚Šã€ã‹ã¤ãƒªãƒ”ãƒ¼ãƒˆã‚¿ã‚¤ãƒãƒ¼ãŒ0ä»¥ä¸‹ã‹ï¼Ÿ
 				if (key_held_duration.at(sf::Keyboard::Down) > mGame->GetHoldThresHold() && auto_repeat_timer.at(sf::Keyboard::Down) <= 0.0f)
 				{
 					mQueuedDirection = Direction::ESouth;
@@ -456,24 +476,24 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 
 			if (mHasQueuedInput)
 			{
-				// ‚à‚µƒnƒCƒ‰ƒCƒg•\¦’†‚È‚çAˆÚ“®‚Ì‘O‚ÉƒnƒCƒ‰ƒCƒg‚ğÁ‚·
+				// ã‚‚ã—ãƒã‚¤ãƒ©ã‚¤ãƒˆè¡¨ç¤ºä¸­ãªã‚‰ã€ç§»å‹•ã®å‰ã«ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’æ¶ˆã™
 				if (mCurrentHighlightState == HighlightState::Highlighting)
 				{
 					mGame->ClearMoveHighlights();
 					mCurrentHighlightState = HighlightState::Idle;
 				}
-				// ‰×•¨‚ÌˆÚ“®‰Â”\‚Èƒ}ƒX‚ÌƒnƒCƒ‰ƒCƒg‚à–³ğŒ‚ÅÁ‚·
+				// è·ç‰©ã®ç§»å‹•å¯èƒ½ãªãƒã‚¹ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚‚ç„¡æ¡ä»¶ã§æ¶ˆã™
 				mGame->ClearPushHighlights();
 			}
 
-			// ˆÈ‰º‚Í‹Œ“ü—Íˆ—A‚ ‚Ü‚è‘€ì«‚Í‚æ‚­‚È‚¢‚ªˆê‰c‚µ‚Ä‚¨‚­
-			// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌU‚é•‘‚¢‚ª‚ ‚ê‚Î‘‚­
-			// ˆÚ“®“ü—Í‚ÌƒN[ƒ‹ƒ_ƒEƒ“‚ª0ˆÈ‰º‚È‚ç“ü—Í‚ğó‚¯•t‚¯‚é
-			// ‚±‚±‚Å‚ÍƒvƒŒƒCƒ„[‚ÌˆÚ“®‚âŒü‚«‚ÌØ‚è‘Ö‚¦‚Ì•`‰æ‚Ís‚í‚È‚¢‚ªA“à•”ó‘Ô‚ğXV‚·‚é
+			// ä»¥ä¸‹ã¯æ—§å…¥åŠ›å‡¦ç†ã€ã‚ã¾ã‚Šæ“ä½œæ€§ã¯ã‚ˆããªã„ãŒä¸€å¿œæ®‹ã—ã¦ãŠã
+			// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æŒ¯ã‚‹èˆã„ãŒã‚ã‚Œã°æ›¸ã
+			// ç§»å‹•å…¥åŠ›ã®ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³ãŒ0ä»¥ä¸‹ãªã‚‰å…¥åŠ›ã‚’å—ã‘ä»˜ã‘ã‚‹
+			// ã“ã“ã§ã¯ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•ã‚„å‘ãã®åˆ‡ã‚Šæ›¿ãˆã®æç”»ã¯è¡Œã‚ãªã„ãŒã€å†…éƒ¨çŠ¶æ…‹ã‚’æ›´æ–°ã™ã‚‹
 			/*
 			if (mMoveCooldown <= 0.0f)
 			{
-				// mDetection‚ÍˆÚ“®‚ğXVˆ—•”•ª‚Å‚·‚é‚©‚Ç‚¤‚©‚ğ•\‚·•Ï”
+				// mDetectionã¯ç§»å‹•ã‚’æ›´æ–°å‡¦ç†éƒ¨åˆ†ã§ã™ã‚‹ã‹ã©ã†ã‹ã‚’è¡¨ã™å¤‰æ•°
 				mMoveCooldown = 0.13f;
 				mDetection = true;
 				switch (event->key.code)
@@ -518,20 +538,20 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 			}
 			*/
 
-			// ƒ}ƒEƒXƒNƒŠƒbƒN‚Ìˆ—‚ğ’Ç‰Á
+			// ãƒã‚¦ã‚¹ã‚¯ãƒªãƒƒã‚¯ã®å‡¦ç†ã‚’è¿½åŠ 
 			if (event && event->type == sf::Event::MouseButtonPressed)
 			{
-				// ˆÚ“®‚ÌƒAƒjƒ[ƒVƒ‡ƒ“’†iIsAnimatingj‚È‚çƒ}ƒEƒX‘€ì‚ğŠ®‘S‚É–³‹‚·‚é
+				// ç§»å‹•ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ï¼ˆIsAnimatingï¼‰ãªã‚‰ãƒã‚¦ã‚¹æ“ä½œã‚’å®Œå…¨ã«ç„¡è¦–ã™ã‚‹
 				if (mMoveAnimation->IsAnimating()) return;
 
 				if (event->mouseButton.button == sf::Mouse::Left)
 				{
-					sf::Vector2f mousePos(static_cast<float>(event->mouseButton.x), static_cast<float>(event->mouseButton.y));
+					sf::Vector2f mousePos = mGame->MapPixelToLogicalCoords(sf::Vector2i{ event->mouseButton.x, event->mouseButton.y });
 					sf::Vector2i clickedTile = mGame->ScreenToTileCoords(mousePos);
 
 					if (clickedTile != sf::Vector2i{ -1, -1 })
 					{
-						// ƒvƒŒƒCƒ„[‚ÌŒ»İ‚Ìó‘Ô‚Åˆ—‚ğ•ªŠò
+						// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç¾åœ¨ã®çŠ¶æ…‹ã§å‡¦ç†ã‚’åˆ†å²
 						switch (mCurrentHighlightState)
 						{
 						case HighlightState::Idle:
@@ -541,7 +561,7 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 							HandleInputHighlighting(clickedTile);
 							break;
 						case HighlightState::MovingOnPath:
-							// Œo˜HˆÚ“®’†‚Í“ü—Í‚ğ–³‹
+							// çµŒè·¯ç§»å‹•ä¸­ã¯å…¥åŠ›ã‚’ç„¡è¦–
 							break;
 						default:
 							break;
@@ -565,7 +585,7 @@ void Player::ProcessInputComponents(const sf::Event* event, const std::map<sf::K
 
 void Player::AddComponent(IComponent* component)
 {
-	// XV—Dæ“x‚Åƒ\[ƒg‚³‚ê‚½ƒŠƒXƒg‚©‚ç‘}“ü‚·‚éêŠ‚ğ’T‚·
+	// æ›´æ–°å„ªå…ˆåº¦ã§ã‚½ãƒ¼ãƒˆã•ã‚ŒãŸãƒªã‚¹ãƒˆã‹ã‚‰æŒ¿å…¥ã™ã‚‹å ´æ‰€ã‚’æ¢ã™
 	int myOrder = component->GetUpdateOrder();
 	auto iter = mComponents.begin();
 	for (;
@@ -600,14 +620,14 @@ void Player::SetBoardCoordinate(const sf::Vector2i boardCoordinate)
 
 void Player::Reload()
 {
-	// ƒAƒCƒhƒ‹ó‘Ô‚É–ß‚µ‚Ä‚¨‚­
+	// ã‚¢ã‚¤ãƒ‰ãƒ«çŠ¶æ…‹ã«æˆ»ã—ã¦ãŠã
 	mCurrentHighlightState = HighlightState::Idle;
 
-	// ”Õ–Êƒf[ƒ^‚ğGameƒNƒ‰ƒX‚©‚çæ“¾‚·‚é
+	// ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å–å¾—ã™ã‚‹
 	mBoardName = mGame->GetCurrentKey();
 	std::vector<std::string> lines = mGame->GetInitBoardData(mBoardName);
 
-	// ”Õ–Ê‚Ì‰¡•‚ğ“¾‚é
+	// ç›¤é¢ã®æ¨ªå¹…ã‚’å¾—ã‚‹
 	int maxX = 0;
 	for (const auto& item : lines)
 	{
@@ -617,7 +637,7 @@ void Player::Reload()
 		}
 	}
 
-	// ƒvƒŒƒCƒ„[‚Ì‰ŠúÀ•W‚ğ“¾‚é
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸåº§æ¨™ã‚’å¾—ã‚‹
 	{
 		int i = 0, j = 0;
 		for (const auto& line : lines)
@@ -641,25 +661,25 @@ void Player::Reload()
 		}
 	}
 
-	// ƒEƒBƒ“ƒhƒEƒTƒCƒY
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚º
 	sf::Vector2f wSize = mGame->GetWindowSize();
 
-	// ƒvƒŒƒCƒ„[‚ÌŒü‚«‚ğ‰º•ûŒü‚É‰Šú‰»
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®å‘ãã‚’ä¸‹æ–¹å‘ã«åˆæœŸåŒ–
 	mSpriteComponent->SetTexture(mTextures[Direction::ESouth]);
 
-	// 2024_09_05 •`‰æ”ÍˆÍ‚ÉC³
+	// 2024_09_05 æç”»ç¯„å›²ã«ä¿®æ­£
 	BoundingBox viewArea = mGame->GetBoardViewArea();
 
-	// ƒXƒP[ƒŠƒ“ƒO‚ÆˆÊ’u‚Ì‰Šú‰»‚ğs‚¤
-	// •\¦ƒGƒŠƒA‚ÌƒTƒCƒY@/ ”Õ–Ê‚ÌƒTƒCƒY ‚ğ‹‚ß‚é
-	// •\¦ƒGƒŠƒA‚Ì•û‚ª¬‚³‚¯‚ê‚Îƒ^ƒCƒ‹‚Ík¬‚·‚×‚«‚ÅA‹t‚È‚çŠg‘å‚·‚é‚×‚«
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ä½ç½®ã®åˆæœŸåŒ–ã‚’è¡Œã†
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®ã‚µã‚¤ã‚ºã€€/ ç›¤é¢ã®ã‚µã‚¤ã‚º ã‚’æ±‚ã‚ã‚‹
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®æ–¹ãŒå°ã•ã‘ã‚Œã°ã‚¿ã‚¤ãƒ«ã¯ç¸®å°ã™ã¹ãã§ã€é€†ãªã‚‰æ‹¡å¤§ã™ã‚‹ã¹ã
 	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[Direction::EEast]->getSize().x * mGame->GetBoardSize().x),
 		(viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[Direction::EEast]->getSize().y * mGame->GetBoardSize().y));
 
 	mScale = sf::Vector2f(minScale, minScale);
 
-	// —]”’‚Ì•ª’†‰›‘µ‚¦‚·‚é
-	// *ƒƒ‚ UI“™‚Å‚¸‚ê‚éê‡‚ÍƒIƒtƒZƒbƒg‚ğ‰Á‚¦‚Ä‚¨‚­
+	// ä½™ç™½ã®åˆ†ä¸­å¤®æƒãˆã™ã‚‹
+	// *ãƒ¡ãƒ¢ UIç­‰ã§ãšã‚Œã‚‹å ´åˆã¯ã‚ªãƒ•ã‚»ãƒƒãƒˆã‚’åŠ ãˆã¦ãŠã
 	mPosition = sf::Vector2f
 	{
 		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(mTextures[Direction::EEast]->getSize().x * mGame->GetBoardSize().x) * mScale.x) / 2.0f + static_cast<float>(mTextures[Direction::EEast]->getSize().x * mBoardCoordinate.x) * mScale.x,
@@ -669,7 +689,7 @@ void Player::Reload()
 
 void Player::InputMovePath(const std::vector<sf::Vector2i>& path)
 {
-	// ‘Ã“–‚ÈŒo˜H‚©‚Ç‚¤‚©”»’è
+	// å¦¥å½“ãªçµŒè·¯ã‹ã©ã†ã‹åˆ¤å®š
 	if (Pathfinder::isValidPath(mBoardCoordinate, path, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize()))
 	{
 		mMovementPath = path;
@@ -682,31 +702,31 @@ void Player::InputMovePath(const std::vector<sf::Vector2i>& path)
 
 void Player::HandleInputIdle(const sf::Vector2i& clickedTile)
 {
-	// ‰×•¨‚ÌˆÚ“®‰Â”\ˆÊ’u‚ğƒnƒCƒ‰ƒCƒg‚µ‚Ä‚¢‚éê‡‚Íˆ—‚ğ‹‘”Û‚·‚é
+	// è·ç‰©ã®ç§»å‹•å¯èƒ½ä½ç½®ã‚’ãƒã‚¤ãƒ©ã‚¤ãƒˆã—ã¦ã„ã‚‹å ´åˆã¯å‡¦ç†ã‚’æ‹’å¦ã™ã‚‹
 	if (!mGame->ExistsBaggagesHighlightingState())
 	{
-		if (clickedTile == mBoardCoordinate) // ƒvƒŒƒCƒ„[©g‚ªƒNƒŠƒbƒN‚³‚ê‚½
+		if (clickedTile == mBoardCoordinate) // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼è‡ªèº«ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸ
 		{
-			// 1. ˆÚ“®‰Â”\‚Èƒ}ƒX‚ğ‚·‚×‚ÄŒvZ
+			// 1. ç§»å‹•å¯èƒ½ãªãƒã‚¹ã‚’ã™ã¹ã¦è¨ˆç®—
 			auto reachable = Pathfinder::FindAllReachable(mBoardCoordinate, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
 
-			// 2. GameƒNƒ‰ƒX‚ÉƒnƒCƒ‰ƒCƒg•`‰æ‚ğˆË—Š
+			// 2. Gameã‚¯ãƒ©ã‚¹ã«ãƒã‚¤ãƒ©ã‚¤ãƒˆæç”»ã‚’ä¾é ¼
 			mGame->SetMoveHighlights(reachable);
 
-			// 3. ó‘Ô‚ğXV
+			// 3. çŠ¶æ…‹ã‚’æ›´æ–°
 			mCurrentHighlightState = HighlightState::Highlighting;
 		}
-		else // ‘¼‚Ìƒ}ƒX‚ªƒNƒŠƒbƒN‚³‚ê‚½
+		else // ä»–ã®ãƒã‚¹ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸ
 		{
 			mGame->ClearPushHighlights();
 
-			// 1. ‚»‚±‚Ü‚Å‚ÌŒo˜H‚ğŒvZ
+			// 1. ãã“ã¾ã§ã®çµŒè·¯ã‚’è¨ˆç®—
 			mMovementPath = Pathfinder::FindPath(mBoardCoordinate, clickedTile, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
 
-			// 2. Œo˜H‚ª‚ ‚ê‚ÎAˆÚ“®ó‘Ô‚ÉˆÚs
+			// 2. çµŒè·¯ãŒã‚ã‚Œã°ã€ç§»å‹•çŠ¶æ…‹ã«ç§»è¡Œ
 			if (!mMovementPath.empty())
 			{
-				// Player‚Í©g‚Ìó‘Ô‚ÆƒpƒX‚ğXV‚·‚é‚¾‚¯
+				// Playerã¯è‡ªèº«ã®çŠ¶æ…‹ã¨ãƒ‘ã‚¹ã‚’æ›´æ–°ã™ã‚‹ã ã‘
 				mCurrentHighlightState = HighlightState::MovingOnPath;
 				mPathMoveTimer = PATH_MOVE_INTERVAL;
 			}
@@ -716,22 +736,22 @@ void Player::HandleInputIdle(const sf::Vector2i& clickedTile)
 
 void Player::HandleInputHighlighting(const sf::Vector2i& clickedTile)
 {
-	// GameƒNƒ‰ƒX‚©‚çƒnƒCƒ‰ƒCƒg’†‚Ìƒ}ƒXƒŠƒXƒg‚ğæ“¾
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰ãƒã‚¤ãƒ©ã‚¤ãƒˆä¸­ã®ãƒã‚¹ãƒªã‚¹ãƒˆã‚’å–å¾—
 	const auto& highlightedTiles = mGame->GetMoveHighlightedTiles();
 
-	if (clickedTile == mBoardCoordinate) // ƒvƒŒƒCƒ„[‚ªÄ“xƒNƒŠƒbƒN‚³‚ê‚½
+	if (clickedTile == mBoardCoordinate) // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒå†åº¦ã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸ
 	{
-		mGame->ClearMoveHighlights(); // ƒnƒCƒ‰ƒCƒg‚ğÁ‹ˆË—Š
+		mGame->ClearMoveHighlights(); // ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’æ¶ˆå»ä¾é ¼
 		mGame->ClearPushHighlights();
 		mCurrentHighlightState = HighlightState::Idle;
 	}
-	// ƒnƒCƒ‰ƒCƒg‚³‚ê‚Ä‚¢‚éƒ}ƒX‚ªƒNƒŠƒbƒN‚³‚ê‚½‚©ƒ`ƒFƒbƒN
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆã•ã‚Œã¦ã„ã‚‹ãƒã‚¹ãŒã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸã‹ãƒã‚§ãƒƒã‚¯
 	else if (std::find(highlightedTiles.begin(), highlightedTiles.end(), clickedTile) != highlightedTiles.end())
 	{
 		mGame->ClearMoveHighlights();
 		mGame->ClearPushHighlights();
 
-		// Œo˜H‚ğŒvZ‚µ‚ÄˆÚ“®ŠJn
+		// çµŒè·¯ã‚’è¨ˆç®—ã—ã¦ç§»å‹•é–‹å§‹
 		mMovementPath = Pathfinder::FindPath(mBoardCoordinate, clickedTile, mGame->GetBoardState(), mGame->GetBaggagesPos(), mGame->GetBoardSize());
 		if (!mMovementPath.empty())
 		{

@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "SpriteComponent.h"
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 
@@ -27,9 +28,9 @@ GameBoard::GameBoard(Game* game)
 {
 	mGame->AddActor(this);
 
-	// SpriteComponent‚ğì¬‚·‚é
-	// °‚Æ•Ç‚Ìƒ^ƒCƒ‹‚ğ—pˆÓ
-	// “Ç‚İ‚ñ‚¾”Õ–Êƒf[ƒ^‚É‰‚¶‚½ƒXƒe[ƒW‚ÌƒeƒNƒXƒ`ƒƒ‚ğì¬‚·‚é
+	// SpriteComponentã‚’ä½œæˆã™ã‚‹
+	// åºŠã¨å£ã®ã‚¿ã‚¤ãƒ«ã‚’ç”¨æ„
+	// èª­ã¿è¾¼ã‚“ã ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã«å¿œã˜ãŸã‚¹ãƒ†ãƒ¼ã‚¸ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆã™ã‚‹
 	mBoardSpriteComponent = new SpriteComponent(this, 100, 50);
 	std::string filename = "Assets/Floor.png";
 	mTextures.emplace(filename, game->LoadTexture(filename));
@@ -38,7 +39,7 @@ GameBoard::GameBoard(Game* game)
 	filename = "Assets/Goal.png";
 	mTextures.emplace(filename, game->LoadTexture(filename));
 	
-	// ƒnƒCƒ‰ƒCƒg—p‚ÌƒeƒNƒXƒ`ƒƒ‚ğ“Ç‚İ‚Ş
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆç”¨ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’èª­ã¿è¾¼ã‚€
 	filename = "Assets/MoveGuideGrid.png";
 	mTextures.emplace(filename, game->LoadTexture(filename));
 	mMoveHighlightTexture = game->LoadTexture(filename);
@@ -70,11 +71,11 @@ GameBoard::GameBoard(Game* game)
 	mTextures.emplace(filename, game->LoadTexture(filename));
 	mOnCursorArrowTextures.emplace(Direction::ENorth, mTextures[filename]);
 	
-	// ”Õ–Ê‚Ì“Ç‚İ‚İ‚ğs‚¤
-	// ƒeƒLƒXƒgƒf[ƒ^‚ğæ“¾
+	// ç›¤é¢ã®èª­ã¿è¾¼ã¿ã‚’è¡Œã†
+	// ãƒ†ã‚­ã‚¹ãƒˆãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
 	std::vector<std::string> lines = game->GetBoardData()[mBoardName];
 
-	// ”Õ–Ê‚Ì‰¡•‚ğ‘µ‚¦‚é
+	// ç›¤é¢ã®æ¨ªå¹…ã‚’æƒãˆã‚‹
 	size_t maxX = 0;
 	for (const auto& item : lines)
 	{
@@ -84,21 +85,21 @@ GameBoard::GameBoard(Game* game)
 		}
 	}
 
-	// ”Õ–Ê‚ÌƒeƒNƒXƒ`ƒƒ‚ğì¬
+	// ç›¤é¢ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆ
 	sf::RenderTexture* boardTexture = new sf::RenderTexture();
-	// 2024_09_05 ƒEƒBƒ“ƒhƒEƒTƒCƒY‚©‚ç•`‰æ”ÍˆÍ‚É•ÏX
+	// 2024_09_05 ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚ºã‹ã‚‰æç”»ç¯„å›²ã«å¤‰æ›´
 	BoundingBox viewArea = mGame->GetBoardViewArea();
 
-	// °‚Æ•Ç‚ÌƒXƒvƒ‰ƒCƒg‚ğì¬
+	// åºŠã¨å£ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ä½œæˆ
 	sf::Sprite tmpFloor, tmpWall, tmpGoal;
 	tmpFloor.setTexture(*mTextures["Assets/Floor.png"]);
 	tmpWall.setTexture(*mTextures["Assets/Wall.png"]);
 	tmpGoal.setTexture(*mTextures["Assets/Goal.png"]);
 	
-	// ƒXƒvƒ‰ƒCƒg‚ğƒeƒNƒXƒ`ƒƒ‚É“\‚è•t‚¯‚Ä‚¢‚­
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ãƒ†ã‚¯ã‚¹ãƒãƒ£ã«è²¼ã‚Šä»˜ã‘ã¦ã„ã
 	boardTexture->create(static_cast<int>(tmpFloor.getGlobalBounds().width * maxX), static_cast<int>(tmpFloor.getGlobalBounds().height * lines.size()));
 	
-	// RenderTexture‚ÌƒeƒNƒXƒ`ƒƒ‚ğƒNƒŠƒA
+	// RenderTextureã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚¯ãƒªã‚¢
 	boardTexture->clear(sf::Color::Transparent);
 	
 	for (int i = 0; i < lines.size(); i++)
@@ -145,16 +146,16 @@ GameBoard::GameBoard(Game* game)
 
 	mBoardSpriteComponent->SetTexture(tmpTexture);
 
-	// ƒXƒP[ƒŠƒ“ƒO‚ÆˆÊ’u‚Ì‰Šú‰»‚ğs‚¤
-	// •\¦ƒGƒŠƒA‚ÌƒTƒCƒY@/ ”Õ–Ê‚ÌƒTƒCƒY ‚ğ‹‚ß‚é
-	// •\¦ƒGƒŠƒA‚Ì•û‚ª¬‚³‚¯‚ê‚Îƒ^ƒCƒ‹‚Ík¬‚·‚×‚«‚ÅA‹t‚È‚çŠg‘å‚·‚é‚×‚«
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ä½ç½®ã®åˆæœŸåŒ–ã‚’è¡Œã†
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®ã‚µã‚¤ã‚ºã€€/ ç›¤é¢ã®ã‚µã‚¤ã‚º ã‚’æ±‚ã‚ã‚‹
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®æ–¹ãŒå°ã•ã‘ã‚Œã°ã‚¿ã‚¤ãƒ«ã¯ç¸®å°ã™ã¹ãã§ã€é€†ãªã‚‰æ‹¡å¤§ã™ã‚‹ã¹ã
 	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(tmpTexture->getSize().x),
 		(viewArea.second.y - viewArea.first.y) / static_cast<float>(tmpTexture->getSize().y));
 
 	mScale = sf::Vector2f(minScale, -minScale);
 
-	// —]”’‚Ì•ª’†‰›‘µ‚¦‚·‚é
-	// *ƒƒ‚ UI“™‚Å‚¸‚ê‚éê‡‚ÍƒIƒtƒZƒbƒg‚ğ‰Á‚¦‚Ä‚¨‚­
+	// ä½™ç™½ã®åˆ†ä¸­å¤®æƒãˆã™ã‚‹
+	// *ãƒ¡ãƒ¢ UIç­‰ã§ãšã‚Œã‚‹å ´åˆã¯ã‚ªãƒ•ã‚»ãƒƒãƒˆã‚’åŠ ãˆã¦ãŠã
 	mPosition = sf::Vector2f
 	{
 		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(tmpTexture->getSize().x) * mScale.x) / 2.0f,
@@ -165,7 +166,7 @@ GameBoard::GameBoard(Game* game)
 GameBoard::~GameBoard()
 {
 	mGame->RemoveActor(this);
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğíœ‚·‚é
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’å‰Šé™¤ã™ã‚‹
 	while (!mComponents.empty())
 	{
 		delete mComponents.back();
@@ -178,7 +179,7 @@ void GameBoard::Update(float deltaTime)
 	{
 		UpdateComponents(deltaTime);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌXVˆ—‚ª‚ ‚ê‚Î‘‚­
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æ›´æ–°å‡¦ç†ãŒã‚ã‚Œã°æ›¸ã
 	}
 }
 
@@ -194,11 +195,11 @@ void GameBoard::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard
 {
 	if (mState == IActor::ActorState::EActive)
 	{
-		// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌComponent‚Ì“ü—Íˆ—‚ğs‚¤
-		// ‚Ç‚ÌComponent‚à“Á‚É“Æ©‚Ìˆ—‚ğÀ‘•‚µ‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+		// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®Componentã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
+		// ã©ã®Componentã‚‚ç‰¹ã«ç‹¬è‡ªã®å‡¦ç†ã‚’å®Ÿè£…ã—ã¦ã„ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 		ProcessInputComponents(event, key_held_duration, auto_repeat_timer);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌU‚é•‘‚¢‚ª‚ ‚ê‚Î‘‚­
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æŒ¯ã‚‹èˆã„ãŒã‚ã‚Œã°æ›¸ã
 		
 	}
 
@@ -240,13 +241,13 @@ void GameBoard::RemoveComponent(IComponent* component)
 
 void GameBoard::Reload()
 {
-	// ƒnƒCƒ‰ƒCƒg’†‚Ìƒ^ƒCƒ‹‚ğÁ‹
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆä¸­ã®ã‚¿ã‚¤ãƒ«ã‚’æ¶ˆå»
 	ClearMoveHighlights();
 
 	mBoardName = mGame->GetCurrentKey();
 	std::vector<std::string> lines = mGame->GetInitBoardData(mBoardName);
 
-	// ”Õ–Ê‚Ì‰¡•‚ğ‘µ‚¦‚é
+	// ç›¤é¢ã®æ¨ªå¹…ã‚’æƒãˆã‚‹
 	size_t maxX = 0;
 	for (const auto& item : lines)
 	{
@@ -256,19 +257,19 @@ void GameBoard::Reload()
 		}
 	}
 
-	// ”Õ–Ê‚ÌƒeƒNƒXƒ`ƒƒ‚ğì¬
+	// ç›¤é¢ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆ
 	sf::RenderTexture* boardTexture = new sf::RenderTexture();
 
-	// °‚Æ•Ç‚ÌƒXƒvƒ‰ƒCƒg‚ğì¬
+	// åºŠã¨å£ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ä½œæˆ
 	sf::Sprite tmpFloor, tmpWall, tmpGoal;
 	tmpFloor.setTexture(*mTextures["Assets/Floor.png"]);
 	tmpWall.setTexture(*mTextures["Assets/Wall.png"]);
 	tmpGoal.setTexture(*mTextures["Assets/Goal.png"]);
 
-	// ƒXƒvƒ‰ƒCƒg‚ğƒeƒNƒXƒ`ƒƒ‚É“\‚è•t‚¯‚Ä‚¢‚­
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ãƒ†ã‚¯ã‚¹ãƒãƒ£ã«è²¼ã‚Šä»˜ã‘ã¦ã„ã
 	boardTexture->create(static_cast<int>(tmpFloor.getGlobalBounds().width * maxX), static_cast<int>(tmpFloor.getGlobalBounds().height * lines.size()));
 
-	// RenderTexture‚ÌƒeƒNƒXƒ`ƒƒ‚ğƒNƒŠƒA
+	// RenderTextureã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚¯ãƒªã‚¢
 	boardTexture->clear(sf::Color::Transparent);
 
 	for (int i = 0; i < lines.size(); i++)
@@ -315,19 +316,19 @@ void GameBoard::Reload()
 
 	mBoardSpriteComponent->SetTexture(tmpTexture);
 
-	// 2024_09_05 ƒEƒBƒ“ƒhƒEƒTƒCƒY‚©‚ç•`‰æ”ÍˆÍ‚É•ÏX
+	// 2024_09_05 ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚ºã‹ã‚‰æç”»ç¯„å›²ã«å¤‰æ›´
 	BoundingBox viewArea = mGame->GetBoardViewArea();
 
-	// ƒXƒP[ƒŠƒ“ƒO‚ÆˆÊ’u‚Ì‰Šú‰»‚ğs‚¤
-	// •\¦ƒGƒŠƒA‚ÌƒTƒCƒY@/ ”Õ–Ê‚ÌƒTƒCƒY ‚ğ‹‚ß‚é
-	// •\¦ƒGƒŠƒA‚Ì•û‚ª¬‚³‚¯‚ê‚Îƒ^ƒCƒ‹‚Ík¬‚·‚×‚«‚ÅA‹t‚È‚çŠg‘å‚·‚é‚×‚«
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ä½ç½®ã®åˆæœŸåŒ–ã‚’è¡Œã†
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®ã‚µã‚¤ã‚ºã€€/ ç›¤é¢ã®ã‚µã‚¤ã‚º ã‚’æ±‚ã‚ã‚‹
+	// è¡¨ç¤ºã‚¨ãƒªã‚¢ã®æ–¹ãŒå°ã•ã‘ã‚Œã°ã‚¿ã‚¤ãƒ«ã¯ç¸®å°ã™ã¹ãã§ã€é€†ãªã‚‰æ‹¡å¤§ã™ã‚‹ã¹ã
 	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(tmpTexture->getSize().x),
 		(viewArea.second.y - viewArea.first.y) / static_cast<float>(tmpTexture->getSize().y));
 
 	mScale = sf::Vector2f(minScale, -minScale);
 
-	// —]”’‚Ì•ª’†‰›‘µ‚¦‚·‚é
-	// *ƒƒ‚ UI“™‚Å‚¸‚ê‚éê‡‚ÍƒIƒtƒZƒbƒg‚ğ‰Á‚¦‚Ä‚¨‚­
+	// ä½™ç™½ã®åˆ†ä¸­å¤®æƒãˆã™ã‚‹
+	// *ãƒ¡ãƒ¢ UIç­‰ã§ãšã‚Œã‚‹å ´åˆã¯ã‚ªãƒ•ã‚»ãƒƒãƒˆã‚’åŠ ãˆã¦ãŠã
 	mPosition = sf::Vector2f
 	{
 		viewArea.first.x + (viewArea.second.x - viewArea.first.x - static_cast<float>(tmpTexture->getSize().x) * mScale.x) / 2.0f,
@@ -338,24 +339,24 @@ void GameBoard::Reload()
 
 void GameBoard::SetMoveHighlightedTiles(const std::vector<sf::Vector2i>& tiles)
 {
-	// ‰×•¨‚ÌˆÚ“®‰Â”\ƒ}ƒX‚Æ‰^”À‰Â”\‚È•ûŒü‚ÌƒnƒCƒ‰ƒCƒg‚ğæ‚ÉÁ‚·
+	// è·ç‰©ã®ç§»å‹•å¯èƒ½ãƒã‚¹ã¨é‹æ¬å¯èƒ½ãªæ–¹å‘ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’å…ˆã«æ¶ˆã™
 	mGame->ClearPushHighlights();
 	mGame->ClearPushDirections();
 
-	// ƒnƒCƒ‰ƒCƒg‚³‚ê‚éƒ^ƒCƒ‹‚ÌƒŠƒXƒg‚ğ“Ç‚İæ‚é
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆã•ã‚Œã‚‹ã‚¿ã‚¤ãƒ«ã®ãƒªã‚¹ãƒˆã‚’èª­ã¿å–ã‚‹
 	mMoveHighlightedTiles = tiles;
 
-	// ƒnƒCƒ‰ƒCƒg‚ÌƒeƒNƒXƒ`ƒƒ‚ğì¬
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆ
 	sf::RenderTexture* highlightTexture = new sf::RenderTexture();
 
-	// Šeƒ}ƒX‚É“\‚è•t‚¯‚éƒnƒCƒ‰ƒCƒg‚ÌƒXƒvƒ‰ƒCƒg‚ğì¬
+	// å„ãƒã‚¹ã«è²¼ã‚Šä»˜ã‘ã‚‹ãƒã‚¤ãƒ©ã‚¤ãƒˆã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ä½œæˆ
 	sf::Sprite tmpHighlight;
 	tmpHighlight.setTexture(*mMoveHighlightTexture);
 
-	// ƒXƒvƒ‰ƒCƒg‚ğƒeƒNƒXƒ`ƒƒ‚É“\‚è•t‚¯‚Ä‚¢‚­
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ãƒ†ã‚¯ã‚¹ãƒãƒ£ã«è²¼ã‚Šä»˜ã‘ã¦ã„ã
 	highlightTexture->create(static_cast<int>(tmpHighlight.getGlobalBounds().width * mGame->GetBoardSize().x), static_cast<int>(tmpHighlight.getGlobalBounds().height * mGame->GetBoardSize().y));
 
-	// RendererTexture‚ÌƒeƒNƒXƒ`ƒƒ‚ğƒNƒŠƒA
+	// RendererTextureã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚¯ãƒªã‚¢
 	highlightTexture->clear(sf::Color::Transparent);
 
 	for (const auto& tile : mMoveHighlightedTiles)
@@ -384,27 +385,27 @@ void GameBoard::ClearMoveHighlights()
 
 void GameBoard::SetPushHighlightedTiles(const std::vector<sf::Vector2i>& tiles, Baggage* baggage)
 {
-	// ƒvƒŒƒCƒ„[‚ÌˆÚ“®‰Â”\ƒ}ƒX‚ÌƒnƒCƒ‰ƒCƒg‚Æ‰×•¨‚Ì‰^”À‰Â”\‚È•ûŒü‚Ì•\¦‚ğæ‚ÉÁ‚·
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•å¯èƒ½ãƒã‚¹ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã¨è·ç‰©ã®é‹æ¬å¯èƒ½ãªæ–¹å‘ã®è¡¨ç¤ºã‚’å…ˆã«æ¶ˆã™
 	mGame->ClearMoveHighlights();
 	mGame->ClearPushDirections();
 
-	// •\¦‘ÎÛ‚Ì‰×•¨‚Ìƒ|ƒCƒ“ƒ^‚ğ“o˜^
+	// è¡¨ç¤ºå¯¾è±¡ã®è·ç‰©ã®ãƒã‚¤ãƒ³ã‚¿ã‚’ç™»éŒ²
 	mHighlightingBaggage = baggage;
 
-	// ƒnƒCƒ‰ƒCƒg‚³‚ê‚éƒ^ƒCƒ‹‚ÌƒŠƒXƒg‚ğ“Ç‚İæ‚é
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆã•ã‚Œã‚‹ã‚¿ã‚¤ãƒ«ã®ãƒªã‚¹ãƒˆã‚’èª­ã¿å–ã‚‹
 	mPushHighlightedTiles = tiles;
 
-	// ƒnƒCƒ‰ƒCƒg‚ÌƒeƒNƒXƒ`ƒƒ‚ğì¬
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆ
 	sf::RenderTexture* highlightTexture = new sf::RenderTexture();
 
-	// Šeƒ}ƒX‚É“\‚è•t‚¯‚éƒnƒCƒ‰ƒCƒg‚ÌƒXƒvƒ‰ƒCƒg‚ğì¬
+	// å„ãƒã‚¹ã«è²¼ã‚Šä»˜ã‘ã‚‹ãƒã‚¤ãƒ©ã‚¤ãƒˆã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ä½œæˆ
 	sf::Sprite tmpHighlight;
 	tmpHighlight.setTexture(*mPushHighlightTexture);
 
-	// ƒXƒvƒ‰ƒCƒg‚ğƒeƒNƒXƒ`ƒƒ‚É“\‚è•t‚¯‚Ä‚¢‚­
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ãƒ†ã‚¯ã‚¹ãƒãƒ£ã«è²¼ã‚Šä»˜ã‘ã¦ã„ã
 	highlightTexture->create(static_cast<int>(tmpHighlight.getGlobalBounds().width * mGame->GetBoardSize().x), static_cast<int>(tmpHighlight.getGlobalBounds().height * mGame->GetBoardSize().y));
 
-	// RenderTexture‚ÌƒeƒNƒXƒ`ƒƒ‚ğƒNƒŠƒA
+	// RenderTextureã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚¯ãƒªã‚¢
 	highlightTexture->clear(sf::Color::Transparent);
 
 	for (const auto& tile : mPushHighlightedTiles)
@@ -434,20 +435,20 @@ void GameBoard::ClearPushHighlights()
 
 void GameBoard::SetPushDirections(const std::vector<int>& indexes, class Baggage* baggage)
 {
-	// ƒvƒŒƒCƒ„[‚ÌˆÚ“®‰Â”\ƒ}ƒX‚ÌƒnƒCƒ‰ƒCƒg‚Æ‰×•¨‚ÌƒnƒCƒ‰ƒCƒg‚ğæ‚ÉÁ‚·
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•å¯èƒ½ãƒã‚¹ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã¨è·ç‰©ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’å…ˆã«æ¶ˆã™
 	mGame->ClearMoveHighlights();
 	mGame->ClearPushHighlights();
 
-	// •\¦‘ÎÛ‚Ì‰×•¨‚Ìƒ|ƒCƒ“ƒ^‚ğˆê‰“o˜^‚µ‚Ä‚¨‚­(•Ï‚í‚ç‚È‚¢‚Í‚¸‚Å‚Í‚ ‚é‚ª)
+	// è¡¨ç¤ºå¯¾è±¡ã®è·ç‰©ã®ãƒã‚¤ãƒ³ã‚¿ã‚’ä¸€å¿œç™»éŒ²ã—ã¦ãŠã(å¤‰ã‚ã‚‰ãªã„ã¯ãšã§ã¯ã‚ã‚‹ãŒ)
 	mHighlightingBaggage = baggage;
 
-	// ‰×•¨‚ÌˆÚ“®æ‚ÌÀ•W
+	// è·ç‰©ã®ç§»å‹•å…ˆã®åº§æ¨™
 	sf::Vector2i destination = baggage->GetDestination();
 
-	// ƒnƒCƒ‰ƒCƒg‚ÌƒeƒNƒXƒ`ƒƒ‚ğì¬
+	// ãƒã‚¤ãƒ©ã‚¤ãƒˆã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆ
 	sf::RenderTexture* highlightTexture = new sf::RenderTexture();
 
-	// Šeƒ}ƒX‚É“\‚è•t‚¯‚éƒnƒCƒ‰ƒCƒg‚ÌƒXƒvƒ‰ƒCƒg‚ğì¬
+	// å„ãƒã‚¹ã«è²¼ã‚Šä»˜ã‘ã‚‹ãƒã‚¤ãƒ©ã‚¤ãƒˆã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ä½œæˆ
 	sf::Sprite tmpIdleEast, tmpIdleSouth, tmpIdleWest, tmpIdleNorth, tmpHighlight;
 	tmpIdleEast.setTexture(*mIdleArrowTextures[Direction::EEast]);
 	tmpIdleSouth.setTexture(*mIdleArrowTextures[Direction::ESouth]);
@@ -455,10 +456,10 @@ void GameBoard::SetPushDirections(const std::vector<int>& indexes, class Baggage
 	tmpIdleNorth.setTexture(*mIdleArrowTextures[Direction::ENorth]);
 	tmpHighlight.setTexture(*mPushHighlightTexture);
 
-	// ƒXƒvƒ‰ƒCƒg‚ğƒeƒNƒXƒ`ƒƒ‚É“\‚è•t‚¯‚Ä‚¢‚­
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’ãƒ†ã‚¯ã‚¹ãƒãƒ£ã«è²¼ã‚Šä»˜ã‘ã¦ã„ã
 	highlightTexture->create(static_cast<int>(tmpIdleEast.getGlobalBounds().width * mGame->GetBoardSize().x), static_cast<int>(tmpIdleEast.getGlobalBounds().height * mGame->GetBoardSize().y));
 
-	// RenderTexture‚ÌƒeƒNƒXƒ`ƒƒ‚ğƒNƒŠƒA
+	// RenderTextureã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚¯ãƒªã‚¢
 	highlightTexture->clear(sf::Color::Transparent);
 
 	tmpHighlight.setPosition(tmpHighlight.getGlobalBounds().width * static_cast<float>(destination.x), tmpHighlight.getGlobalBounds().height * static_cast<float>(destination.y));

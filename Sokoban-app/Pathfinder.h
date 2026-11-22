@@ -9,10 +9,10 @@
 class Pathfinder
 {
 public:
-    // ƒƒ‚: ‚±‚ÌƒNƒ‰ƒX‚Å‚ÍŒo˜H‚ğ•\‚·ÛAŸ‚ÉˆÚ“®‚·‚éƒ}ƒX‚ÌÀ•W‚ÌƒŠƒXƒg‚Å•\Œ»‚·‚éB
-    // ‚Â‚Ü‚èAstart‚©‚çend‚Ü‚Å‚ÌŒo˜H‚ğ•\‚·ƒŠƒXƒg‚É‚ÍAstart‚ÌŸ‚Ìƒ}ƒX‚©‚çend‚Ìƒ}ƒX‚Ü‚Å‚ÌÀ•W‚ÌƒŠƒXƒg‚ªŠi”[‚³‚ê‚éB
+    // ãƒ¡ãƒ¢: ã“ã®ã‚¯ãƒ©ã‚¹ã§ã¯çµŒè·¯ã‚’è¡¨ã™éš›ã€æ¬¡ã«ç§»å‹•ã™ã‚‹ãƒã‚¹ã®åº§æ¨™ã®ãƒªã‚¹ãƒˆã§è¡¨ç¾ã™ã‚‹ã€‚
+    // ã¤ã¾ã‚Šã€startã‹ã‚‰endã¾ã§ã®çµŒè·¯ã‚’è¡¨ã™ãƒªã‚¹ãƒˆã«ã¯ã€startã®æ¬¡ã®ãƒã‚¹ã‹ã‚‰endã®ãƒã‚¹ã¾ã§ã®åº§æ¨™ã®ãƒªã‚¹ãƒˆãŒæ ¼ç´ã•ã‚Œã‚‹ã€‚
 
-    // start‚©‚çend‚Ü‚Å‚ÌÅ’ZŒo˜H‚ğ•Ô‚· (Œo˜H‚ª‚È‚¯‚ê‚Î‹ó)
+    // startã‹ã‚‰endã¾ã§ã®æœ€çŸ­çµŒè·¯ã‚’è¿”ã™ (çµŒè·¯ãŒãªã‘ã‚Œã°ç©º)
     static std::vector<sf::Vector2i> FindPath(
         const sf::Vector2i& start,
         const sf::Vector2i& end,
@@ -20,14 +20,14 @@ public:
         const std::vector<sf::Vector2i>& baggagePositions,
         const sf::Vector2i& boardSize);
 
-    // start‚©‚çƒvƒŒƒCƒ„[‚ªˆÚ“®‰Â”\‚È‚·‚×‚Ä‚Ìƒ}ƒX‚ğ•Ô‚·
+    // startã‹ã‚‰ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•å¯èƒ½ãªã™ã¹ã¦ã®ãƒã‚¹ã‚’è¿”ã™
     static std::vector<sf::Vector2i> FindAllReachable(
         const sf::Vector2i& start,
         const std::vector<std::string>& boardState,
         const std::vector<sf::Vector2i>& baggagePositions,
         const sf::Vector2i& boardSize);
 
-    // start‚ÌˆÊ’u‚Ì‰×•¨‚ğ‰^”À‰Â”\‚È‚·‚×‚Ä‚Ìƒ}ƒX‚ğ•Ô‚·
+    // startã®ä½ç½®ã®è·ç‰©ã‚’é‹æ¬å¯èƒ½ãªã™ã¹ã¦ã®ãƒã‚¹ã‚’è¿”ã™
     static std::vector<sf::Vector2i> FindAllTransportable(
         const sf::Vector2i& start,
         const std::vector<std::string>& boardState,

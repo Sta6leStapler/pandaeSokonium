@@ -12,23 +12,23 @@ public:
 	BackGround(class Game* game);
 	virtual ~BackGround();
 
-	// ƒAƒNƒ^[‚ªƒAƒNƒeƒBƒuó‘Ô‚Ì‚Æ‚«XVˆ—‚ğs‚¤ŠÖ”
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒã‚¢ã‚¯ãƒ†ã‚£ãƒ–çŠ¶æ…‹ã®ã¨ãæ›´æ–°å‡¦ç†ã‚’è¡Œã†é–¢æ•°
 	void Update(float deltaTime) override;
 
-	// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ğXV
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æ›´æ–°
 	void UpdateComponents(float deltaTime) override;
 
-	// GameƒNƒ‰ƒX‚©‚ç“ü—Íˆ—‚ğŒÄ‚Ño‚·
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å…¥åŠ›å‡¦ç†ã‚’å‘¼ã³å‡ºã™
 	void ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) override;
 
-	// ƒAƒNƒ^[‚ª‚Â‚·‚×‚Ä‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì“ü—Íˆ—‚ğs‚¤
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤ã™ã¹ã¦ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
 	void ProcessInputComponents(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) override;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì’Ç‰Á‚Æíœ
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®è¿½åŠ ã¨å‰Šé™¤
 	void AddComponent(class IComponent* component) override;
 	void RemoveComponent(class IComponent* component) override;
 
-	// ƒAƒNƒ^[‹¤’Ê‚ÌƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ã‚¢ã‚¯ã‚¿ãƒ¼å…±é€šã®ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 	class Game* GetGame() override { return mGame; }
 	IActor::ActorState GetState() override { return mState; }
 	void SetState(const ActorState state) override { this->mState = state; }
@@ -37,15 +37,15 @@ public:
 	sf::Vector2f GetScale() override { return mScale; }
 	float GetRotation() override { return mRotation; }
 
-	// ˆÈ‰º–{ƒAƒNƒ^[“Á—L‚Ìƒƒ“ƒoŠÖ”
-	// ƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ä»¥ä¸‹æœ¬ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®ãƒ¡ãƒ³ãƒé–¢æ•°
+	// ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 	sf::Vector2f GetForward() const { return sf::Vector2f(std::cos(mRotation), -std::sin(mRotation)); }
 
 private:
-	// ƒAƒNƒ^[‚Ìó‘Ô
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã®çŠ¶æ…‹
 	IActor::ActorState mState;
 
-	// •ÏŠ·
+	// å¤‰æ›
 	sf::Vector2f mPosition;
 	sf::Vector2f mScale;
 	float mRotation;
@@ -53,7 +53,7 @@ private:
 	std::vector<IComponent*> mComponents;
 	class SpriteComponent* mSpriteComponent;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ég‚¤ƒeƒNƒXƒ`ƒƒ
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«ä½¿ã†ãƒ†ã‚¯ã‚¹ãƒãƒ£
 	std::unordered_map<std::string, sf::Texture*> mTextures;
 
 	class Game* mGame;

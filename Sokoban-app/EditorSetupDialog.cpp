@@ -4,20 +4,20 @@
 EditorSetupDialog::EditorSetupDialog(Game* game, sf::RenderWindow* window)
     : mGame(game),
     mState(IUIScreen::UIState::EActive),
-    mGui(std::make_unique<tgui::Gui>(*window)), // ê—p‚ÌGUI‚ğì¬
-    mTheme(std::make_unique<tgui::Theme>("Assets/themes/Black.txt")), // ƒe[ƒ}‚ğƒ[ƒh
+    mGui(std::make_unique<tgui::Gui>(*window)), // å°‚ç”¨ã®GUIã‚’ä½œæˆ
+    mTheme(std::make_unique<tgui::Theme>(game->GetTheme())), // ãƒ†ãƒ¼ãƒã‚’ãƒ­ãƒ¼ãƒ‰
 	mMode(-1)
 {
-    // 1. ƒQ[ƒ€‚ğˆê’â~ó‘Ô‚É‚·‚é
+    // 1. ã‚²ãƒ¼ãƒ ã‚’ä¸€æ™‚åœæ­¢çŠ¶æ…‹ã«ã™ã‚‹
     mGame->SetState(Game::GameState::EPaused);
 
-    // 2. ‚±‚ÌUIƒXƒNƒŠ[ƒ“‚ğGame‚ÌƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…
+    // 2. ã“ã®UIã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚’Gameã®ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥
     mGame->PushUI(this);
 
-	// ƒtƒHƒ“ƒg‚ğİ’è
+	// ãƒ•ã‚©ãƒ³ãƒˆã‚’è¨­å®š
 	mGui->setFont(mGame->GetFontTGUI());
 
-	// ‹N“®ƒ‚[ƒh‘I‘ğƒ_ƒCƒAƒƒO‚ğ•\¦
+	// èµ·å‹•ãƒ¢ãƒ¼ãƒ‰é¸æŠãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤º
 	auto msgBox = tgui::MessageBox::create();
 	msgBox->setRenderer(mTheme->getRenderer("MessageBox"));
 	msgBox->moveToFront();
@@ -36,12 +36,12 @@ EditorSetupDialog::EditorSetupDialog(Game* game, sf::RenderWindow* window)
 			return;
 		}
 
-		// ‘I‘ğ‚É‰‚¶‚Äƒ[ƒhƒ‚[ƒh‚ğŒˆ’è
+		// é¸æŠã«å¿œã˜ã¦ãƒ­ãƒ¼ãƒ‰ãƒ¢ãƒ¼ãƒ‰ã‚’æ±ºå®š
 		if (button == mGame->GetLoc()->Get("EDITOR_SETUP_BTN_NEW")) mMode = 0;
 		else if (button == mGame->GetLoc()->Get("EDITOR_SETUP_BTN_CURRENT_INITIAL")) mMode = 1;
 		else if (button == mGame->GetLoc()->Get("EDITOR_SETUP_BTN_CURRENT_STATE")) mMode = 2;
 
-		// GameƒNƒ‰ƒX‚©‚çƒGƒfƒBƒbƒg‰æ–Ê‚ğ‹N“®
+		// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰ã‚¨ãƒ‡ã‚£ãƒƒãƒˆç”»é¢ã‚’èµ·å‹•
 		mGame->DisplayEditorScreen(mMode);
 		Close();
 		});
@@ -55,32 +55,32 @@ EditorSetupDialog::EditorSetupDialog(Game* game, sf::RenderWindow* window)
 
 EditorSetupDialog::~EditorSetupDialog()
 {
-    // ƒQ[ƒ€‚Ìˆê’â~‚ğ‰ğœ
+    // ã‚²ãƒ¼ãƒ ã®ä¸€æ™‚åœæ­¢ã‚’è§£é™¤
     mGame->SetState(Game::GameState::EGamePlay);
 
-    // mGui‚Íunique_ptr‚È‚Ì‚Å©“®‚Å‰ğ•ú‚³‚ê‚é
+    // mGuiã¯unique_ptrãªã®ã§è‡ªå‹•ã§è§£æ”¾ã•ã‚Œã‚‹
 }
 
 void EditorSetupDialog::Update(float deltaTime)
 {
-    // ‚±‚ÌUI‚ÍÃ“I‚È‚Ì‚ÅAUpdate‚Å‚Ìˆ—‚Í•s—v
+    // ã“ã®UIã¯é™çš„ãªã®ã§ã€Updateã§ã®å‡¦ç†ã¯ä¸è¦
 }
 
 void EditorSetupDialog::Draw(sf::RenderWindow* window)
 {
-    // ‚±‚ÌUI‚ª‚ÂGUI‚ğ•`‰æ
+    // ã“ã®UIãŒæŒã¤GUIã‚’æç”»
     mGui->draw();
 }
 
 void EditorSetupDialog::ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos)
 {
-    // ‚±‚ÌUI‚ª‚ÂGUI‚ÉƒCƒxƒ“ƒg‚ğ“n‚·
+    // ã“ã®UIãŒæŒã¤GUIã«ã‚¤ãƒ™ãƒ³ãƒˆã‚’æ¸¡ã™
     mGui->handleEvent(*event);
 }
 
 void EditorSetupDialog::Close()
 {
-    // ó‘Ô‚ğClosing‚Éİ’è
-    // Game::UpdateGame() ‚Ìƒ‹[ƒv‚ª‚±‚ÌUI‚ğˆÀ‘S‚Éíœ‚·‚é
+    // çŠ¶æ…‹ã‚’Closingã«è¨­å®š
+    // Game::UpdateGame() ã®ãƒ«ãƒ¼ãƒ—ãŒã“ã®UIã‚’å®‰å…¨ã«å‰Šé™¤ã™ã‚‹
     mState = IUIScreen::UIState::EClosing;
 }

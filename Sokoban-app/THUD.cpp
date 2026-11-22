@@ -4,6 +4,7 @@
 #include "LocalizationManager.h"
 #include "HUDHelper.h"
 
+#include <iomanip>
 #include <iostream>
 
 THUD::THUD(Game* game, sf::RenderWindow* window)
@@ -24,29 +25,29 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 {
 	mGame->PushUI(this);
 
-	// ƒtƒHƒ“ƒg‚ğİ’è
+	// ãƒ•ã‚©ãƒ³ãƒˆã‚’è¨­å®š
 	mGui->setFont(mGame->GetFontTGUI());
 
-	// ƒuƒƒbƒJ[—p‚Ìƒpƒlƒ‹
+	// ãƒ–ãƒ­ãƒƒã‚«ãƒ¼ç”¨ã®ãƒ‘ãƒãƒ«
 	mBlocker = tgui::Panel::create();
-	mBlocker->setSize("100%", "100%"); // ‰æ–Ê‘S‘Ì‚ğ•¢‚¤
-	mBlocker->getRenderer()->setBackgroundColor(tgui::Color(0, 0, 0, 0)); // “§–¾
+	mBlocker->setSize("100%", "100%"); // ç”»é¢å…¨ä½“ã‚’è¦†ã†
+	mBlocker->getRenderer()->setBackgroundColor(tgui::Color(0, 0, 0, 0)); // é€æ˜
 
-	// Šeíƒ{ƒ^ƒ“‚ğ’Ç‰Á
-	// Undo/Redo‘€ìŠÖ˜A‚Ìƒ{ƒ^ƒ“
-	// ”Õ–Ê‚Ì•`‰æ”ÍˆÍ‚Ì‰º‚É”z’u‚·‚é
-	// ƒ{ƒ^ƒ“‚ÌŠî€ˆÊ’u
+	// å„ç¨®ãƒœã‚¿ãƒ³ã‚’è¿½åŠ 
+	// Undo/Redoæ“ä½œé–¢é€£ã®ãƒœã‚¿ãƒ³
+	// ç›¤é¢ã®æç”»ç¯„å›²ã®ä¸‹ã«é…ç½®ã™ã‚‹
+	// ãƒœã‚¿ãƒ³ã®åŸºæº–ä½ç½®
 	sf::Vector2f rollbackButtonInitialPos{ mGame->GetBoardViewArea().second.x, mGame->GetBoardViewArea().second.y };
-	// ”Õ–Ê‚Ì•`‰æ”ÍˆÍ‚ÆƒEƒBƒ“ƒhƒE‚ÌŠÔ‚Ìƒ}[ƒWƒ“
+	// ç›¤é¢ã®æç”»ç¯„å›²ã¨ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®é–“ã®ãƒãƒ¼ã‚¸ãƒ³
 	sf::Vector2f rollbackLargeButtonMargin{ (mGame->GetWindowSize().y - (mGame->GetBoardViewArea().second.y - mGame->GetBoardViewArea().first.y) - static_cast<float>(mRollBackLargeButtonSize.y)) / 2.0f, (mGame->GetWindowSize().y - (mGame->GetBoardViewArea().second.y - mGame->GetBoardViewArea().first.y) - static_cast<float>(mRollBackLargeButtonSize.y)) / 2.0f };
 	sf::Vector2f rollbackSmallButtonMargin{ (mGame->GetWindowSize().y - (mGame->GetBoardViewArea().second.y - mGame->GetBoardViewArea().first.y) - static_cast<float>(mRollBackSmallButtonSize.y)) / 2.0f, (mGame->GetWindowSize().y - (mGame->GetBoardViewArea().second.y - mGame->GetBoardViewArea().first.y) - static_cast<float>(mRollBackSmallButtonSize.y)) / 2.0f };
-	// Undoƒ{ƒ^ƒ“
+	// Undoãƒœã‚¿ãƒ³
 	sf::Image tmpImage = mGame->LoadTexture("Assets/Undo.png")->copyToImage();
 	tgui::Texture tmpTGuiTex{};
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	mUndoButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_UNDO"));
-	mUndoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
-	// ƒ{ƒ^ƒ“‚ÌˆÊ’u
+	mUndoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
+	// ãƒœã‚¿ãƒ³ã®ä½ç½®
 	mUndoButton->setPosition(
 		rollbackButtonInitialPos.x - rollbackLargeButtonMargin.x - mRollBackLargeButtonSize.x,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
@@ -56,28 +57,28 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	mUndoButton->setTextSize(16);
 	mUndoButton->onMousePress([this]() {
 		std::cout << "Undo action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mIsUndoHeld = true;
-		mGame->CallUndo(); // ‰Ÿ‚µ‚½uŠÔ‚É‚Ü‚¸1‰ñÀs
-		// Å‰‚Ì’·‰Ÿ‚µ”»’è‚Ü‚Å‚ÌŠÔ‚ğİ’è
+		mGame->CallUndo(); // æŠ¼ã—ãŸç¬é–“ã«ã¾ãš1å›å®Ÿè¡Œ
+		// æœ€åˆã®é•·æŠ¼ã—åˆ¤å®šã¾ã§ã®æ™‚é–“ã‚’è¨­å®š
 		mUndoRepeatTimer = mGame->GetHoldThresHold();
 		});
 	mUndoButton->onMouseRelease([this]() {
 		std::cout << "Released undo Button!" << std::endl;
 		mIsUndoHeld = false;
 		});
-	// ƒ{ƒ^ƒ“‚Ì—ÌˆæŠO‚Éƒ}ƒEƒX‚ªo‚Ä‚à’â~‚·‚é
+	// ãƒœã‚¿ãƒ³ã®é ˜åŸŸå¤–ã«ãƒã‚¦ã‚¹ãŒå‡ºã¦ã‚‚åœæ­¢ã™ã‚‹
 	mUndoButton->onMouseLeave([this]() {
 		mIsUndoHeld = false;
 		});
 	mGui->add(mUndoButton);
 
-	// Redoƒ{ƒ^ƒ“
+	// Redoãƒœã‚¿ãƒ³
 	tmpImage = mGame->LoadTexture("Assets/Redo.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	mRedoButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_REDO"));
-	mRedoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
-	// ƒ{ƒ^ƒ“‚ÌˆÊ’u
+	mRedoButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
+	// ãƒœã‚¿ãƒ³ã®ä½ç½®
 	mRedoButton->setPosition(
 		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0f - rollbackLargeButtonMargin.x * 3.0f,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
@@ -87,10 +88,10 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	mRedoButton->setTextSize(16);
 	mRedoButton->onMousePress([this]() {
 		std::cout << "Redo action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mIsRedoHeld = true;
-		mGame->CallRedo(); // ‰Ÿ‚µ‚½uŠÔ‚É‚Ü‚¸1‰ñÀs
-		// Å‰‚Ì’·‰Ÿ‚µ”»’è‚Ü‚Å‚ÌŠÔ‚ğİ’è
+		mGame->CallRedo(); // æŠ¼ã—ãŸç¬é–“ã«ã¾ãš1å›å®Ÿè¡Œ
+		// æœ€åˆã®é•·æŠ¼ã—åˆ¤å®šã¾ã§ã®æ™‚é–“ã‚’è¨­å®š
 		mRedoRepeatTimer = mGame->GetHoldThresHold();
 		});
 	mRedoButton->onMouseRelease([this]() {
@@ -101,12 +102,12 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 		});
 	mGui->add(mRedoButton);
 
-	// Resetƒ{ƒ^ƒ“
+	// Resetãƒœã‚¿ãƒ³
 	tmpImage = mGame->LoadTexture("Assets/Reset.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	mResetButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_RESET"));
-	mResetButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
-	// ƒ{ƒ^ƒ“‚ÌˆÊ’u
+	mResetButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
+	// ãƒœã‚¿ãƒ³ã®ä½ç½®
 	mResetButton->setPosition(
 		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0 - mRollBackSmallButtonSize.x - rollbackLargeButtonMargin.x * 4.0f - rollbackSmallButtonMargin.x,
 		rollbackButtonInitialPos.y + rollbackSmallButtonMargin.y);
@@ -116,17 +117,17 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	mResetButton->setTextSize(16);
 	mResetButton->onPress([=]() {
 		std::cout << "Reset action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mGame->CallReset();
 		});
 	mGui->add(mResetButton);
 
-	// Redo Allƒ{ƒ^ƒ“
+	// Redo Allãƒœã‚¿ãƒ³
 	tmpImage = mGame->LoadTexture("Assets/RedoAll.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	mRedoAllButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_REDO_ALL"));
-	mRedoAllButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
-	// ƒ{ƒ^ƒ“‚ÌˆÊ’u
+	mRedoAllButton->setSize(mRollBackSmallButtonSize.x, mRollBackSmallButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
+	// ãƒœã‚¿ãƒ³ã®ä½ç½®
 	mRedoAllButton->setPosition(
 		rollbackButtonInitialPos.x - mRollBackLargeButtonSize.x * 2.0 - mRollBackSmallButtonSize.x * 2.0f - rollbackLargeButtonMargin.x * 4.0f - rollbackSmallButtonMargin.x * 3.0f,
 		rollbackButtonInitialPos.y + rollbackSmallButtonMargin.y);
@@ -136,15 +137,15 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	mRedoAllButton->setTextSize(16);
 	mRedoAllButton->onPress([=]() {
 		std::cout << "Redo all action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mGame->CallRedoAll();
 		});
 	mGui->add(mRedoAllButton);
 
-	// Load Snapshotƒ{ƒ^ƒ“
+	// Load Snapshotãƒœã‚¿ãƒ³
 	mLoadSnapshotButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_QUICK_LOAD"));
-	mLoadSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
-	// ƒ{ƒ^ƒ“‚ÌˆÊ’u
+	mLoadSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
+	// ãƒœã‚¿ãƒ³ã®ä½ç½®
 	mLoadSnapshotButton->setPosition(
 		mGame->GetBoardViewArea().first.x + rollbackLargeButtonMargin.x,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
@@ -152,16 +153,16 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	mLoadSnapshotButton->setTextSize(16);
 	mLoadSnapshotButton->onPress([=]() {
 		std::cout << "Load Snapshot action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
-		// ƒXƒiƒbƒvƒVƒ‡ƒbƒgƒ}ƒl[ƒWƒƒ[‚ğŒÄ‚Ño‚·
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
+		// ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆãƒãƒãƒ¼ã‚¸ãƒ£ãƒ¼ã‚’å‘¼ã³å‡ºã™
 		mGame->DisplaySnapshot();
 		});
 	mGui->add(mLoadSnapshotButton);
 
-	// Add Snapshotƒ{ƒ^ƒ“
+	// Add Snapshotãƒœã‚¿ãƒ³
 	mAddSnapshotButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_QUICK_SAVE"));
-	mAddSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
-	// ƒ{ƒ^ƒ“‚ÌˆÊ’u
+	mAddSnapshotButton->setSize(mRollBackLargeButtonSize.x, mRollBackLargeButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
+	// ãƒœã‚¿ãƒ³ã®ä½ç½®
 	mAddSnapshotButton->setPosition(
 		mGame->GetBoardViewArea().first.x + mRollBackLargeButtonSize.x + rollbackLargeButtonMargin.x * 3.0f,
 		rollbackButtonInitialPos.y + rollbackLargeButtonMargin.y);
@@ -169,107 +170,135 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	mAddSnapshotButton->setTextSize(16);
 	mAddSnapshotButton->onPress([=]() {
 		std::cout << "Add Snapshot action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
-		// ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğƒŠƒXƒg‚É’Ç‰Á‚·‚éˆ—‚ğŒÄ‚Ño‚·
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
+		// ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’ãƒªã‚¹ãƒˆã«è¿½åŠ ã™ã‚‹å‡¦ç†ã‚’å‘¼ã³å‡ºã™
 		mGame->AddSnapshotDialog();
 		});
 	mGui->add(mAddSnapshotButton);
 
-	// Undo/Redo‘€ìŠÖ˜A‚Ìƒ{ƒ^ƒ“‚Ì”z’u‚±‚±‚Ü‚Å
+	// Undo/Redoæ“ä½œé–¢é€£ã®ãƒœã‚¿ãƒ³ã®é…ç½®ã“ã“ã¾ã§
 	
-	// ˆÈ‰º‚ÍƒQ[ƒ€ƒVƒXƒeƒ€ŠÖ˜A‚Ìƒ{ƒ^ƒ“‚Ì”z’u
-	// Šeƒ{ƒ^ƒ“‚ÌŠî€ˆÊ’u‚Ìƒ}[ƒWƒ“
+	// ä»¥ä¸‹ã¯ã‚²ãƒ¼ãƒ ã‚·ã‚¹ãƒ†ãƒ é–¢é€£ã®ãƒœã‚¿ãƒ³ã®é…ç½®
+	// å„ãƒœã‚¿ãƒ³ã®åŸºæº–ä½ç½®ã®ãƒãƒ¼ã‚¸ãƒ³
 	sf::Vector2i listBoxMargin{ static_cast<int>((mGame->GetWindowSize().x - (mGame->GetBoardViewArea().second.x - mGame->GetBoardViewArea().first.x) - (mGameSystemButtonSize.x * 4 + mButtonMergin.x * 3)) / 2.0f), static_cast<int>((mGame->GetWindowSize().x - (mGame->GetBoardViewArea().second.x - mGame->GetBoardViewArea().first.x) - (mGameSystemButtonSize.x * 4 + mButtonMergin.x * 3)) / 4.0f) };
 
-	// Load Boardƒ{ƒ^ƒ“
+	// Load Boardãƒœã‚¿ãƒ³
 	mLoadBoardButton = tgui::Button::create(mGame->GetLoc()->Get("TITLE_SELECT_BOARD"));
-	mLoadBoardButton->setPosition(listBoxMargin.x, mButtonInitialPos.y); // ƒ{ƒ^ƒ“‚ÌˆÊ’u
-	mLoadBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
+	mLoadBoardButton->setPosition(listBoxMargin.x, mButtonInitialPos.y); // ãƒœã‚¿ãƒ³ã®ä½ç½®
+	mLoadBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
 	mLoadBoardButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	mLoadBoardButton->setTextSize(16);
 	mLoadBoardButton->onPress([=]() {
 		std::cout << "Load board action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mGame->SelectBoards();
 		});
 	mGui->add(mLoadBoardButton);
 
-	// Generate Boardƒ{ƒ^ƒ“
+	// Generate Boardãƒœã‚¿ãƒ³
 	mGenBoardButton = tgui::Button::create(mGame->GetLoc()->Get("TITLE_BOARD_GENERATION"));
-	mGenBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x), mButtonInitialPos.y); // ƒ{ƒ^ƒ“‚ÌˆÊ’u
-	mGenBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
+	mGenBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x), mButtonInitialPos.y); // ãƒœã‚¿ãƒ³ã®ä½ç½®
+	mGenBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
 	mGenBoardButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	mGenBoardButton->setTextSize(16);
 	mGenBoardButton->onPress([=]() {
 		std::cout << "Generate board action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mGame->CallReload();
 		});
 	mGui->add(mGenBoardButton);
 	
-	// Save Boardƒ{ƒ^ƒ“
+	// Save Boardãƒœã‚¿ãƒ³
 	tmpImage = mGame->LoadTexture("Assets/SaveBoard.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	mSaveBoardButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_SAVE"));
-	mSaveBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y); // ƒ{ƒ^ƒ“‚ÌˆÊ’u
-	mSaveBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
+	mSaveBoardButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y); // ãƒœã‚¿ãƒ³ã®ä½ç½®
+	mSaveBoardButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
 	mSaveBoardButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
 	mSaveBoardButton->setImage(tmpTGuiTex);
 	mSaveBoardButton->setImageScaling(mIconImageScale);
 	mSaveBoardButton->setTextSize(16);
 	mSaveBoardButton->onPress([=]() {
 		std::cout << "Save board action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mGame->CallSave();
 		});
 	mGui->add(mSaveBoardButton);
 
-	// Save Logƒ{ƒ^ƒ“
+	// Save Logãƒœã‚¿ãƒ³
 	tmpImage = mGame->LoadTexture("Assets/SaveLog.png")->copyToImage();
 	tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
 	mSaveLogButton = tgui::BitmapButton::create(mGame->GetLoc()->Get("BTN_LOG"));
-	mSaveLogButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 3, mButtonInitialPos.y); // ƒ{ƒ^ƒ“‚ÌˆÊ’u
-	mSaveLogButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
+	mSaveLogButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 3, mButtonInitialPos.y); // ãƒœã‚¿ãƒ³ã®ä½ç½®
+	mSaveLogButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
 	mSaveLogButton->setRenderer(mGame->GetTheme().getRenderer("BitmapButton"));
 	mSaveLogButton->setImage(tmpTGuiTex);
 	mSaveLogButton->setImageScaling(mIconImageScale);
 	mSaveLogButton->setTextSize(16);
 	mSaveLogButton->onPress([=]() {
 		std::cout << "Save log action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mGame->CallSaveLog();
 		});
 	mGui->add(mSaveLogButton);
 
-	// Edit Modeƒ{ƒ^ƒ“
+	// Edit Modeãƒœã‚¿ãƒ³
 	mEditModeButton = tgui::Button::create(mGame->GetLoc()->Get("TITLE_EDITOR"));
-	mEditModeButton->setPosition(listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ƒ{ƒ^ƒ“‚ÌˆÊ’u
-	mEditModeButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
+	mEditModeButton->setPosition(listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ãƒœã‚¿ãƒ³ã®ä½ç½®
+	mEditModeButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
 	mEditModeButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	mEditModeButton->setTextSize(16);
 	mEditModeButton->onPress([=]() {
 		std::cout << "Edit Mode action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mGame->CallEditorSetup();
 		});
 	mGui->add(mEditModeButton);
 
-	// Helpƒ{ƒ^ƒ“
+	// Helpãƒœã‚¿ãƒ³
 	mHelpButton = tgui::Button::create(mGame->GetLoc()->Get("TITLE_HELP"));
-	mHelpButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 1, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ƒ{ƒ^ƒ“‚ÌˆÊ’u
-	mHelpButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ƒ{ƒ^ƒ“‚ÌƒTƒCƒY
+	mHelpButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 1, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y)); // ãƒœã‚¿ãƒ³ã®ä½ç½®
+	mHelpButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);    // ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚º
 	mHelpButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
 	mHelpButton->setTextSize(16);
 	mHelpButton->onPress([=]() {
 		std::cout << "Help action triggered!" << std::endl;
-		if (mGame->IsAnyMovementAnimating()) return; // ƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í–³‹
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
 		mGame->DisplayHelpWindow();
 		});
 	mGui->add(mHelpButton);
 
-	// ƒQ[ƒ€ƒVƒXƒeƒ€ŠÖ˜A‚Ìƒ{ƒ^ƒ“‚Ì”z’u‚±‚±‚Ü‚Å
+	// Solution (rludRLUD) å…¥å‡ºåŠ›ãƒœã‚¿ãƒ³
+	mSolutionButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_SOLUTION"));
+	mSolutionButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 2, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y));
+	mSolutionButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);
+	mSolutionButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mSolutionButton->setTextSize(16);
+	mSolutionButton->onPress([=]() {
+		std::cout << "Solution dialog action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
+		mGame->PlaySound(SoundManager::SoundEffect::ButtonClick);
+		mGame->OpenSolutionDialog();
+		});
+	mGui->add(mSolutionButton);
+
+	// Solver (Festival) ãƒœã‚¿ãƒ³
+	mSolverButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_SOLVER"));
+	mSolverButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 3, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y));
+	mSolverButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);
+	mSolverButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mSolverButton->setTextSize(16);
+	mSolverButton->onPress([=]() {
+		std::cout << "Solver dialog action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ç„¡è¦–
+		mGame->PlaySound(SoundManager::SoundEffect::ButtonClick);
+		mGame->OpenSolverDialog();
+		});
+	mGui->add(mSolverButton);
+
+	// ã‚²ãƒ¼ãƒ ã‚·ã‚¹ãƒ†ãƒ é–¢é€£ã®ãƒœã‚¿ãƒ³ã®é…ç½®ã“ã“ã¾ã§
 	
-	// TODO Šeíî•ñ‚ÌƒeƒLƒXƒg‚ğ•\¦‚·‚é‹éŒ`
+	// TODO å„ç¨®æƒ…å ±ã®ãƒ†ã‚­ã‚¹ãƒˆã‚’è¡¨ç¤ºã™ã‚‹çŸ©å½¢
 	mListBoxSize = sf::Vector2i{ static_cast<int>(mGame->GetWindowSize().x - (mGame->GetBoardViewArea().second.x - mGame->GetBoardViewArea().first.x) - listBoxMargin.x * 2), static_cast<int>(mGame->GetWindowSize().y) - (mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y) * 2) - 20};
 	mListBoxPos = sf::Vector2i{ listBoxMargin.x, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y) * 2 };
 
@@ -300,7 +329,7 @@ THUD::~THUD()
 
 void THUD::Update(float deltaTime)
 {
-	// ƒeƒLƒXƒg•\¦‚·‚éŠeíî•ñ‚ğXV
+	// ãƒ†ã‚­ã‚¹ãƒˆè¡¨ç¤ºã™ã‚‹å„ç¨®æƒ…å ±ã‚’æ›´æ–°
 	mTextInfo[TextIndex::EMoveCount] = mGame->GetLoc()->Get("LBL_MOVES") + std::to_string(mGame->GetStep());
 	long time = static_cast<long>(mGame->GetSecTime());
 	std::stringstream m, s;
@@ -342,35 +371,35 @@ void THUD::Update(float deltaTime)
 	{
 		mListBox->changeItemById(std::to_string(text.first), text.second);
 	}
-	// ƒeƒLƒXƒg‚ÌXV‚Í‚±‚±‚Ü‚Å
+	// ãƒ†ã‚­ã‚¹ãƒˆã®æ›´æ–°ã¯ã“ã“ã¾ã§
 
-	// --- UIƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µƒŠƒs[ƒgˆ— ---
-	// ’·‰Ÿ‚µˆ—FƒAƒjƒ[ƒVƒ‡ƒ“’†‚Í‰½‚à‚µ‚È‚¢
+	// --- UIãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—ãƒªãƒ”ãƒ¼ãƒˆå‡¦ç† ---
+	// é•·æŠ¼ã—å‡¦ç†ï¼šã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ã¯ä½•ã‚‚ã—ãªã„
 	if (mGame->IsAnyMovementAnimating()) {
-		CancelButtonHolds(); // ƒAƒjƒ[ƒVƒ‡ƒ“‚ªn‚Ü‚Á‚½‚ç’·‰Ÿ‚µó‘Ô‚ğ‹­§‰ğœ‚·‚é
+		CancelButtonHolds(); // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ãŒå§‹ã¾ã£ãŸã‚‰é•·æŠ¼ã—çŠ¶æ…‹ã‚’å¼·åˆ¶è§£é™¤ã™ã‚‹
 		return;
 	}
 
-	// Undoƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µˆ—
+	// Undoãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—å‡¦ç†
 	if (mIsUndoHeld)
 	{
 		mUndoRepeatTimer -= deltaTime;
 		if (mUndoRepeatTimer <= 0.0f)
 		{
 			mGame->CallUndo();
-			// Ÿ‚ÌƒŠƒs[ƒgŠÔŠu‚ğİ’è
+			// æ¬¡ã®ãƒªãƒ”ãƒ¼ãƒˆé–“éš”ã‚’è¨­å®š
 			mUndoRepeatTimer = mGame->GetAutoRepeatInterval();
 		}
 	}
 
-	// Redoƒ{ƒ^ƒ“‚Ì’·‰Ÿ‚µˆ—
+	// Redoãƒœã‚¿ãƒ³ã®é•·æŠ¼ã—å‡¦ç†
 	if (mIsRedoHeld)
 	{
 		mRedoRepeatTimer -= deltaTime;
 		if (mRedoRepeatTimer <= 0.0f)
 		{
 			mGame->CallRedo();
-			// Ÿ‚ÌƒŠƒs[ƒgŠÔŠu‚ğİ’è
+			// æ¬¡ã®ãƒªãƒ”ãƒ¼ãƒˆé–“éš”ã‚’è¨­å®š
 			mRedoRepeatTimer = mGame->GetAutoRepeatInterval();
 		}
 	}
@@ -378,14 +407,14 @@ void THUD::Update(float deltaTime)
 
 void THUD::ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos)
 {
-	// GUI‚Ì“ü—Íˆ—‚ğs‚¤
+	// GUIã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
 	mGui->handleEvent(*event);
 
 }
 
 void THUD::Draw(sf::RenderWindow* mWindow)
 {
-	// GUI‚Ì•`‰æ
+	// GUIã®æç”»
 	mGui->draw();
 }
 
@@ -394,14 +423,14 @@ void THUD::CancelButtonHolds()
 	mIsUndoHeld = false;
 	mIsRedoHeld = false;
 
-	// ƒ^ƒCƒ}[‚àƒŠƒZƒbƒg‚µ‚Ä‚¨‚­
+	// ã‚¿ã‚¤ãƒãƒ¼ã‚‚ãƒªã‚»ãƒƒãƒˆã—ã¦ãŠã
 	mUndoRepeatTimer = 0.0f;
 	mRedoRepeatTimer = 0.0f;
 }
 
 void THUD::OnLanguageChanged()
 {
-	// ƒ{ƒ^ƒ“ƒeƒLƒXƒg‚ÌXV
+	// ãƒœã‚¿ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã®æ›´æ–°
 	mUndoButton->setText(mGame->GetLoc()->Get("BTN_UNDO"));
 	mRedoButton->setText(mGame->GetLoc()->Get("BTN_REDO"));
 	mResetButton->setText(mGame->GetLoc()->Get("BTN_RESET"));
@@ -414,9 +443,11 @@ void THUD::OnLanguageChanged()
 	mSaveLogButton->setText(mGame->GetLoc()->Get("BTN_LOG"));
 	mEditModeButton->setText(mGame->GetLoc()->Get("TITLE_EDITOR"));
 	mHelpButton->setText(mGame->GetLoc()->Get("BTN_HELP"));
+	mSolutionButton->setText(mGame->GetLoc()->Get("BTN_SOLUTION"));
+	mSolverButton->setText(mGame->GetLoc()->Get("BTN_SOLVER"));
 
-	// ListBox“à‚ÌÃ“I‚Èƒ‰ƒxƒ‹iMoves‚È‚Çj‚ÌXV
-	// Update()“à‚Å–ˆƒtƒŒ[ƒ€ changeItemById ‚³‚ê‚Ä‚¢‚é‚½‚ßA
-	// Ÿ‚ÌƒtƒŒ[ƒ€‚Å©“®“I‚É«‘‚©‚çÅV‚Ì•¶š‚ªˆø‚©‚ê‚Ü‚·B
+	// ListBoxå†…ã®é™çš„ãªãƒ©ãƒ™ãƒ«ï¼ˆMovesãªã©ï¼‰ã®æ›´æ–°
+	// Update()å†…ã§æ¯ãƒ•ãƒ¬ãƒ¼ãƒ  changeItemById ã•ã‚Œã¦ã„ã‚‹ãŸã‚ã€
+	// æ¬¡ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã§è‡ªå‹•çš„ã«è¾æ›¸ã‹ã‚‰æœ€æ–°ã®æ–‡å­—ãŒå¼•ã‹ã‚Œã¾ã™ã€‚
 
 }

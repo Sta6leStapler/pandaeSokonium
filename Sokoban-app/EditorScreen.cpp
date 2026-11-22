@@ -1,13 +1,17 @@
 #include "EditorScreen.h"
 #include "Game.h"
+#include "PlatformInput.h"
 #include "SFML/Graphics.hpp"
 
-// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+#include <algorithm>
+#include <cmath>
+
+// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     : mGame(game),
     mState(IUIScreen::UIState::EActive),
     mGui(std::make_unique<tgui::Gui>(*window)),
-    mTheme(std::make_unique<tgui::Theme>("Assets/themes/Black.txt")),
+    mTheme(std::make_unique<tgui::Theme>(game->GetTheme())),
     mEditorCanvasSize(10, 10),
     mCanvasSizeMin(10),
     mCanvasSizeMax(64),
@@ -26,39 +30,39 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mIsValidLevel(false),
     mIsDialogOpen(false)
 {
-    // 1. ƒQ[ƒ€‚ğˆê’â~ó‘Ô‚É‚·‚é
+    // 1. ã‚²ãƒ¼ãƒ ã‚’ä¸€æ™‚åœæ­¢çŠ¶æ…‹ã«ã™ã‚‹
     mGame->SetState(Game::GameState::EPaused);
 
-    // 2. ‚±‚ÌUIƒXƒNƒŠ[ƒ“‚ğGame‚ÌƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…
+    // 2. ã“ã®UIã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚’Gameã®ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥
     mGame->PushUI(this);
 
-    // ƒtƒHƒ“ƒg‚ğİ’è
+    // ãƒ•ã‚©ãƒ³ãƒˆã‚’è¨­å®š
     mGui->setFont(mGame->GetFontTGUI());
 
-    // --- 1. ”Õ–Êƒf[ƒ^‚Ì‰Šú‰» ---
+    // --- 1. ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã®åˆæœŸåŒ– ---
     // loadMode: 0=Empty, 1=Init, 2=Current
     if (loadMode == 0)
     {
-        // ‹ó‚Ì”Õ–Ê (10x10)
+        // ç©ºã®ç›¤é¢ (10x10)
         mEditorCanvasSize = { 10, 10 };
         mEditorBoardData.assign(10, std::string(10, ' '));
     }
     else
     {
-        // Œ»İ‚Ì”Õ–Êƒf[ƒ^‚ğæ“¾
+        // ç¾åœ¨ã®ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
         std::vector<std::string> sourceData;
         if (loadMode == 1) sourceData = mGame->GetCurrentInitBoardData();
         else sourceData = mGame->GetBoardStateWithObjects();
 
-        // ƒf[ƒ^‚ğƒRƒs[
+        // ãƒ‡ãƒ¼ã‚¿ã‚’ã‚³ãƒ”ãƒ¼
         mEditorBoardData = sourceData;
         mEditorCanvasSize = { static_cast<int>(sourceData[0].size()), static_cast<int>(sourceData.size()) };
     }
 
-    // ‰Šúó‘Ô‚ğuƒZ[ƒuÏ‚İv‚Æ‚µ‚Ä‹L˜^
+    // åˆæœŸçŠ¶æ…‹ã‚’ã€Œã‚»ãƒ¼ãƒ–æ¸ˆã¿ã€ã¨ã—ã¦è¨˜éŒ²
     mLastSavedData = mEditorBoardData;
 
-    // ƒ^ƒCƒ‹‚Æ•¶š‚Ìƒ}ƒbƒsƒ“ƒO
+    // ã‚¿ã‚¤ãƒ«ã¨æ–‡å­—ã®ãƒãƒƒãƒ”ãƒ³ã‚°
     mTileToChar[SelectedTile::Floor] = ' ';
     mTileToChar[SelectedTile::Wall] = '#';
     mTileToChar[SelectedTile::Goal] = '.';
@@ -66,7 +70,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mTileToChar[SelectedTile::Player] = '@';
     mTileToChar[SelectedTile::Erase] = ' ';
 
-    // --- •`‰æƒXƒvƒ‰ƒCƒg‚ÆƒLƒƒƒ“ƒoƒXİ’è ---
+    // --- æç”»ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã¨ã‚­ãƒ£ãƒ³ãƒã‚¹è¨­å®š ---
     mFloorSprite.setTexture(*mGame->GetTexture("Assets/Floor.png"));
     mWallSprite.setTexture(*mGame->GetTexture("Assets/Wall.png"));
     mGoalSprite.setTexture(*mGame->GetTexture("Assets/Goal.png"));
@@ -74,50 +78,50 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mShinyBaggageSprite.setTexture(*mGame->GetTexture("Assets/ShinyBox.png"));
     mPlayerSprite.setTexture(*mGame->GetTexture("Assets/playerS.png"));
 
-    // 1. ƒGƒfƒBƒ^—p‚ÌqƒEƒBƒ“ƒhƒE‚ğì¬
+    // 1. ã‚¨ãƒ‡ã‚£ã‚¿ç”¨ã®å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
     mEditorWindow = tgui::ChildWindow::create();
     mEditorWindow->setRenderer(mTheme->getRenderer("ChildWindow"));
     mEditorWindow->setTitle(mGame->GetLoc()->Get("EDITOR_LBL_TITLE"));
-    mEditorWindow->setSize(mGame->GetWindowSize().x * 0.95f, mGame->GetWindowSize().y * 0.95f); // ‰æ–Ê‚¢‚Á‚Ï‚¢‚É
+    mEditorWindow->setSize(mGame->GetWindowSize().x * 0.95f, mGame->GetWindowSize().y * 0.95f); // ç”»é¢ã„ã£ã±ã„ã«
     mEditorWindow->setPosition((mGame->GetWindowSize().x - mEditorWindow->getSize().x) / 2.0f, (mGame->GetWindowSize().y - mEditorWindow->getSize().y) / 2.0f);
     //mEditorWindow->setKeepInParent(true);
     mGui->add(mEditorWindow);
 
-    // Exit Editorƒ{ƒ^ƒ“ˆÈŠO‚Å•Â‚¶‚ç‚ê‚½ê‡‚àCloseŠÖ”‚ğŒÄ‚Ño‚·
+    // Exit Editorãƒœã‚¿ãƒ³ä»¥å¤–ã§é–‰ã˜ã‚‰ã‚ŒãŸå ´åˆã‚‚Closeé–¢æ•°ã‚’å‘¼ã³å‡ºã™
     mEditorWindow->onClose([this]() { this->Close(); });
 
-    // 2. ”Õ–Ê•`‰æ—p‚ÌƒLƒƒƒ“ƒoƒX‚ğì¬
+    // 2. ç›¤é¢æç”»ç”¨ã®ã‚­ãƒ£ãƒ³ãƒã‚¹ã‚’ä½œæˆ
     mCanvasWidget = tgui::CanvasSFML::create();
-    // ƒLƒƒƒ“ƒoƒX‚ÌƒTƒCƒYŒvZ
-    float windowHeight = mEditorWindow->getSize().y; // qƒEƒBƒ“ƒhƒE‚Ì‚‚³ŠTZ
-    // ã•”‚Ìƒ^ƒCƒgƒ‹ƒo[‚â‰º•”‚ÌUIƒXƒy[ƒX‚ğˆø‚¢‚½‚‚³‚ğŠî€‚É‚·‚é
+    // ã‚­ãƒ£ãƒ³ãƒã‚¹ã®ã‚µã‚¤ã‚ºè¨ˆç®—
+    float windowHeight = mEditorWindow->getSize().y; // å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®é«˜ã•æ¦‚ç®—
+    // ä¸Šéƒ¨ã®ã‚¿ã‚¤ãƒˆãƒ«ãƒãƒ¼ã‚„ä¸‹éƒ¨ã®UIã‚¹ãƒšãƒ¼ã‚¹ã‚’å¼•ã„ãŸé«˜ã•ã‚’åŸºæº–ã«ã™ã‚‹
     float availableHeight = windowHeight * 0.9f;
     mCanvasTileSize = std::floor(availableHeight / mEditorCanvasSize.y);
 
     mCanvasWidget->setSize(mCanvasTileSize * mEditorCanvasSize.x, mCanvasTileSize * mEditorCanvasSize.y);
-    // ƒEƒBƒ“ƒhƒE“à‚Ì’†‰›‚É”z’uiƒŒƒCƒAƒEƒg‹@”\‚ğg—pj
+    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å†…ã®ä¸­å¤®ã«é…ç½®ï¼ˆãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆæ©Ÿèƒ½ã‚’ä½¿ç”¨ï¼‰
     mCanvasWidget->setPosition((mEditorWindow->getSize().x - mCanvasWidget->getSize().x) / 2.0f, (mEditorWindow->getSize().y - mEditorWindow->getChildWidgetsOffset().y - mCanvasWidget->getSize().y) / 2.0f);
 
-    // ƒLƒƒƒ“ƒoƒX‚ğqƒEƒBƒ“ƒhƒE‚É’Ç‰Á
+    // ã‚­ãƒ£ãƒ³ãƒã‚¹ã‚’å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«è¿½åŠ 
     mEditorWindow->add(mCanvasWidget);
 
-    // ƒXƒvƒ‰ƒCƒg‚ÌƒXƒP[ƒ‹‚ğƒ^ƒCƒ‹ƒTƒCƒY‚É‡‚í‚¹‚é
+    // ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®ã‚¹ã‚±ãƒ¼ãƒ«ã‚’ã‚¿ã‚¤ãƒ«ã‚µã‚¤ã‚ºã«åˆã‚ã›ã‚‹
     mFloorSprite.setScale(mCanvasTileSize / mFloorSprite.getLocalBounds().width, -mCanvasTileSize / mFloorSprite.getLocalBounds().height);
-    // ‘¼‚ÌƒXƒvƒ‰ƒCƒg‚à“¯—l‚ÉsetScale‚·‚é
+    // ä»–ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚‚åŒæ§˜ã«setScaleã™ã‚‹
     mWallSprite.setScale(mCanvasTileSize / mWallSprite.getLocalBounds().width, -mCanvasTileSize / mWallSprite.getLocalBounds().height);
     mGoalSprite.setScale(mCanvasTileSize / mGoalSprite.getLocalBounds().width, -mCanvasTileSize / mGoalSprite.getLocalBounds().height);
     mBaggageSprite.setScale(mCanvasTileSize / mBaggageSprite.getLocalBounds().width, -mCanvasTileSize / mBaggageSprite.getLocalBounds().height);
     mShinyBaggageSprite.setScale(mCanvasTileSize / mShinyBaggageSprite.getLocalBounds().width, -mCanvasTileSize / mShinyBaggageSprite.getLocalBounds().height);
     mPlayerSprite.setScale(mCanvasTileSize / mPlayerSprite.getLocalBounds().width, -mCanvasTileSize / mPlayerSprite.getLocalBounds().height);
 
-    // ƒOƒŠƒbƒh‚ÆƒnƒCƒ‰ƒCƒg‚Ì‰Šúİ’è
-    mGridLines[0].setFillColor(sf::Color(100, 100, 100)); // cü
-    mGridLines[1].setFillColor(sf::Color(100, 100, 100)); // ‰¡ü
+    // ã‚°ãƒªãƒƒãƒ‰ã¨ãƒã‚¤ãƒ©ã‚¤ãƒˆã®åˆæœŸè¨­å®š
+    mGridLines[0].setFillColor(sf::Color(100, 100, 100)); // ç¸¦ç·š
+    mGridLines[1].setFillColor(sf::Color(100, 100, 100)); // æ¨ªç·š
     mSelectedCellHighlight.setSize({ mCanvasTileSize, mCanvasTileSize });
-    mSelectedCellHighlight.setFillColor(sf::Color(255, 255, 0, 100)); // ‰©F”¼“§–¾
+    mSelectedCellHighlight.setFillColor(sf::Color(255, 255, 0, 100)); // é»„è‰²åŠé€æ˜
 
-    // TGUIƒEƒBƒWƒFƒbƒg‚Ì”z’u (ƒtƒF[ƒY1)
-    // ¶‰º‚Ìƒ^ƒCƒ‹ƒpƒŒƒbƒg
+    // TGUIã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®é…ç½® (ãƒ•ã‚§ãƒ¼ã‚º1)
+    // å·¦ä¸‹ã®ã‚¿ã‚¤ãƒ«ãƒ‘ãƒ¬ãƒƒãƒˆ
     mTilePaletteSize = tgui::Layout2d(mCanvasWidget->getPosition().x * 0.9f, (mTileButtonSize.y + mTileButtonOffset.y) * 7 + mTileButtonOffset.y);
     mTilePaletteOffset = tgui::Layout2d((mCanvasWidget->getPosition().x - mTilePaletteSize.x) / 2.0f, mEditorWindow->getSize().y - mEditorWindow->getChildWidgetsOffset().y - mTilePaletteSize.y * 1.05f);
     mTilePalettePanel = tgui::Panel::create();
@@ -128,14 +132,14 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mTilePalettePanel->getRenderer()->setBorderColor(sf::Color(100, 100, 100));
     mEditorWindow->add(mTilePalettePanel);
 
-    // ƒnƒCƒ‰ƒCƒg’†‚Ìƒ^ƒCƒ‹‚ğ•\¦‚·‚éƒ‰ƒWƒIƒ{ƒ^ƒ“
+    // ãƒã‚¤ãƒ©ã‚¤ãƒˆä¸­ã®ã‚¿ã‚¤ãƒ«ã‚’è¡¨ç¤ºã™ã‚‹ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
     auto highlightedTileGroup = tgui::RadioButtonGroup::create();
     highlightedTileGroup->setRenderer(mTheme->getRenderer("RadioButtonGroup"));
     mTilePalettePanel->add(highlightedTileGroup);
 
-    // ƒpƒŒƒbƒg“à‚Ìƒ{ƒ^ƒ“
-    // •Çƒ}ƒX
-    // ƒ‰ƒWƒIƒ{ƒ^ƒ“
+    // ãƒ‘ãƒ¬ãƒƒãƒˆå†…ã®ãƒœã‚¿ãƒ³
+    // å£ãƒã‚¹
+    // ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
     mWallRadioButton = tgui::RadioButton::create();
     mWallRadioButton->setRenderer(mTheme->getRenderer("RadioButton"));
     mWallRadioButton->setSize(mTileButtonSize.y * 0.5f, mTileButtonSize.y * 0.5f);
@@ -143,7 +147,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mWallRadioButton->setChecked(true);
     mWallRadioButton->onCheck([this]() { this->mCurrentTile = SelectedTile::Wall; });
     highlightedTileGroup->add(mWallRadioButton);
-    // ƒAƒCƒRƒ“•t‚«‚Ìƒ{ƒ^ƒ“
+    // ã‚¢ã‚¤ã‚³ãƒ³ä»˜ãã®ãƒœã‚¿ãƒ³
     sf::Image tmpImage = mGame->LoadTexture("Assets/Wall.png")->copyToImage();
     tgui::Texture tmpTGuiTex{};
     tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
@@ -155,26 +159,26 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     btnWall->setSize(mTileButtonSize - tgui::Layout2d(mTileButtonSize.y, 0));
     btnWall->onPress([this]() { mCurrentTile = SelectedTile::Wall; });
     mTilePalettePanel->add(btnWall);
-    // ”ÍˆÍ‘I‘ğ—pƒAƒNƒVƒ‡ƒ“ƒ{ƒ^ƒ“
+    // ç¯„å›²é¸æŠç”¨ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒœã‚¿ãƒ³
     mBtnFillWall = tgui::BitmapButton::create(" " + mGame->GetLoc()->Get("EDITOR_BTN_FILL"));
     mBtnFillWall->setRenderer(mTheme->getRenderer("BitmapButton"));
     mBtnFillWall->setImage(tmpTGuiTex);
     mBtnFillWall->setImageScaling(mIconImageScale);
     mBtnFillWall->setPosition(btnWall->getPosition() - tgui::Layout2d(mTileButtonSize.y, 0) + tgui::Layout2d(mTileButtonSize.x + 20, 0));
     mBtnFillWall->setSize(mTileButtonSize);
-    mBtnFillWall->setEnabled(false); // ‰Šúó‘Ô‚Í–³Œø
+    mBtnFillWall->setEnabled(false); // åˆæœŸçŠ¶æ…‹ã¯ç„¡åŠ¹
     mBtnFillWall->onPress([this]() { FillSelection(SelectedTile::Wall); });
     mTilePalettePanel->add(mBtnFillWall);
 
-    // °ƒ}ƒX
-    // ƒ‰ƒWƒIƒ{ƒ^ƒ“
+    // åºŠãƒã‚¹
+    // ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
     mFloorRadioButton = tgui::RadioButton::create();
     mFloorRadioButton->setRenderer(mTheme->getRenderer("RadioButton"));
     mFloorRadioButton->setSize(mTileButtonSize.y * 0.5f, mTileButtonSize.y * 0.5f);
     mFloorRadioButton->setPosition(mTileButtonOffset + mTileButtonInterval * 1 + (tgui::Layout2d(mTileButtonSize.y, mTileButtonSize.y) - mFloorRadioButton->getSize()) / 2);
     mFloorRadioButton->onCheck([this]() { this->mCurrentTile = SelectedTile::Floor; });
     highlightedTileGroup->add(mFloorRadioButton);
-    // ƒAƒCƒRƒ“•t‚«‚Ìƒ{ƒ^ƒ“
+    // ã‚¢ã‚¤ã‚³ãƒ³ä»˜ãã®ãƒœã‚¿ãƒ³
     tmpImage = mGame->LoadTexture("Assets/Floor.png")->copyToImage();
     tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
     auto btnFloor = tgui::BitmapButton::create("");
@@ -185,7 +189,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     btnFloor->setSize(mTileButtonSize - tgui::Layout2d(mTileButtonSize.y, 0));
     btnFloor->onPress([this]() { mCurrentTile = SelectedTile::Floor; });
     mTilePalettePanel->add(btnFloor);
-    // ”ÍˆÍ‘I‘ğ—pƒAƒNƒVƒ‡ƒ“ƒ{ƒ^ƒ“
+    // ç¯„å›²é¸æŠç”¨ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒœã‚¿ãƒ³
     mBtnFillFloor = tgui::BitmapButton::create(" " + mGame->GetLoc()->Get("EDITOR_BTN_FILL"));
     mBtnFillFloor->setRenderer(mTheme->getRenderer("BitmapButton"));
     mBtnFillFloor->setImage(tmpTGuiTex);
@@ -196,15 +200,15 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mBtnFillFloor->onPress([this]() { FillSelection(SelectedTile::Floor); });
     mTilePalettePanel->add(mBtnFillFloor);
 
-    // ƒS[ƒ‹ƒ}ƒX
-    // ƒ‰ƒWƒIƒ{ƒ^ƒ“
+    // ã‚´ãƒ¼ãƒ«ãƒã‚¹
+    // ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
     mGoalRadioButton = tgui::RadioButton::create();
     mGoalRadioButton->setRenderer(mTheme->getRenderer("RadioButton"));
     mGoalRadioButton->setSize(mTileButtonSize.y * 0.5f, mTileButtonSize.y * 0.5f);
     mGoalRadioButton->setPosition(mTileButtonOffset + mTileButtonInterval * 2 + (tgui::Layout2d(mTileButtonSize.y, mTileButtonSize.y) - mGoalRadioButton->getSize()) / 2);
     mGoalRadioButton->onCheck([this]() { this->mCurrentTile = SelectedTile::Goal; });
     highlightedTileGroup->add(mGoalRadioButton);
-    // ƒAƒCƒRƒ“•t‚«‚Ìƒ{ƒ^ƒ“
+    // ã‚¢ã‚¤ã‚³ãƒ³ä»˜ãã®ãƒœã‚¿ãƒ³
     tmpImage = mGame->LoadTexture("Assets/Goal.png")->copyToImage();
     tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
     auto btnGoal = tgui::BitmapButton::create("");
@@ -215,7 +219,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     btnGoal->setSize(mTileButtonSize - tgui::Layout2d(mTileButtonSize.y, 0));
     btnGoal->onPress([this]() { mCurrentTile = SelectedTile::Goal; });
     mTilePalettePanel->add(btnGoal);
-    // ”ÍˆÍ‘I‘ğ—pƒAƒNƒVƒ‡ƒ“ƒ{ƒ^ƒ“
+    // ç¯„å›²é¸æŠç”¨ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒœã‚¿ãƒ³
     mBtnFillGoal = tgui::BitmapButton::create(" " + mGame->GetLoc()->Get("EDITOR_BTN_FILL"));
     mBtnFillGoal->setRenderer(mTheme->getRenderer("BitmapButton"));
     mBtnFillGoal->setImage(tmpTGuiTex);
@@ -226,15 +230,15 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mBtnFillGoal->onPress([this]() { FillSelection(SelectedTile::Goal); });
     mTilePalettePanel->add(mBtnFillGoal);
 
-    // ‰×•¨
-    // ƒ‰ƒWƒIƒ{ƒ^ƒ“
+    // è·ç‰©
+    // ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
     mBaggageRadioButton = tgui::RadioButton::create();
     mBaggageRadioButton->setRenderer(mTheme->getRenderer("RadioButton"));
     mBaggageRadioButton->setSize(mTileButtonSize.y * 0.5f, mTileButtonSize.y * 0.5f);
     mBaggageRadioButton->setPosition(mTileButtonOffset + mTileButtonInterval * 3 + (tgui::Layout2d(mTileButtonSize.y, mTileButtonSize.y) - mBaggageRadioButton->getSize()) / 2);
     mBaggageRadioButton->onCheck([this]() { this->mCurrentTile = SelectedTile::Baggage; });
     highlightedTileGroup->add(mBaggageRadioButton);
-    // ƒAƒCƒRƒ“•t‚«‚Ìƒ{ƒ^ƒ“
+    // ã‚¢ã‚¤ã‚³ãƒ³ä»˜ãã®ãƒœã‚¿ãƒ³
     tmpImage = mGame->LoadTexture("Assets/Box.png")->copyToImage();
     tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
     auto btnBaggage = tgui::BitmapButton::create("");
@@ -246,16 +250,16 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     btnBaggage->onPress([this]() { mCurrentTile = SelectedTile::Baggage; });
     mTilePalettePanel->add(btnBaggage);
 
-    // ƒvƒŒƒCƒ„[
-    // ƒ‰ƒWƒIƒ{ƒ^ƒ“
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼
+    // ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
     mPlayerRadioButton = tgui::RadioButton::create();
     mPlayerRadioButton->setRenderer(mTheme->getRenderer("RadioButton"));
     mPlayerRadioButton->setSize(mTileButtonSize.y * 0.5f, mTileButtonSize.y * 0.5f);
     mPlayerRadioButton->setPosition(mTileButtonOffset + mTileButtonInterval * 4 + (tgui::Layout2d(mTileButtonSize.y, mTileButtonSize.y) - mPlayerRadioButton->getSize()) / 2);
     mPlayerRadioButton->onCheck([this]() { this->mCurrentTile = SelectedTile::Player; });
     highlightedTileGroup->add(mPlayerRadioButton);
-    // ƒAƒCƒRƒ“•t‚«‚Ìƒ{ƒ^ƒ“
-    tmpImage = mGame->LoadTexture("Assets/PlayerN.png")->copyToImage();
+    // ã‚¢ã‚¤ã‚³ãƒ³ä»˜ãã®ãƒœã‚¿ãƒ³
+    tmpImage = mGame->LoadTexture("Assets/playerN.png")->copyToImage();
     tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
     auto btnPlayer = tgui::BitmapButton::create("");
     btnPlayer->setRenderer(mTheme->getRenderer("BitmapButton"));
@@ -266,22 +270,22 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     btnPlayer->onPress([this]() { mCurrentTile = SelectedTile::Player; });
     mTilePalettePanel->add(btnPlayer);
 
-    // íœ
-    // ƒ‰ƒWƒIƒ{ƒ^ƒ“
+    // å‰Šé™¤
+    // ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
     mEraseRadioButton = tgui::RadioButton::create();
     mEraseRadioButton->setRenderer(mTheme->getRenderer("RadioButton"));
     mEraseRadioButton->setSize(mTileButtonSize.y * 0.5f, mTileButtonSize.y * 0.5f);
     mEraseRadioButton->setPosition(mTileButtonOffset + mTileButtonInterval * 5 + (tgui::Layout2d(mTileButtonSize.y, mTileButtonSize.y) - mEraseRadioButton->getSize()) / 2);
     mEraseRadioButton->onCheck([this]() { this->mCurrentTile = SelectedTile::Erase; });
     highlightedTileGroup->add(mEraseRadioButton);
-    // ƒ{ƒ^ƒ“
+    // ãƒœã‚¿ãƒ³
     auto btnErase = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_ERASE"));
     btnErase->setRenderer(mTheme->getRenderer("Button"));
     btnErase->setPosition(mTileButtonOffset + mTileButtonInterval * 5 + tgui::Layout2d(mTileButtonSize.y, 0));
     btnErase->setSize(mTileButtonSize - tgui::Layout2d(mTileButtonSize.y, 0));
     btnErase->onPress([this]() { mCurrentTile = SelectedTile::Erase; });
     mTilePalettePanel->add(btnErase);
-    // ”ÍˆÍ‘I‘ğ—pƒAƒNƒVƒ‡ƒ“ƒ{ƒ^ƒ“
+    // ç¯„å›²é¸æŠç”¨ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒœã‚¿ãƒ³
     mBtnDeleteArea = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_DELETE_AREA"));
     mBtnDeleteArea->setRenderer(mTheme->getRenderer("Button"));
     mBtnDeleteArea->setPosition(btnErase->getPosition() + tgui::Layout2d(mTileButtonSize.x + 20, 0) - tgui::Layout2d(mTileButtonSize.y, 0));
@@ -290,7 +294,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mBtnDeleteArea->onPress([this]() { FillSelection(SelectedTile::Erase); });
     mTilePalettePanel->add(mBtnDeleteArea);
 
-    // ƒ‚[ƒhØ‘Ö
+    // ãƒ¢ãƒ¼ãƒ‰åˆ‡æ›¿
     mModeGroup = tgui::RadioButtonGroup::create();
     mModeGroup->setRenderer(mTheme->getRenderer("RadioButtonGroup"));
     mTilePalettePanel->add(mModeGroup);
@@ -313,24 +317,24 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mRadioSelect->setPosition(mTileButtonOffset + mTileButtonInterval * 6 + tgui::Layout2d(mTileButtonSize.x + 20, 0) + radioButtonOffset);
     mModeGroup->add(mRadioSelect);
 
-    // ƒ‚[ƒh•ÏX‚ÌƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰
+    // ãƒ¢ãƒ¼ãƒ‰å¤‰æ›´æ™‚ã®ã‚¤ãƒ™ãƒ³ãƒˆãƒãƒ³ãƒ‰ãƒ©
     mRadioDraw->onChange([this](bool checked) {
-        // ‚±‚¿‚ç‚Ìƒ‰ƒWƒIƒ{ƒ^ƒ“‚ÌON/OFF‚ÅØ‚è‘Ö‚í‚é‚à‚Ì‚ª‚ ‚ê‚Îˆ—‚ğ’Ç‰Á
+        // ã“ã¡ã‚‰ã®ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ã®ON/OFFã§åˆ‡ã‚Šæ›¿ã‚ã‚‹ã‚‚ã®ãŒã‚ã‚Œã°å‡¦ç†ã‚’è¿½åŠ 
         });
     mRadioSelect->onChange([this](bool checked) {
-        // ƒ‰ƒWƒIƒ{ƒ^ƒ“‚ªƒIƒ“‚Ìê‡
+        // ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ãŒã‚ªãƒ³ã®å ´åˆ
         if (checked)
         {
-            // ƒAƒNƒVƒ‡ƒ“ƒ{ƒ^ƒ“‚ğ—LŒø‰»
+            // ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒœã‚¿ãƒ³ã‚’æœ‰åŠ¹åŒ–
             mBtnFillWall->setEnabled(true);
             mBtnFillFloor->setEnabled(true);
             mBtnFillGoal->setEnabled(true);
             mBtnDeleteArea->setEnabled(true);
         }
-        // ƒ‰ƒWƒIƒ{ƒ^ƒ“‚ªƒIƒt‚Ìê‡
+        // ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ãŒã‚ªãƒ•ã®å ´åˆ
         else
         {
-            // ƒAƒNƒVƒ‡ƒ“ƒ{ƒ^ƒ“–³Œø‰»
+            // ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒœã‚¿ãƒ³ç„¡åŠ¹åŒ–
             mIsSelecting = false;
             mDragStartPos = { -1, -1 };
             mBtnFillWall->setEnabled(false);
@@ -340,7 +344,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
         }
         });
 
-    // ‰E‰º‚Ìƒ{ƒ^ƒ“
+    // å³ä¸‹ã®ãƒœã‚¿ãƒ³
     mSystemButtonPaletteSize = tgui::Layout2d((mSystemButtonSize.x + mSystemButtonOffset.x) * 3 + mSystemButtonOffset.x, mSystemButtonSize.y + mSystemButtonOffset.y * 2);
     mSystemButtonPaletteOffset = tgui::Layout2d(mEditorWindow->getSize().x - mSystemButtonPaletteSize.x, mEditorWindow->getSize().y - mEditorWindow->getChildWidgetsOffset().y - mSystemButtonPaletteSize.y);
     mSystemPalettePanel = tgui::Panel::create();
@@ -349,7 +353,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mSystemPalettePanel->setPosition(mSystemButtonPaletteOffset);
     mEditorWindow->add(mSystemPalettePanel);
 
-    // ƒŒƒxƒ‹“K—pƒ{ƒ^ƒ“
+    // ãƒ¬ãƒ™ãƒ«é©ç”¨ãƒœã‚¿ãƒ³
     mApplyButton = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_APPLY_LEVEL"));
     mApplyButton->setRenderer(mTheme->getRenderer("Button"));
     mApplyButton->setSize(mSystemButtonSize);
@@ -359,18 +363,18 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
         });
     mSystemPalettePanel->add(mApplyButton);
 
-    // ƒŒƒxƒ‹ƒZ[ƒuƒ{ƒ^ƒ“
+    // ãƒ¬ãƒ™ãƒ«ã‚»ãƒ¼ãƒ–ãƒœã‚¿ãƒ³
     mSaveButton = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_SAVE_LEVEL"));
     mSaveButton->setRenderer(mTheme->getRenderer("Button"));
     mSaveButton->setSize(mSystemButtonSize);
     mSaveButton->setPosition(mSystemButtonOffset + mSystemButtonInterval * 1);
-    // ƒZ[ƒuŒã‚ÉƒGƒfƒBƒ^‰æ–Ê‚É–ß‚é‚½‚ß‚Éfalse
+    // ã‚»ãƒ¼ãƒ–å¾Œã«ã‚¨ãƒ‡ã‚£ã‚¿ç”»é¢ã«æˆ»ã‚‹ãŸã‚ã«false
     mSaveButton->onPress([this]() {
         PerformSave(false);
         });
     mSystemPalettePanel->add(mSaveButton);
 
-    // ƒGƒfƒBƒ^I—¹ƒ{ƒ^ƒ“
+    // ã‚¨ãƒ‡ã‚£ã‚¿çµ‚äº†ãƒœã‚¿ãƒ³
     mExitButton = tgui::Button::create(mGame->GetLoc()->Get("EDITOR_BTN_EXIT_EDITOR"));
     mExitButton->setRenderer(mTheme->getRenderer("Button"));
     mExitButton->setSize(mSystemButtonSize);
@@ -378,7 +382,7 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mExitButton->onPress([this]() { CheckUnsavedChangesAndClose(); });
     mSystemPalettePanel->add(mExitButton);
 
-    // ‰E‚Ìî•ñƒpƒlƒ‹
+    // å³ã®æƒ…å ±ãƒ‘ãƒãƒ«
     mInfoPanel = tgui::Panel::create();
     mInfoPanel->setRenderer(mTheme->getRenderer("Panel"));
     mInfoPanel->setSize((mEditorWindow->getSize().x - mCanvasWidget->getSize().x - mCanvasWidget->getPosition().x) * 0.9f, (mEditorWindow->getSize().y - mSystemButtonPaletteSize.y) * 0.95f);
@@ -395,32 +399,32 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     mInfoBaggageGoaledLabel->setPosition(10, 40);
     mInfoPanel->add(mInfoBaggageGoaledLabel);
 
-    // mSelectedGridCell ‚Ì‰ŠúˆÊ’u‚ğ (0, 0) ‚Éİ’è‚µ‚Ä‚¨‚­
+    // mSelectedGridCell ã®åˆæœŸä½ç½®ã‚’ (0, 0) ã«è¨­å®šã—ã¦ãŠã
     mSelectedGridCell = sf::Vector2i(0, 0);
 
-    // mSelectedGridCell ‚Ì‰ŠúˆÊ’u‚ğ (0, 0) ‚Éİ’è‚µ‚Ä‚¨‚­
+    // mSelectedGridCell ã®åˆæœŸä½ç½®ã‚’ (0, 0) ã«è¨­å®šã—ã¦ãŠã
     mSelectedGridCell = sf::Vector2i(0, 0);
 
-    // ƒnƒCƒ‰ƒCƒgƒVƒFƒCƒv‚Ìİ’è
-    // 1. ‘I‘ğƒJ[ƒ\ƒ‹ (”Z‚¢˜gü)
+    // ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚·ã‚§ã‚¤ãƒ—ã®è¨­å®š
+    // 1. é¸æŠã‚«ãƒ¼ã‚½ãƒ« (æ¿ƒã„æ ç·š)
     mCursorHighlight.setSize({ mCanvasTileSize, mCanvasTileSize });
-    mCursorHighlight.setFillColor(sf::Color::Transparent); // ’†g‚Í“§–¾
-    mCursorHighlight.setOutlineColor(sf::Color::Yellow);   // ˜g‚Í‰©F
-    mCursorHighlight.setOutlineThickness(3.0f);            // ‘¾‚ß‚Ì˜g
+    mCursorHighlight.setFillColor(sf::Color::Transparent); // ä¸­èº«ã¯é€æ˜
+    mCursorHighlight.setOutlineColor(sf::Color::Yellow);   // æ ã¯é»„è‰²
+    mCursorHighlight.setOutlineThickness(3.0f);            // å¤ªã‚ã®æ 
 
-    // 2. ƒ}ƒEƒXƒzƒo[ (”–‚¢“h‚è‚Â‚Ô‚µ)
+    // 2. ãƒã‚¦ã‚¹ãƒ›ãƒãƒ¼ (è–„ã„å¡—ã‚Šã¤ã¶ã—)
     mHoverHighlight.setSize({ mCanvasTileSize, mCanvasTileSize });
-    mHoverHighlight.setFillColor(sf::Color(255, 255, 255, 50)); // ”’‚Ì”¼“§–¾
+    mHoverHighlight.setFillColor(sf::Color(255, 255, 255, 50)); // ç™½ã®åŠé€æ˜
     mHoverHighlight.setOutlineThickness(0.0f);
 
 
-    // ƒwƒ‹ƒv•\¦ƒGƒŠƒA
+    // ãƒ˜ãƒ«ãƒ—è¡¨ç¤ºã‚¨ãƒªã‚¢
     auto helpArea = tgui::TextArea::create();
     helpArea->setRenderer(mTheme->getRenderer("TextArea"));
     helpArea->setSize(mCanvasWidget->getPosition().x * 0.9f, mTilePaletteOffset.y * 0.95f);
     helpArea->setPosition((mCanvasWidget->getPosition().x - helpArea->getSize().x) / 2.0f, (mTilePaletteOffset.y - helpArea->getSize().y) / 2.0f );
     helpArea->setTextSize(14);
-    helpArea->setReadOnly(true); // •ÒW•s‰Â
+    helpArea->setReadOnly(true); // ç·¨é›†ä¸å¯
     helpArea->setText(
         mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_KEY_BIND") + "\n" +
         mGame->GetLoc()->Get("EDITOR_LEFT_PANEL_WASD") + "\n" +
@@ -435,16 +439,16 @@ EditorScreen::EditorScreen(Game* game, sf::RenderWindow* window, int loadMode)
     );
     mEditorWindow->add(helpArea);
 
-    // ‰‰ñ‚ÌƒLƒƒƒ“ƒoƒX’²®‚ÆƒoƒŠƒf[ƒVƒ‡ƒ“
+    // åˆå›ã®ã‚­ãƒ£ãƒ³ãƒã‚¹èª¿æ•´ã¨ãƒãƒªãƒ‡ãƒ¼ã‚·ãƒ§ãƒ³
     ResizeCanvasIfNeeded();
     UpdateValidationState();
 }
 
-// ƒfƒXƒgƒ‰ƒNƒ^
+// ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 EditorScreen::~EditorScreen()
 {
     mGame->SetState(Game::GameState::EGamePlay);
-    // mGui‚Íunique_ptr‚ª©“®‚Å‰ğ•ú
+    // mGuiã¯unique_ptrãŒè‡ªå‹•ã§è§£æ”¾
 }
 
 void EditorScreen::Close()
@@ -453,16 +457,16 @@ void EditorScreen::Close()
     mGui->removeAllWidgets();
 }
 
-// –ˆƒtƒŒ[ƒ€‚ÌXV
+// æ¯ãƒ•ãƒ¬ãƒ¼ãƒ ã®æ›´æ–°
 void EditorScreen::Update(float deltaTime)
 {
-    // GameƒNƒ‰ƒX‚ÌmGameState‚ªEGamePlay‚É‚È‚Á‚Ä‚µ‚Ü‚¤‚Ì‚ÅAEPaused‚ÉXV‚µ‘±‚¯‚é
+    // Gameã‚¯ãƒ©ã‚¹ã®mGameStateãŒEGamePlayã«ãªã£ã¦ã—ã¾ã†ã®ã§ã€EPausedã«æ›´æ–°ã—ç¶šã‘ã‚‹
     mGame->SetState(Game::GameState::EPaused);
 
-    // î•ñƒpƒlƒ‹‚ğXV
+    // æƒ…å ±ãƒ‘ãƒãƒ«ã‚’æ›´æ–°
     UpdateInfoPanel();
 
-    // ƒ^ƒCƒ‹‘I‘ğ‚Ìƒ‰ƒWƒIƒ{ƒ^ƒ“‚ğƒCƒ“ƒXƒ^ƒ“ƒX“à‚Ìó‘Ô‚Æ“¯Šú
+    // ã‚¿ã‚¤ãƒ«é¸æŠã®ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ã‚’ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹å†…ã®çŠ¶æ…‹ã¨åŒæœŸ
     mWallRadioButton->setChecked(false);
     mFloorRadioButton->setChecked(false);
     mGoalRadioButton->setChecked(false);
@@ -481,65 +485,65 @@ void EditorScreen::Update(float deltaTime)
     }
 }
 
-// •`‰æˆ—
+// æç”»å‡¦ç†
 void EditorScreen::Draw(sf::RenderWindow* window)
 {
-    // 1. Å‰‚É©‘O‚ÌƒLƒƒƒ“ƒoƒX‚ğ•`‰æ‚·‚é
+    // 1. æœ€åˆã«è‡ªå‰ã®ã‚­ãƒ£ãƒ³ãƒã‚¹ã‚’æç”»ã™ã‚‹
     DrawCanvas();
 
-    // 2. ‚»‚Ìã‚ÉTGUI‚ÌUI‚ğ•`‰æ‚·‚é
+    // 2. ãã®ä¸Šã«TGUIã®UIã‚’æç”»ã™ã‚‹
     mGui->draw();
 }
 
-// “ü—Íˆ—
+// å…¥åŠ›å‡¦ç†
 void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos)
 {
-    // TGUI‚ÉƒCƒxƒ“ƒg‚ğ“n‚·
+    // TGUIã«ã‚¤ãƒ™ãƒ³ãƒˆã‚’æ¸¡ã™
     bool eventConsumed = mGui->handleEvent(*event);
 
-    // ƒ_ƒCƒAƒƒO•\¦’†‚ÍƒLƒƒƒ“ƒoƒX‘€ì‚ğƒuƒƒbƒN
+    // ãƒ€ã‚¤ã‚¢ãƒ­ã‚°è¡¨ç¤ºä¸­ã¯ã‚­ãƒ£ãƒ³ãƒã‚¹æ“ä½œã‚’ãƒ–ãƒ­ãƒƒã‚¯
     if (mIsDialogOpen) return;
 
-    // ƒGƒfƒBƒbƒgƒEƒBƒ“ƒhƒE‚Ìƒ^ƒCƒgƒ‹ƒo[‚ğœ‚¢‚Ä¶ã‚ğŒ´“_‚Æ‚µ‚½ƒ}ƒEƒX‚ÌÀ•W
+    // ã‚¨ãƒ‡ã‚£ãƒƒãƒˆã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¿ã‚¤ãƒˆãƒ«ãƒãƒ¼ã‚’é™¤ã„ã¦å·¦ä¸Šã‚’åŸç‚¹ã¨ã—ãŸãƒã‚¦ã‚¹ã®åº§æ¨™
     sf::Vector2f childWindowMousePos( (float)mousePos.x - mEditorWindow->getPosition().x, (float)mousePos.y - mEditorWindow->getPosition().y);
-    // ƒGƒfƒBƒbƒgƒEƒBƒ“ƒhƒE‚Ìƒ^ƒCƒgƒ‹ƒo[‚ğ‰Á–¡‚µ‚Ä¶ã‚ğŒ´“_‚Æ‚µ‚½ƒ}ƒEƒX‚ÌÀ•W
+    // ã‚¨ãƒ‡ã‚£ãƒƒãƒˆã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¿ã‚¤ãƒˆãƒ«ãƒãƒ¼ã‚’åŠ å‘³ã—ã¦å·¦ä¸Šã‚’åŸç‚¹ã¨ã—ãŸãƒã‚¦ã‚¹ã®åº§æ¨™
     sf::Vector2f canvasMousePos( childWindowMousePos.x - mEditorWindow->getChildWidgetsOffset().x, childWindowMousePos.y - mEditorWindow->getChildWidgetsOffset().y);
 
-    // ƒLƒƒƒ“ƒoƒXã‚Åƒ}ƒEƒX‚ª“®‚¢‚½‚èƒNƒŠƒbƒN‚³‚ê‚½ê‡ATGUI‚ÍuÁ”ï‚³‚ê‚½v‚Æ‚İ‚È‚·‚ªA
-    // ƒGƒfƒBƒ^‚Æ‚µ‚Ä‚Í”Õ–Ê‘€ì‚ğs‚¢‚½‚¢‚Ì‚ÅA—áŠO“I‚Éˆ—‚ğ‘±s‚³‚¹‚éB
+    // ã‚­ãƒ£ãƒ³ãƒã‚¹ä¸Šã§ãƒã‚¦ã‚¹ãŒå‹•ã„ãŸã‚Šã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸå ´åˆã€TGUIã¯ã€Œæ¶ˆè²»ã•ã‚ŒãŸã€ã¨ã¿ãªã™ãŒã€
+    // ã‚¨ãƒ‡ã‚£ã‚¿ã¨ã—ã¦ã¯ç›¤é¢æ“ä½œã‚’è¡Œã„ãŸã„ã®ã§ã€ä¾‹å¤–çš„ã«å‡¦ç†ã‚’ç¶šè¡Œã•ã›ã‚‹ã€‚
     bool isMouseOnCanvas = mCanvasWidget->isMouseOnWidget(canvasMousePos);
 
     if (eventConsumed && !isMouseOnCanvas)
     {
-        // ƒLƒƒƒ“ƒoƒXˆÈŠO‚ÌUIiƒ{ƒ^ƒ“‚È‚Çj‚ª‘€ì‚³‚ê‚½ê‡‚Í‚±‚±‚ÅI—¹
+        // ã‚­ãƒ£ãƒ³ãƒã‚¹ä»¥å¤–ã®UIï¼ˆãƒœã‚¿ãƒ³ãªã©ï¼‰ãŒæ“ä½œã•ã‚ŒãŸå ´åˆã¯ã“ã“ã§çµ‚äº†
         return;
     }
 
-    // ƒ}ƒEƒXˆÊ’u‚ÌŒvZ‚Æƒzƒo[XV
+    // ãƒã‚¦ã‚¹ä½ç½®ã®è¨ˆç®—ã¨ãƒ›ãƒãƒ¼æ›´æ–°
     sf::Vector2i gridPos = ScreenToGrid(sf::Vector2f(mousePos));
 
-    // ƒ}ƒEƒX‚ª“®‚¢‚½‚çuƒ}ƒEƒXƒ‚[ƒhv‚É‚·‚é
+    // ãƒã‚¦ã‚¹ãŒå‹•ã„ãŸã‚‰ã€Œãƒã‚¦ã‚¹ãƒ¢ãƒ¼ãƒ‰ã€ã«ã™ã‚‹
     if (event->type == sf::Event::MouseMoved)
     {
         mIsMouseMode = true;
-        mHoverGridCell = gridPos; // ƒzƒo[ˆÊ’uXV
+        mHoverGridCell = gridPos; // ãƒ›ãƒãƒ¼ä½ç½®æ›´æ–°
 
-        // ¶ƒNƒŠƒbƒN‚ª‰Ÿ‚³‚ê‚½‚Ü‚ÜˆÚ“®‚µ‚½ê‡
+        // å·¦ã‚¯ãƒªãƒƒã‚¯ãŒæŠ¼ã•ã‚ŒãŸã¾ã¾ç§»å‹•ã—ãŸå ´åˆ
         if (mRadioDraw->isChecked() && sf::Mouse::isButtonPressed(sf::Mouse::Left))
         {
             if (gridPos.x != -1)
             {
-                mSelectedGridCell = gridPos; // ƒJ[ƒ\ƒ‹‚à’Ç]
-                // ƒvƒŒƒCƒ„[‚Æ‰×•¨‚Í˜A‘±”z’u‚µ‚È‚¢iƒgƒOƒ‹“®ì‚Æ‚Ì‹£‡‚ğ–h‚®j
+                mSelectedGridCell = gridPos; // ã‚«ãƒ¼ã‚½ãƒ«ã‚‚è¿½å¾“
+                // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã¯é€£ç¶šé…ç½®ã—ãªã„ï¼ˆãƒˆã‚°ãƒ«å‹•ä½œã¨ã®ç«¶åˆã‚’é˜²ãï¼‰
                 PlaceTile(gridPos, true);
             }
         }
 
-        // Selectƒ‚[ƒh‚Ìƒhƒ‰ƒbƒO”ÍˆÍXV
+        // Selectãƒ¢ãƒ¼ãƒ‰æ™‚ã®ãƒ‰ãƒ©ãƒƒã‚°ç¯„å›²æ›´æ–°
         if (mRadioSelect->isChecked() && mIsSelecting)
         {
-            // ƒhƒ‰ƒbƒO’†‚ÍI“_‚ğXVi”ÍˆÍŠO‚Å‚àƒNƒ‰ƒ“ƒv‚µ‚ÄXV‚·‚é‚È‚ÇH•v‰Âj
-            // ¶ƒNƒŠƒbƒN‚ª‰Ÿ‚³‚ê‚Ä‚¢‚éŠÔ‚¾‚¯I“_‚ğXV‚·‚é
+            // ãƒ‰ãƒ©ãƒƒã‚°ä¸­ã¯çµ‚ç‚¹ã‚’æ›´æ–°ï¼ˆç¯„å›²å¤–ã§ã‚‚ã‚¯ãƒ©ãƒ³ãƒ—ã—ã¦æ›´æ–°ã™ã‚‹ãªã©å·¥å¤«å¯ï¼‰
+            // å·¦ã‚¯ãƒªãƒƒã‚¯ãŒæŠ¼ã•ã‚Œã¦ã„ã‚‹é–“ã ã‘çµ‚ç‚¹ã‚’æ›´æ–°ã™ã‚‹
             if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
             {
                 if (gridPos.x >= 0 && gridPos.x < mEditorCanvasSize.x && gridPos.y >= 0 && gridPos.y < mEditorCanvasSize.y) mDragEndPos = gridPos;
@@ -547,38 +551,38 @@ void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mous
         }
     }
 
-    // ƒ}ƒEƒX‘€ì
+    // ãƒã‚¦ã‚¹æ“ä½œ
     if (gridPos.x != -1)
     {
-        // ƒNƒŠƒbƒN‚³‚ê‚½‚çA‘I‘ğƒJ[ƒ\ƒ‹‚à‚»‚±‚ÉˆÚ“®‚³‚¹‚é
+        // ã‚¯ãƒªãƒƒã‚¯ã•ã‚ŒãŸã‚‰ã€é¸æŠã‚«ãƒ¼ã‚½ãƒ«ã‚‚ãã“ã«ç§»å‹•ã•ã›ã‚‹
         if (event->type == sf::Event::MouseButtonPressed && event->mouseButton.button == sf::Mouse::Left)
         {
-            mSelectedGridCell = gridPos; // ƒJ[ƒ\ƒ‹ˆÚ“®
+            mSelectedGridCell = gridPos; // ã‚«ãƒ¼ã‚½ãƒ«ç§»å‹•
             mIsMouseMode = true;
 
             if (mRadioDraw->isChecked())
             {
-                // Drawƒ‚[ƒh: ‘¦À‚É”z’u
+                // Drawãƒ¢ãƒ¼ãƒ‰: å³åº§ã«é…ç½®
                 PlaceTile(gridPos, false);
             }
             else if (mRadioSelect->isChecked())
             {
-                // Selectƒ‚[ƒh: ”ÍˆÍ‘I‘ğŠJn
+                // Selectãƒ¢ãƒ¼ãƒ‰: ç¯„å›²é¸æŠé–‹å§‹
                 mIsSelecting = true;
                 mDragStartPos = gridPos;
                 mDragEndPos = gridPos;
 
-                // ‘I‘ğŠJn‚Éƒ{ƒ^ƒ“—Ş‚Íˆê“x–³Œø‰»iƒhƒ‰ƒbƒOŠ®—¹‚Ü‚Åj
+                // é¸æŠé–‹å§‹æ™‚ã«ãƒœã‚¿ãƒ³é¡ã¯ä¸€åº¦ç„¡åŠ¹åŒ–ï¼ˆãƒ‰ãƒ©ãƒƒã‚°å®Œäº†ã¾ã§ï¼‰
                 mBtnFillWall->setEnabled(false);
                 mBtnFillFloor->setEnabled(false);
                 mBtnFillGoal->setEnabled(false);
                 mBtnDeleteArea->setEnabled(false);
             }
         }
-        // ‰EƒNƒŠƒbƒN (Drawƒ‚[ƒh‚Ì‚İ—LŒøAErase)
+        // å³ã‚¯ãƒªãƒƒã‚¯ (Drawãƒ¢ãƒ¼ãƒ‰ã®ã¿æœ‰åŠ¹ã€Erase)
         else if (event->type == sf::Event::MouseButtonPressed && event->mouseButton.button == sf::Mouse::Right)
         {
-            // ”z’uƒ‚[ƒh‚È‚ç‘I‘ğ‚³‚ê‚½ƒ^ƒCƒ‹‚ğ‰ğœ (°ƒ^ƒCƒ‹‚É–ß‚é)
+            // é…ç½®ãƒ¢ãƒ¼ãƒ‰ãªã‚‰é¸æŠã•ã‚ŒãŸã‚¿ã‚¤ãƒ«ã‚’è§£é™¤ (åºŠã‚¿ã‚¤ãƒ«ã«æˆ»ã‚‹)
             if (mRadioDraw->isChecked())
             {
                 mSelectedGridCell = gridPos;
@@ -588,19 +592,19 @@ void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mous
                 mCurrentTile = prevTile;
             }
         }
-        // ¶ƒNƒŠƒbƒN—£ã (Selectƒ‚[ƒh—p)
+        // å·¦ã‚¯ãƒªãƒƒã‚¯é›¢ä¸Š (Selectãƒ¢ãƒ¼ãƒ‰ç”¨)
         else if (event->type == sf::Event::MouseButtonReleased && event->mouseButton.button == sf::Mouse::Left)
         {
             if (mRadioSelect->isChecked() && mIsSelecting)
             {
-                // ƒhƒ‰ƒbƒOI—¹B”ÍˆÍ‚ªŠm’è‚µ‚½‚Ì‚Åƒ{ƒ^ƒ“‚ğ—LŒø‰»
+                // ãƒ‰ãƒ©ãƒƒã‚°çµ‚äº†ã€‚ç¯„å›²ãŒç¢ºå®šã—ãŸã®ã§ãƒœã‚¿ãƒ³ã‚’æœ‰åŠ¹åŒ–
                 mBtnFillWall->setEnabled(true);
                 mBtnFillFloor->setEnabled(true);
                 mBtnFillGoal->setEnabled(true);
                 mBtnDeleteArea->setEnabled(true);
 
-                // mIsSelecting‚Ítrue‚Ì‚Ü‚ÜˆÛi”ÍˆÍ‚ğ•\¦‚µ‘±‚¯‚é‚½‚ßj
-                // ‰ğœ‚Í‰EƒNƒŠƒbƒN‚âƒ‚[ƒhØ‘Ö‚Ås‚¤
+                // mIsSelectingã¯trueã®ã¾ã¾ç¶­æŒï¼ˆç¯„å›²ã‚’è¡¨ç¤ºã—ç¶šã‘ã‚‹ãŸã‚ï¼‰
+                // è§£é™¤ã¯å³ã‚¯ãƒªãƒƒã‚¯ã‚„ãƒ¢ãƒ¼ãƒ‰åˆ‡æ›¿ã§è¡Œã†
             }
         }
     }
@@ -609,59 +613,59 @@ void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mous
         mHoverGridCell = { -1, -1 };
     }
 
-    // ƒL[ƒ{[ƒh‘€ì
+    // ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰æ“ä½œ
     if (event->type == sf::Event::KeyPressed)
     {
-        // ƒL[“ü—Í‚ª‚ ‚Á‚½‚çuƒL[ƒ{[ƒhƒ‚[ƒhv‚É‚·‚é (ƒzƒo[‚ğ‰B‚·)
+        // ã‚­ãƒ¼å…¥åŠ›ãŒã‚ã£ãŸã‚‰ã€Œã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ãƒ¢ãƒ¼ãƒ‰ã€ã«ã™ã‚‹ (ãƒ›ãƒãƒ¼ã‚’éš ã™)
         mIsMouseMode = false;
 
-        // ”ÍˆÍ‘I‘ğƒ‚[ƒh‚©‚ÂShiftƒL[‚ª‰Ÿ‚³‚ê‚½uŠÔ -> ‘I‘ğŠJn
+        // ç¯„å›²é¸æŠãƒ¢ãƒ¼ãƒ‰ã‹ã¤Shiftã‚­ãƒ¼ãŒæŠ¼ã•ã‚ŒãŸç¬é–“ -> é¸æŠé–‹å§‹
         if (mRadioSelect->isChecked() &&
             (event->key.code == sf::Keyboard::LShift || event->key.code == sf::Keyboard::RShift))
         {
             mIsSelecting = true;
             mDragStartPos = mSelectedGridCell;
             mDragEndPos = mSelectedGridCell;
-            // ƒ{ƒ^ƒ“–³Œø‰»
+            // ãƒœã‚¿ãƒ³ç„¡åŠ¹åŒ–
             mBtnFillWall->setEnabled(false); mBtnFillFloor->setEnabled(false);
             mBtnFillGoal->setEnabled(false); mBtnDeleteArea->setEnabled(false);
         }
 
-        // ƒJ[ƒ\ƒ‹ˆÚ“® (WASD / –îˆó)
-        // ”ÍˆÍƒ`ƒFƒbƒN‚ğs‚Á‚ÄˆÚ“®
+        // ã‚«ãƒ¼ã‚½ãƒ«ç§»å‹• (WASD / çŸ¢å°)
+        // ç¯„å›²ãƒã‚§ãƒƒã‚¯ã‚’è¡Œã£ã¦ç§»å‹•
         sf::Vector2i newPos = mSelectedGridCell;
         if (event->key.code == sf::Keyboard::W || event->key.code == sf::Keyboard::Up)    newPos.y--;
         if (event->key.code == sf::Keyboard::S || event->key.code == sf::Keyboard::Down)  newPos.y++;
         if (event->key.code == sf::Keyboard::A || event->key.code == sf::Keyboard::Left)  newPos.x--;
         if (event->key.code == sf::Keyboard::D || event->key.code == sf::Keyboard::Right) newPos.x++;
 
-        // ”ÍˆÍ“à‚È‚ç“K—p
+        // ç¯„å›²å†…ãªã‚‰é©ç”¨
         if (newPos.x >= 0 && newPos.x < mEditorCanvasSize.x &&
             newPos.y >= 0 && newPos.y < mEditorCanvasSize.y)
         {
             mSelectedGridCell = newPos;
 
-            // ”ÍˆÍ‘I‘ğ’†‚Ìê‡AI“_‚ğXV
+            // ç¯„å›²é¸æŠä¸­ã®å ´åˆã€çµ‚ç‚¹ã‚’æ›´æ–°
             if (mRadioSelect->isChecked() && mIsSelecting)
             {
                 mDragEndPos = mSelectedGridCell;
             }
 
-            // Drawƒ‚[ƒh‚ÅEnterƒL[‚ğ‰Ÿ‚µ‚È‚ª‚çˆÚ“® -> ˜A‘±”z’u
+            // Drawãƒ¢ãƒ¼ãƒ‰ã§Enterã‚­ãƒ¼ã‚’æŠ¼ã—ãªãŒã‚‰ç§»å‹• -> é€£ç¶šé…ç½®
             if (mRadioDraw->isChecked() && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
             {
                 PlaceTile(mSelectedGridCell, true);
             }
         }
 
-        // ƒpƒlƒ‹”z’u (Space / Enter)
+        // ãƒ‘ãƒãƒ«é…ç½® (Space / Enter)
         if (event->key.code == sf::Keyboard::Space || event->key.code == sf::Keyboard::Enter)
         {
-            // Enter’P‰Ÿ‚µ‚Ìê‡‚Í’P”­”z’u(false)
-            // (ˆÚ“®‚µ‚È‚ª‚ç‚ÌEnter‚Íã‚ÌˆÚ“®ƒuƒƒbƒN‚Åˆ—‚³‚ê‚é)
+            // Enterå˜æŠ¼ã—ã®å ´åˆã¯å˜ç™ºé…ç½®(false)
+            // (ç§»å‹•ã—ãªãŒã‚‰ã®Enterã¯ä¸Šã®ç§»å‹•ãƒ–ãƒ­ãƒƒã‚¯ã§å‡¦ç†ã•ã‚Œã‚‹)
             PlaceTile(mSelectedGridCell, false);
         }
-        // íœ (Delete / BackSpace)
+        // å‰Šé™¤ (Delete / BackSpace)
         if (event->key.code == sf::Keyboard::Delete || event->key.code == sf::Keyboard::BackSpace)
         {
             SelectedTile prevTile = mCurrentTile;
@@ -670,16 +674,16 @@ void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mous
             mCurrentTile = prevTile;
         }
 
-        // ƒpƒlƒ‹Ø‚è‘Ö‚¦ (Tab)
+        // ãƒ‘ãƒãƒ«åˆ‡ã‚Šæ›¿ãˆ (Tab)
         if (event->key.code == sf::Keyboard::Tab)
         {
             int tileVal = static_cast<int>(mCurrentTile);
 
-            if (event->key.shift) // Shift + Tab : ‹t‡
+            if (event->key.shift) // Shift + Tab : é€†é †
             {
                 if (0 < tileVal) tileVal--;
             }
-            else // Tab : ³‡
+            else // Tab : æ­£é †
             {
                 if (tileVal < static_cast<int>(SelectedTile::Erase)) tileVal++;
             }
@@ -687,7 +691,7 @@ void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mous
             mCurrentTile = static_cast<SelectedTile>(tileVal);
         }
 
-        // ƒ^ƒCƒ‹”z’uƒ‚[ƒh‚Æ”ÍˆÍ‘I‘ğƒ‚[ƒh‚ÌØ‘Ö (M)
+        // ã‚¿ã‚¤ãƒ«é…ç½®ãƒ¢ãƒ¼ãƒ‰ã¨ç¯„å›²é¸æŠãƒ¢ãƒ¼ãƒ‰ã®åˆ‡æ›¿ (M)
         if (event->key.code == sf::Keyboard::M)
         {
             if (mRadioDraw->isChecked())
@@ -700,15 +704,15 @@ void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mous
             }
         }
 
-        // ƒNƒCƒbƒNƒZ[ƒu (Ctrl + S)
-        if (event->key.control && event->key.code == sf::Keyboard::S)
+        // ã‚¯ã‚¤ãƒƒã‚¯ã‚»ãƒ¼ãƒ– (Ctrl + S / macOSã§ã¯Cmd + Sã‚‚å¯)
+        if (PlatformInput::IsCommandModifierPressed(event->key) && event->key.code == sf::Keyboard::S)
         {
-            // ƒZ[ƒuŒã‚ÉƒGƒfƒBƒ^‰æ–Ê‚É–ß‚é‚½‚ß‚Éfalse
+            // ã‚»ãƒ¼ãƒ–å¾Œã«ã‚¨ãƒ‡ã‚£ã‚¿ç”»é¢ã«æˆ»ã‚‹ãŸã‚ã«false
             PerformSave(false);
         }
     }
 
-    // ShiftƒL[—£ãƒCƒxƒ“ƒg (”ÍˆÍ‘I‘ğ‚ÌI—¹)
+    // Shiftã‚­ãƒ¼é›¢ä¸Šã‚¤ãƒ™ãƒ³ãƒˆ (ç¯„å›²é¸æŠã®çµ‚äº†)
     if (event->type == sf::Event::KeyReleased)
     {
         if (mRadioSelect->isChecked() &&
@@ -716,7 +720,7 @@ void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mous
         {
             if (mIsSelecting)
             {
-                // ‘I‘ğŠ®—¹Aƒ{ƒ^ƒ“—LŒø‰»
+                // é¸æŠå®Œäº†ã€ãƒœã‚¿ãƒ³æœ‰åŠ¹åŒ–
                 mBtnFillWall->setEnabled(true); mBtnFillFloor->setEnabled(true);
                 mBtnFillGoal->setEnabled(true); mBtnDeleteArea->setEnabled(true);
             }
@@ -724,26 +728,26 @@ void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mous
     }
 }
 
-// ƒvƒ‰ƒCƒx[ƒgƒwƒ‹ƒp[ŠÖ”
+// ãƒ—ãƒ©ã‚¤ãƒ™ãƒ¼ãƒˆãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°
 
 void EditorScreen::DrawCanvas()
 {
-    // ƒLƒƒƒ“ƒoƒX‚ğƒNƒŠƒA (”wŒiF‚ğw’è)
+    // ã‚­ãƒ£ãƒ³ãƒã‚¹ã‚’ã‚¯ãƒªã‚¢ (èƒŒæ™¯è‰²ã‚’æŒ‡å®š)
     mCanvasWidget->clear(sf::Color(30, 30, 30));
 
-    // ƒXƒvƒ‰ƒCƒg‚Ì•`‰æ (À•W‚ÍƒLƒƒƒ“ƒoƒX¶ã (0,0) ‚©‚ç‚Ì‘Š‘ÎÀ•W)
+    // ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®æç”» (åº§æ¨™ã¯ã‚­ãƒ£ãƒ³ãƒã‚¹å·¦ä¸Š (0,0) ã‹ã‚‰ã®ç›¸å¯¾åº§æ¨™)
     sf::Vector2f currentPos(0.0f, mCanvasTileSize * static_cast<float>(mEditorCanvasSize.y));
 
-    // ”Õ–Êƒ^ƒCƒ‹‚ğ•`‰æ
+    // ç›¤é¢ã‚¿ã‚¤ãƒ«ã‚’æç”»
     for (int y = 0; y < mEditorCanvasSize.y; ++y)
     {
         currentPos.x = 0.0f;
         for (int x = 0; x < mEditorCanvasSize.x; ++x)
         {
             char tile = mEditorBoardData[y][x];
-            sf::Sprite* spriteToDraw = &mFloorSprite; // ƒfƒtƒHƒ‹ƒg‚Í°
+            sf::Sprite* spriteToDraw = &mFloorSprite; // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¯åºŠ
 
-            // °ˆÈŠO‚Ì’nŒ`ƒ}ƒX‚Ìê‡‚Ìİ’è
+            // åºŠä»¥å¤–ã®åœ°å½¢ãƒã‚¹ã®å ´åˆã®è¨­å®š
             switch (tile)
             {
             case '#': spriteToDraw = &mWallSprite; break;
@@ -752,11 +756,11 @@ void EditorScreen::DrawCanvas()
             case '+': spriteToDraw = &mGoalSprite; break;
             }
 
-            // ’nŒ`•”•ª‚ğ•`‰æ
+            // åœ°å½¢éƒ¨åˆ†ã‚’æç”»
             spriteToDraw->setPosition(currentPos);
             mCanvasWidget->draw(*spriteToDraw);
 
-            // ‰×•¨‚ÆƒvƒŒƒCƒ„[‚Ì•`‰æ
+            // è·ç‰©ã¨ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®æç”»
             if (tile == '$')
             {
                 mBaggageSprite.setPosition(currentPos);
@@ -773,14 +777,14 @@ void EditorScreen::DrawCanvas()
                 mCanvasWidget->draw(mPlayerSprite);
             }
 
-            // ƒOƒŠƒbƒhü (c)
+            // ã‚°ãƒªãƒƒãƒ‰ç·š (ç¸¦)
             mGridLines[0].setSize({ 1.f, mCanvasTileSize });
             mGridLines[0].setPosition(currentPos - sf::Vector2f{ 0.0f, mCanvasTileSize });
             mCanvasWidget->draw(mGridLines[0]);
 
             currentPos.x += mCanvasTileSize;
         }
-        // ƒOƒŠƒbƒhü (‰¡)
+        // ã‚°ãƒªãƒƒãƒ‰ç·š (æ¨ª)
         mGridLines[1].setSize({ mCanvasTileSize * mEditorCanvasSize.x, 1.f });
         mGridLines[1].setPosition(0.0f, currentPos.y);
         mCanvasWidget->draw(mGridLines[1]);
@@ -788,7 +792,7 @@ void EditorScreen::DrawCanvas()
         currentPos.y -= mCanvasTileSize;
     }
 
-    // ƒ}ƒEƒXƒzƒo[‚ÌƒnƒCƒ‰ƒCƒg (ƒ}ƒEƒXƒ‚[ƒh‚Ì‚İ•\¦)
+    // ãƒã‚¦ã‚¹ãƒ›ãƒãƒ¼ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆ (ãƒã‚¦ã‚¹ãƒ¢ãƒ¼ãƒ‰æ™‚ã®ã¿è¡¨ç¤º)
     if (mIsMouseMode && mHoverGridCell.x != -1)
     {
         mHoverHighlight.setPosition(
@@ -798,7 +802,7 @@ void EditorScreen::DrawCanvas()
         mCanvasWidget->draw(mHoverHighlight);
     }
 
-    // ‘I‘ğ’†ƒ}ƒX‚ÌƒnƒCƒ‰ƒCƒg‚ğ•`‰æ (ƒtƒF[ƒY2)
+    // é¸æŠä¸­ãƒã‚¹ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’æç”» (ãƒ•ã‚§ãƒ¼ã‚º2)
     if (mSelectedGridCell.x != -1)
     {
         mSelectedCellHighlight.setPosition(
@@ -810,7 +814,7 @@ void EditorScreen::DrawCanvas()
 
     if (mIsSelecting)
     {
-        // ‹éŒ`”ÍˆÍ‚ğŒvZ
+        // çŸ©å½¢ç¯„å›²ã‚’è¨ˆç®—
         int startX = std::min(mDragStartPos.x, mDragEndPos.x);
         int startY = std::min(mDragStartPos.y, mDragEndPos.y);
         int endX = std::max(mDragStartPos.x, mDragEndPos.x);
@@ -818,27 +822,27 @@ void EditorScreen::DrawCanvas()
 
         mSelectionRect.setPosition(startX * mCanvasTileSize, (mEditorCanvasSize.y - startY) * mCanvasTileSize);
         mSelectionRect.setSize({ (endX - startX + 1) * mCanvasTileSize, -(endY - startY + 1) * mCanvasTileSize });
-        mSelectionRect.setFillColor(sf::Color(0, 0, 255, 50)); // Â‚Ì”¼“§–¾
+        mSelectionRect.setFillColor(sf::Color(0, 0, 255, 50)); // é’ã®åŠé€æ˜
         mCanvasWidget->draw(mSelectionRect);
     }
 }
 
 sf::Vector2i EditorScreen::ScreenToGrid(const sf::Vector2f& screenPos) const
 {
-    // screenPos‚ÍƒƒCƒ“ƒEƒBƒ“ƒhƒEã‚Ìâ‘ÎÀ•W
+    // screenPosã¯ãƒ¡ã‚¤ãƒ³ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ä¸Šã®çµ¶å¯¾åº§æ¨™
     auto canvasPos = mCanvasWidget->getPosition() + mEditorWindow->getChildWidgetsOffset();
 
-    // ƒGƒfƒBƒbƒgƒEƒBƒ“ƒhƒE‚Ìƒ^ƒCƒgƒ‹ƒo[‚ğœ‚¢‚Ä¶ã‚ğŒ´“_‚Æ‚µ‚½ƒ}ƒEƒX‚ÌÀ•W
+    // ã‚¨ãƒ‡ã‚£ãƒƒãƒˆã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¿ã‚¤ãƒˆãƒ«ãƒãƒ¼ã‚’é™¤ã„ã¦å·¦ä¸Šã‚’åŸç‚¹ã¨ã—ãŸãƒã‚¦ã‚¹ã®åº§æ¨™
     sf::Vector2f childWindowMousePos((float)screenPos.x - mEditorWindow->getPosition().x, (float)screenPos.y - mEditorWindow->getPosition().y);
 
-    // ƒ[ƒJƒ‹À•W‚Ö•ÏŠ·
+    // ãƒ­ãƒ¼ã‚«ãƒ«åº§æ¨™ã¸å¤‰æ›
     sf::Vector2f localPos = childWindowMousePos - sf::Vector2f{ canvasPos.x, canvasPos.y };
 
-    // ƒOƒŠƒbƒhÀ•W‚Ö•ÏŠ·
+    // ã‚°ãƒªãƒƒãƒ‰åº§æ¨™ã¸å¤‰æ›
     int gridX = static_cast<int>(std::floor(localPos.x / mCanvasTileSize));
     int gridY = static_cast<int>(std::floor(localPos.y / mCanvasTileSize));
 
-    // ”ÍˆÍƒ`ƒFƒbƒN
+    // ç¯„å›²ãƒã‚§ãƒƒã‚¯
     if (gridX >= 0 && gridX < mEditorCanvasSize.x && gridY >= 0 && gridY < mEditorCanvasSize.y)
     {
         return { gridX, gridY };
@@ -852,17 +856,17 @@ void EditorScreen::PlaceTile(const sf::Vector2i& gridPos, bool isContinuous)
     SelectedTile targetType = mCurrentTile;
     char newChar = currentChar;
 
-    // ƒvƒŒƒCƒ„[”z’u‚Ì“Á•Êƒ‹[ƒ‹
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼é…ç½®ã®ç‰¹åˆ¥ãƒ«ãƒ¼ãƒ«
     if (targetType == SelectedTile::Player)
     {
-        // ˜A‘±”z’uiƒhƒ‰ƒbƒO/ƒL[’·‰Ÿ‚µj‚Ìê‡A
-        // uŒÃ‚¢ˆÊ’u‚ÌƒvƒŒƒCƒ„[‚ğÁ‚µ‚ÄAV‚µ‚¢ˆÊ’u‚É’u‚­v‚±‚Æ‚Åu’Ç]v‚ğ•\Œ»‚·‚é
+        // é€£ç¶šé…ç½®ï¼ˆãƒ‰ãƒ©ãƒƒã‚°/ã‚­ãƒ¼é•·æŠ¼ã—ï¼‰ã®å ´åˆã€
+        // ã€Œå¤ã„ä½ç½®ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’æ¶ˆã—ã¦ã€æ–°ã—ã„ä½ç½®ã«ç½®ãã€ã“ã¨ã§ã€Œè¿½å¾“ã€ã‚’è¡¨ç¾ã™ã‚‹
         if (isContinuous)
         {
-            // Šù‚É‚»‚±‚ÉƒvƒŒƒCƒ„[‚ª‚¢‚½‚ç‰½‚à‚µ‚È‚¢i–³‘Ê‚ÈXV‚ğ–h‚®j
+            // æ—¢ã«ãã“ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒã„ãŸã‚‰ä½•ã‚‚ã—ãªã„ï¼ˆç„¡é§„ãªæ›´æ–°ã‚’é˜²ãï¼‰
             if (currentChar == '@' || currentChar == '+') return;
 
-            // ‘S”Õ–Ê‚©‚çƒvƒŒƒCƒ„[‚ğÁ‹iˆÚ“®‘O‚Ìc‘œ‚ğÁ‚·j
+            // å…¨ç›¤é¢ã‹ã‚‰ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’æ¶ˆå»ï¼ˆç§»å‹•å‰ã®æ®‹åƒã‚’æ¶ˆã™ï¼‰
             for (int y = 0; y < mEditorCanvasSize.y; ++y)
             {
                 for (int x = 0; x < mEditorCanvasSize.x; ++x)
@@ -871,26 +875,26 @@ void EditorScreen::PlaceTile(const sf::Vector2i& gridPos, bool isContinuous)
                     if (mEditorBoardData[y][x] == '+') mEditorBoardData[y][x] = '.';
                 }
             }
-            // V‚µ‚¢•¶š‚ğŒˆ’è‚·‚é‚½‚ß‚Ì€”õicurrentChar‚ÍŒÃ‚¢‚Ü‚Ü‚È‚Ì‚Å’ˆÓj
-            // Á‹ˆ—‚ÅcurrentChar‚ÌêŠ‚ª•Ï‚í‚Á‚½‰Â”\«‚ª‚ ‚é‚Ì‚ÅÄæ“¾
+            // æ–°ã—ã„æ–‡å­—ã‚’æ±ºå®šã™ã‚‹ãŸã‚ã®æº–å‚™ï¼ˆcurrentCharã¯å¤ã„ã¾ã¾ãªã®ã§æ³¨æ„ï¼‰
+            // æ¶ˆå»å‡¦ç†ã§currentCharã®å ´æ‰€ãŒå¤‰ã‚ã£ãŸå¯èƒ½æ€§ãŒã‚ã‚‹ã®ã§å†å–å¾—
             currentChar = mEditorBoardData[gridPos.y][gridPos.x];
         }
         else
         {
-            // ’P”­ƒ‚[ƒh: ƒgƒOƒ‹“®ì
-            // (Šù‘¶ƒƒWƒbƒN: Šù‚ÉƒvƒŒƒCƒ„[‚ª‚¢‚ê‚ÎÁ‚·‚¾‚¯‚Ì‘€ì‚É‚È‚é)
+            // å˜ç™ºãƒ¢ãƒ¼ãƒ‰: ãƒˆã‚°ãƒ«å‹•ä½œ
+            // (æ—¢å­˜ãƒ­ã‚¸ãƒƒã‚¯: æ—¢ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒã„ã‚Œã°æ¶ˆã™ã ã‘ã®æ“ä½œã«ãªã‚‹)
             if (currentChar == '@' || currentChar == '+')
             {
-                // Šù‚É‚¢‚éêŠ‚ğƒNƒŠƒbƒN -> Á‹‚Ì‚İ
-                // (‘Oˆ—‚ÅÁ‚·‚Ì‚ÅAnewChar‚ğ°/ƒS[ƒ‹‚É–ß‚·)
+                // æ—¢ã«ã„ã‚‹å ´æ‰€ã‚’ã‚¯ãƒªãƒƒã‚¯ -> æ¶ˆå»ã®ã¿
+                // (å‰å‡¦ç†ã§æ¶ˆã™ã®ã§ã€newCharã‚’åºŠ/ã‚´ãƒ¼ãƒ«ã«æˆ»ã™)
                 if (currentChar == '@') newChar = ' ';
                 if (currentChar == '+') newChar = '.';
                 
-                // ¦d—v: ‚±‚±‚Åreturn‚¹‚¸A‰º•”‚Ì”Õ–ÊXV‚Ü‚Å’Ê‚·
+                // â€»é‡è¦: ã“ã“ã§returnã›ãšã€ä¸‹éƒ¨ã®ç›¤é¢æ›´æ–°ã¾ã§é€šã™
             }
             else
             {
-                // ‚¢‚È‚¢êŠ‚ÉƒNƒŠƒbƒN -> ‘¼‚ğÁ‚µ‚Ä‚±‚±‚É’u‚­
+                // ã„ãªã„å ´æ‰€ã«ã‚¯ãƒªãƒƒã‚¯ -> ä»–ã‚’æ¶ˆã—ã¦ã“ã“ã«ç½®ã
                 for (int y = 0; y < mEditorCanvasSize.y; ++y)
                 {
                     for (int x = 0; x < mEditorCanvasSize.x; ++x)
@@ -904,7 +908,7 @@ void EditorScreen::PlaceTile(const sf::Vector2i& gridPos, bool isContinuous)
         }
     }
 
-    // ”z’uƒƒWƒbƒN
+    // é…ç½®ãƒ­ã‚¸ãƒƒã‚¯
     switch (targetType)
     {
     case SelectedTile::Wall: newChar = '#'; break;
@@ -920,21 +924,21 @@ void EditorScreen::PlaceTile(const sf::Vector2i& gridPos, bool isContinuous)
         break;
 
     case SelectedTile::Baggage:
-        // ˜A‘±”z’u‚Ìê‡AuŠù‚É‰×•¨‚ª‚ ‚é‚È‚ç‰½‚à‚µ‚È‚¢i‰ğœ‚µ‚È‚¢jv
+        // é€£ç¶šé…ç½®ã®å ´åˆã€ã€Œæ—¢ã«è·ç‰©ãŒã‚ã‚‹ãªã‚‰ä½•ã‚‚ã—ãªã„ï¼ˆè§£é™¤ã—ãªã„ï¼‰ã€
         if (isContinuous)
         {
-            if (currentChar == '$' || currentChar == '*') return; // “_–Å–h~
+            if (currentChar == '$' || currentChar == '*') return; // ç‚¹æ»…é˜²æ­¢
         }
         else
         {
-            // ’P”­ƒNƒŠƒbƒN‚È‚çƒgƒOƒ‹“®ì (Šù‘¶ƒƒWƒbƒN)
+            // å˜ç™ºã‚¯ãƒªãƒƒã‚¯ãªã‚‰ãƒˆã‚°ãƒ«å‹•ä½œ (æ—¢å­˜ãƒ­ã‚¸ãƒƒã‚¯)
             if (currentChar == '$') newChar = ' ';
             else if (currentChar == '*') newChar = '.';
         }
 
-        // ”z’uˆ— (‚±‚±‚É—ˆ‚é = ’u‚­ ‚Ü‚½‚Í ƒgƒOƒ‹‚ÅÁ‚·‘ÎÛ‚Å‚È‚¢)
-        // ’P”­‚ÅÁ‚·ˆ—‚Íã‚Ìif‚ÅnewCharİ’èÏ‚İ‚È‚Ì‚ÅA‚±‚±‚Å‚Íu’u‚­vƒP[ƒX‚ğ‹Lq
-        if (newChar == currentChar) // ã‚ÌƒgƒOƒ‹‚Å•Ï‚í‚Á‚Ä‚È‚¯‚ê‚Îu’u‚­v
+        // é…ç½®å‡¦ç† (ã“ã“ã«æ¥ã‚‹ = ç½®ã ã¾ãŸã¯ ãƒˆã‚°ãƒ«ã§æ¶ˆã™å¯¾è±¡ã§ãªã„)
+        // å˜ç™ºã§æ¶ˆã™å‡¦ç†ã¯ä¸Šã®ifã§newCharè¨­å®šæ¸ˆã¿ãªã®ã§ã€ã“ã“ã§ã¯ã€Œç½®ãã€ã‚±ãƒ¼ã‚¹ã‚’è¨˜è¿°
+        if (newChar == currentChar) // ä¸Šã®ãƒˆã‚°ãƒ«ã§å¤‰ã‚ã£ã¦ãªã‘ã‚Œã°ã€Œç½®ãã€
         {
             if (currentChar == '@') newChar = '$';
             else if (currentChar == '+') newChar = '*';
@@ -945,8 +949,8 @@ void EditorScreen::PlaceTile(const sf::Vector2i& gridPos, bool isContinuous)
         break;
 
     case SelectedTile::Player:
-        // ã•”‚Åˆ—Ï‚İ‚¾‚ªAnewChar‚Ìİ’è‚ª•K—v
-        if (newChar == currentChar) // •ÏX‚ª‚Ü‚¾‚È‚çu’u‚­v
+        // ä¸Šéƒ¨ã§å‡¦ç†æ¸ˆã¿ã ãŒã€newCharã®è¨­å®šãŒå¿…è¦
+        if (newChar == currentChar) // å¤‰æ›´ãŒã¾ã ãªã‚‰ã€Œç½®ãã€
         {
             if (currentChar == ' ' || currentChar == '$') newChar = '@';
             else if (currentChar == '.' || currentChar == '*') newChar = '+';
@@ -969,10 +973,10 @@ void EditorScreen::PlaceTile(const sf::Vector2i& gridPos, bool isContinuous)
     }
 }
 
-// ‰Eã‚Ìî•ñƒpƒlƒ‹‚ÌXV
+// å³ä¸Šã®æƒ…å ±ãƒ‘ãƒãƒ«ã®æ›´æ–°
 void EditorScreen::UpdateInfoPanel()
 {
-    // (ƒtƒF[ƒY1)
+    // (ãƒ•ã‚§ãƒ¼ã‚º1)
     int baggageCount = 0;
     int goalCount = 0;
     int playerCount = 0;
@@ -992,7 +996,7 @@ void EditorScreen::UpdateInfoPanel()
 
 void EditorScreen::ResizeCanvasIfNeeded()
 {
-    // 1. Œ»İ”z’u‚³‚ê‚Ä‚¢‚éƒIƒuƒWƒFƒNƒg‚ÌÅ¬EÅ‘åÀ•W‚ğŒ©‚Â‚¯‚é
+    // 1. ç¾åœ¨é…ç½®ã•ã‚Œã¦ã„ã‚‹ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®æœ€å°ãƒ»æœ€å¤§åº§æ¨™ã‚’è¦‹ã¤ã‘ã‚‹
     int minX = mEditorCanvasSize.x;
     int minY = mEditorCanvasSize.y;
     int maxX = -1;
@@ -1005,7 +1009,7 @@ void EditorScreen::ResizeCanvasIfNeeded()
         for (int x = 0; x < mEditorCanvasSize.x; ++x)
         {
             char tile = mEditorBoardData[y][x];
-            // °ˆÈŠOi•ÇAƒS[ƒ‹A‰×•¨AƒvƒŒƒCƒ„[j‚ª‚ ‚éêŠ‚ğ’T‚·
+            // åºŠä»¥å¤–ï¼ˆå£ã€ã‚´ãƒ¼ãƒ«ã€è·ç‰©ã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ï¼‰ãŒã‚ã‚‹å ´æ‰€ã‚’æ¢ã™
             if (tile != ' ')
             {
                 if (x < minX) minX = x;
@@ -1017,38 +1021,38 @@ void EditorScreen::ResizeCanvasIfNeeded()
         }
     }
 
-    // ‰½‚à’u‚©‚ê‚Ä‚¢‚È‚¢ê‡‚ÍƒfƒtƒHƒ‹ƒgƒTƒCƒY (—á: 10x10) ‚É–ß‚·
+    // ä½•ã‚‚ç½®ã‹ã‚Œã¦ã„ãªã„å ´åˆã¯ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã‚µã‚¤ã‚º (ä¾‹: 10x10) ã«æˆ»ã™
     if (isEmpty)
     {
-        // •Ï‰»‚ª‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+        // å¤‰åŒ–ãŒãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
         if (mEditorCanvasSize.x == mCanvasSizeMin && mEditorCanvasSize.y == mCanvasSizeMin) return;
 
         mEditorCanvasSize = { mCanvasSizeMin, mCanvasSizeMin };
         mEditorBoardData.assign(static_cast<size_t>(mCanvasSizeMin), std::string(static_cast<size_t>(mCanvasSizeMin), ' '));
-        // •`‰æî•ñ‚ÌXV‚Ö
+        // æç”»æƒ…å ±ã®æ›´æ–°ã¸
     }
     else
     {
-        // 2. •K—v‚ÈƒTƒCƒY‚ğŒvZ (ŠOü +1 ƒ}ƒX)
-        // Œ»İ‚ÌƒIƒuƒWƒFƒNƒg”ÍˆÍ‚Ì•‚Æ‚‚³
+        // 2. å¿…è¦ãªã‚µã‚¤ã‚ºã‚’è¨ˆç®— (å¤–å‘¨ +1 ãƒã‚¹)
+        // ç¾åœ¨ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆç¯„å›²ã®å¹…ã¨é«˜ã•
         int contentWidth = maxX - minX + 1;
         int contentHeight = maxY - minY + 1;
 
-        // •K—v‚ÈƒLƒƒƒ“ƒoƒXƒTƒCƒY (¶‰E‚É +1 ‚¸‚Â‚Å +2Aã‰º‚É +1 ‚¸‚Â‚Å +2)
-        // ‚©‚ÂAc‰¡”ä‚ğˆÛ‚·‚é‚½‚ß‘å‚«‚¢•û‚É‡‚í‚¹‚éid—lj
+        // å¿…è¦ãªã‚­ãƒ£ãƒ³ãƒã‚¹ã‚µã‚¤ã‚º (å·¦å³ã« +1 ãšã¤ã§ +2ã€ä¸Šä¸‹ã« +1 ãšã¤ã§ +2)
+        // ã‹ã¤ã€ç¸¦æ¨ªæ¯”ã‚’ç¶­æŒã™ã‚‹ãŸã‚å¤§ãã„æ–¹ã«åˆã‚ã›ã‚‹ï¼ˆä»•æ§˜ï¼‰
         int newSize = std::max(contentWidth, contentHeight) + 2;
 
-        // Å¬ƒTƒCƒY§ŒÀ (—á: 10–¢–‚É‚Í‚µ‚È‚¢)
+        // æœ€å°ã‚µã‚¤ã‚ºåˆ¶é™ (ä¾‹: 10æœªæº€ã«ã¯ã—ãªã„)
         newSize = std::max(newSize, mCanvasSizeMin);
 
-        // ƒTƒCƒY•ÏX‚ª•K—v‚©H
+        // ã‚µã‚¤ã‚ºå¤‰æ›´ãŒå¿…è¦ã‹ï¼Ÿ
         if (newSize != mEditorCanvasSize.x || newSize != mEditorCanvasSize.y)
         {
-            // 3. V‚µ‚¢”Õ–Êƒf[ƒ^‚ğì¬‚µ‚ÄˆÚs
+            // 3. æ–°ã—ã„ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’ä½œæˆã—ã¦ç§»è¡Œ
             std::vector<std::string> newBoard(newSize, std::string(newSize, ' '));
 
-            // ƒIƒuƒWƒFƒNƒg‚ğV‚µ‚¢”Õ–Ê‚Ì’†‰›‚É”z’u‚·‚é‚½‚ß‚ÌƒIƒtƒZƒbƒg
-            // V‚µ‚¢”Õ–Ê‚Ì’†S - ƒIƒuƒWƒFƒNƒgŒQ‚Ì’†S
+            // ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’æ–°ã—ã„ç›¤é¢ã®ä¸­å¤®ã«é…ç½®ã™ã‚‹ãŸã‚ã®ã‚ªãƒ•ã‚»ãƒƒãƒˆ
+            // æ–°ã—ã„ç›¤é¢ã®ä¸­å¿ƒ - ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆç¾¤ã®ä¸­å¿ƒ
             int offsetX = (newSize - contentWidth) / 2 - minX;
             int offsetY = (newSize - contentHeight) / 2 - minY;
 
@@ -1060,36 +1064,36 @@ void EditorScreen::ResizeCanvasIfNeeded()
                 }
             }
 
-            // ƒf[ƒ^‚ğXV
+            // ãƒ‡ãƒ¼ã‚¿ã‚’æ›´æ–°
             mEditorBoardData = newBoard;
             mEditorCanvasSize = { newSize, newSize };
 
-            // ƒJ[ƒ\ƒ‹ˆÊ’u‚È‚Ç‚ª‚¸‚ê‚È‚¢‚æ‚¤‚É’²®i•K—v‚È‚çj
-            // ¡‰ñ‚ÍƒJ[ƒ\ƒ‹ˆÊ’u‚ÌƒŠƒZƒbƒg‚ª–³“ï‚©‚à‚µ‚ê‚È‚¢
+            // ã‚«ãƒ¼ã‚½ãƒ«ä½ç½®ãªã©ãŒãšã‚Œãªã„ã‚ˆã†ã«èª¿æ•´ï¼ˆå¿…è¦ãªã‚‰ï¼‰
+            // ä»Šå›ã¯ã‚«ãƒ¼ã‚½ãƒ«ä½ç½®ã®ãƒªã‚»ãƒƒãƒˆãŒç„¡é›£ã‹ã‚‚ã—ã‚Œãªã„
             // mSelectedGridCell = {-1, -1};
         }
     }
 
-    // 4. ƒrƒ…[‚ÆƒEƒBƒWƒFƒbƒg‚ÌƒTƒCƒYEˆÊ’uXV
-    // •`‰æ‚Ég‚¦‚éÅ‘å—Ìˆæ
+    // 4. ãƒ“ãƒ¥ãƒ¼ã¨ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®ã‚µã‚¤ã‚ºãƒ»ä½ç½®æ›´æ–°
+    // æç”»ã«ä½¿ãˆã‚‹æœ€å¤§é ˜åŸŸ
     float maxAvailableHeight = mEditorWindow->getSize().y * 0.9f;
 
-    // c‰¡A‚Ç‚¿‚ç‚Ì”{—¦‚ª§ŒÀ‚É‚È‚é‚©ŒvZ
+    // ç¸¦æ¨ªã€ã©ã¡ã‚‰ã®å€ç‡ãŒåˆ¶é™ã«ãªã‚‹ã‹è¨ˆç®—
     float scaleX = maxAvailableHeight / static_cast<float>(mEditorCanvasSize.x);
     float scaleY = maxAvailableHeight / static_cast<float>(mEditorCanvasSize.y);
 
-    // ¬‚³‚¢•û‚Ì”{—¦‚É‡‚í‚¹‚Äƒ^ƒCƒ‹ƒTƒCƒY‚ğŒˆ’è
+    // å°ã•ã„æ–¹ã®å€ç‡ã«åˆã‚ã›ã¦ã‚¿ã‚¤ãƒ«ã‚µã‚¤ã‚ºã‚’æ±ºå®š
     mCanvasTileSize = std::min(scaleX, scaleY);
 
-    // ƒLƒƒƒ“ƒoƒXƒEƒBƒWƒFƒbƒg‚ÌƒTƒCƒY‚ğuƒ^ƒCƒ‹ƒTƒCƒY ~ ŒÂ”v‚Éİ’è
+    // ã‚­ãƒ£ãƒ³ãƒã‚¹ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®ã‚µã‚¤ã‚ºã‚’ã€Œã‚¿ã‚¤ãƒ«ã‚µã‚¤ã‚º Ã— å€‹æ•°ã€ã«è¨­å®š
     mCanvasWidget->setSize(mCanvasTileSize * static_cast<float>(mEditorCanvasSize.x), mCanvasTileSize * static_cast<float>(mEditorCanvasSize.y));
 
-    // 5. ƒXƒvƒ‰ƒCƒg‚ÆƒnƒCƒ‰ƒCƒg‚ÌƒXƒP[ƒ‹XV
+    // 5. ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã¨ãƒã‚¤ãƒ©ã‚¤ãƒˆã®ã‚¹ã‚±ãƒ¼ãƒ«æ›´æ–°
     float texW = static_cast<float>(mFloorSprite.getTexture()->getSize().x);
     float texH = static_cast<float>(mFloorSprite.getTexture()->getSize().y);
 
-    // Y²”½“]‚Ì‘Î‰‚Í‚¨D‚İ‚Å (³‚Ì’l‚È‚çã‚©‚ç‰ºA•‰‚È‚ç‰º‚©‚çã)
-    // ‚±‚±‚Å‚Íˆê”Ê“I‚Èuã‚©‚ç‰ºv•`‰æ‚É‡‚í‚¹‚Ä³‚Ì’l‚É‚µ‚Ü‚·
+    // Yè»¸åè»¢ã®å¯¾å¿œã¯ãŠå¥½ã¿ã§ (æ­£ã®å€¤ãªã‚‰ä¸Šã‹ã‚‰ä¸‹ã€è² ãªã‚‰ä¸‹ã‹ã‚‰ä¸Š)
+    // ã“ã“ã§ã¯ä¸€èˆ¬çš„ãªã€Œä¸Šã‹ã‚‰ä¸‹ã€æç”»ã«åˆã‚ã›ã¦æ­£ã®å€¤ã«ã—ã¾ã™
     float scale(mCanvasTileSize / texW);
     mFloorSprite.setScale(scale, -scale);
     mWallSprite.setScale(scale, -scale);
@@ -1102,7 +1106,7 @@ void EditorScreen::ResizeCanvasIfNeeded()
     mHoverHighlight.setSize({ mCanvasTileSize, mCanvasTileSize });
     mSelectedCellHighlight.setSize({ mCanvasTileSize, mCanvasTileSize });
 
-    // ƒOƒŠƒbƒhü‚Ì‘¾‚³‚ªƒ^ƒCƒ‹ƒTƒCƒY‚É‘Î‚µ‚Ä‘¾‚·‚¬‚È‚¢‚æ‚¤‚É’²®
+    // ã‚°ãƒªãƒƒãƒ‰ç·šã®å¤ªã•ãŒã‚¿ã‚¤ãƒ«ã‚µã‚¤ã‚ºã«å¯¾ã—ã¦å¤ªã™ããªã„ã‚ˆã†ã«èª¿æ•´
     float gridThickness = std::max(1.0f, mCanvasTileSize / 40.0f);
     mGridLines[0].setSize({ gridThickness, mCanvasTileSize });
     mGridLines[1].setSize({ mCanvasTileSize * mEditorCanvasSize.x, gridThickness });
@@ -1112,13 +1116,13 @@ void EditorScreen::FillSelection(SelectedTile tile)
 {
     if (!mIsSelecting) return;
 
-    // ”ÍˆÍ‚Ì³‹K‰»
+    // ç¯„å›²ã®æ­£è¦åŒ–
     int startX = std::min(mDragStartPos.x, mDragEndPos.x);
     int startY = std::min(mDragStartPos.y, mDragEndPos.y);
     int endX = std::max(mDragStartPos.x, mDragEndPos.x);
     int endY = std::max(mDragStartPos.y, mDragEndPos.y);
 
-    // ˆê“I‚ÉŒ»İ‚Ìƒ^ƒCƒ‹‚ğ•Û‘¶‚µ‚Ä•ÏX
+    // ä¸€æ™‚çš„ã«ç¾åœ¨ã®ã‚¿ã‚¤ãƒ«ã‚’ä¿å­˜ã—ã¦å¤‰æ›´
     SelectedTile prevTile = mCurrentTile;
     mCurrentTile = tile;
 
@@ -1127,11 +1131,11 @@ void EditorScreen::FillSelection(SelectedTile tile)
     {
         for (int x = startX; x <= endX; ++x)
         {
-            // ƒOƒŠƒbƒh”ÍˆÍ“àƒ`ƒFƒbƒN
+            // ã‚°ãƒªãƒƒãƒ‰ç¯„å›²å†…ãƒã‚§ãƒƒã‚¯
             if (x >= 0 && x < mEditorCanvasSize.x && y >= 0 && y < mEditorCanvasSize.y)
             {
-                // PlaceTile‚ğŒÄ‚Ô‚Æ1ƒ}ƒX‚²‚Æ‚ÉƒŠƒTƒCƒY”»’è‚ª‘–‚Á‚Äd‚­‚È‚é‰Â”\«‚ª‚ ‚é‚½‚ß
-                // ‚±‚±‚Å‚Í’¼Úƒf[ƒ^‚ğ‘‚«Š·‚¦AÅŒã‚É‚Ü‚Æ‚ß‚ÄƒŠƒTƒCƒY”»’è‚ğs‚¤‚Ì‚ªŒø—¦“I‚Å‚·
+                // PlaceTileã‚’å‘¼ã¶ã¨1ãƒã‚¹ã”ã¨ã«ãƒªã‚µã‚¤ã‚ºåˆ¤å®šãŒèµ°ã£ã¦é‡ããªã‚‹å¯èƒ½æ€§ãŒã‚ã‚‹ãŸã‚
+                // ã“ã“ã§ã¯ç›´æ¥ãƒ‡ãƒ¼ã‚¿ã‚’æ›¸ãæ›ãˆã€æœ€å¾Œã«ã¾ã¨ã‚ã¦ãƒªã‚µã‚¤ã‚ºåˆ¤å®šã‚’è¡Œã†ã®ãŒåŠ¹ç‡çš„ã§ã™
                 char newChar = mTileToChar[mCurrentTile];
                 if (mEditorBoardData[y][x] != newChar)
                 {
@@ -1142,12 +1146,12 @@ void EditorScreen::FillSelection(SelectedTile tile)
         }
     }
 
-    mCurrentTile = prevTile; // Œ³‚É–ß‚·
+    mCurrentTile = prevTile; // å…ƒã«æˆ»ã™
 
     if (changed)
     {
-        ResizeCanvasIfNeeded(); // ÅŒã‚É1‰ñ‚¾‚¯ƒŠƒTƒCƒY”»’è
-        UpdateInfoPanel();      // î•ñXV
+        ResizeCanvasIfNeeded(); // æœ€å¾Œã«1å›ã ã‘ãƒªã‚µã‚¤ã‚ºåˆ¤å®š
+        UpdateInfoPanel();      // æƒ…å ±æ›´æ–°
         UpdateValidationState();
     }
 }
@@ -1157,7 +1161,7 @@ bool EditorScreen::CheckReachability()
     sf::Vector2i playerPos = { -1, -1 };
     int baggageCount = 0;
 
-    // 1. ƒvƒŒƒCƒ„[ˆÊ’u‚Æ‰×•¨”‚ğæ“¾
+    // 1. ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ä½ç½®ã¨è·ç‰©æ•°ã‚’å–å¾—
     for (int y = 0; y < mEditorCanvasSize.y; ++y)
     {
         for (int x = 0; x < mEditorCanvasSize.x; ++x)
@@ -1168,17 +1172,17 @@ bool EditorScreen::CheckReachability()
         }
     }
 
-    // ƒvƒŒƒCƒ„[‚ª‚¢‚È‚¢ê‡‚ÍNG
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒã„ãªã„å ´åˆã¯NG
     if (playerPos.x == -1) return false;
 
-    // 2. Flood Fill (•—Dæ’Tõ) ‚Å“’B‰Â”\—Ìˆæ‚ğ’²‚×‚é
-    // “¯‚ÉuŠOüi”Õ–ÊŠOj‚Ö“’B‰Â”\‚©v‚à’²‚×‚é
+    // 2. Flood Fill (å¹…å„ªå…ˆæ¢ç´¢) ã§åˆ°é”å¯èƒ½é ˜åŸŸã‚’èª¿ã¹ã‚‹
+    // åŒæ™‚ã«ã€Œå¤–å‘¨ï¼ˆç›¤é¢å¤–ï¼‰ã¸åˆ°é”å¯èƒ½ã‹ã€ã‚‚èª¿ã¹ã‚‹
     std::vector<std::vector<bool>> visited(mEditorCanvasSize.y, std::vector<bool>(mEditorCanvasSize.x, false));
     std::vector<sf::Vector2i> queue;
     queue.push_back(playerPos);
     visited[playerPos.y][playerPos.x] = true;
 
-    bool isEnclosed = true; // •Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‚©
+    bool isEnclosed = true; // å£ã§å›²ã¾ã‚Œã¦ã„ã‚‹ã‹
     int reachableBaggages = 0;
 
     int head = 0;
@@ -1186,14 +1190,14 @@ bool EditorScreen::CheckReachability()
     {
         sf::Vector2i curr = queue[head++];
 
-        // ƒLƒƒƒ“ƒoƒX‚Ì’[‚É“’B‚µ‚½‚çuˆÍ‚Ü‚ê‚Ä‚¢‚È‚¢v
+        // ã‚­ãƒ£ãƒ³ãƒã‚¹ã®ç«¯ã«åˆ°é”ã—ãŸã‚‰ã€Œå›²ã¾ã‚Œã¦ã„ãªã„ã€
         if (curr.x == 0 || curr.x == mEditorCanvasSize.x - 1 ||
             curr.y == 0 || curr.y == mEditorCanvasSize.y - 1)
         {
             isEnclosed = false;
         }
 
-        // 4•ûŒü‚ğƒ`ƒFƒbƒN
+        // 4æ–¹å‘ã‚’ãƒã‚§ãƒƒã‚¯
         int dx[] = { 0, 0, 1, -1 };
         int dy[] = { 1, -1, 0, 0 };
 
@@ -1202,20 +1206,20 @@ bool EditorScreen::CheckReachability()
             int nx = curr.x + dx[i];
             int ny = curr.y + dy[i];
 
-            // ”ÍˆÍ“àƒ`ƒFƒbƒN
+            // ç¯„å›²å†…ãƒã‚§ãƒƒã‚¯
             if (nx >= 0 && nx < mEditorCanvasSize.x && ny >= 0 && ny < mEditorCanvasSize.y)
             {
                 if (!visited[ny][nx])
                 {
                     char c = mEditorBoardData[ny][nx];
-                    // •ÇˆÈŠO‚È‚çˆÚ“®‰Â”\‚Æ‚İ‚È‚·i‰×•¨‚à‰Ÿ‚¹‚é‚Ì‚ÅˆÚ“®‰Â”\Œo˜H‚ÉŠÜ‚ß‚éj
-                    // ¦Œµ–§‚É‚Í‰×•¨‚ÍáŠQ•¨‚¾‚ªA‚±‚±‚Å‚Íu‰×•¨‚ÉG‚ê‚é‚©v‚ğŒ©‚½‚¢‚Ì‚Å’Ê‚ê‚é‚à‚Ì‚Æ‚·‚é
+                    // å£ä»¥å¤–ãªã‚‰ç§»å‹•å¯èƒ½ã¨ã¿ãªã™ï¼ˆè·ç‰©ã‚‚æŠ¼ã›ã‚‹ã®ã§ç§»å‹•å¯èƒ½çµŒè·¯ã«å«ã‚ã‚‹ï¼‰
+                    // â€»å³å¯†ã«ã¯è·ç‰©ã¯éšœå®³ç‰©ã ãŒã€ã“ã“ã§ã¯ã€Œè·ç‰©ã«è§¦ã‚Œã‚‹ã‹ã€ã‚’è¦‹ãŸã„ã®ã§é€šã‚Œã‚‹ã‚‚ã®ã¨ã™ã‚‹
                     if (c != '#')
                     {
                         visited[ny][nx] = true;
                         queue.push_back({ nx, ny });
 
-                        // “’B‚µ‚½ƒ}ƒX‚É‰×•¨‚ª‚ ‚é‚©ƒJƒEƒ“ƒg
+                        // åˆ°é”ã—ãŸãƒã‚¹ã«è·ç‰©ãŒã‚ã‚‹ã‹ã‚«ã‚¦ãƒ³ãƒˆ
                         if (c == '$' || c == '*') reachableBaggages++;
                     }
                 }
@@ -1223,27 +1227,27 @@ bool EditorScreen::CheckReachability()
         }
     }
 
-    // 3. Œ‹‰Ê‚Ì”»’è
+    // 3. çµæœã®åˆ¤å®š
     std::string statusMsg = "";
     bool isValid = true;
 
-    // ğŒ1: Š®‘S‚É•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‚©
+    // æ¡ä»¶1: å®Œå…¨ã«å£ã§å›²ã¾ã‚Œã¦ã„ã‚‹ã‹
     if (!isEnclosed)
     {
         statusMsg += mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_NOT_ENCLOSED_STATE") + "\n";
         isValid = false;
     }
 
-    // ğŒ2: ‚·‚×‚Ä‚Ì‰×•¨‚ª“’B‰Â”\‚©
-    // ¦ƒS[ƒ‹ã‚Ì‰×•¨('*')‚à“’B•s”\‚È‚ç“®‚©‚¹‚È‚¢‚Ì‚ÅNG‚Æ‚·‚éi‹l‚İ–h~‚Ì‚½‚ßj
-    // ‚½‚¾‚µd—l‚Å‚ÍuƒS[ƒ‹‚É”z’u‚³‚ê‚Ä‚¢‚È‚¢‰×•¨‚ª“’B•s”\v‚Æ‚ ‚é‚Ì‚Å’²®
+    // æ¡ä»¶2: ã™ã¹ã¦ã®è·ç‰©ãŒåˆ°é”å¯èƒ½ã‹
+    // â€»ã‚´ãƒ¼ãƒ«ä¸Šã®è·ç‰©('*')ã‚‚åˆ°é”ä¸èƒ½ãªã‚‰å‹•ã‹ã›ãªã„ã®ã§NGã¨ã™ã‚‹ï¼ˆè©°ã¿é˜²æ­¢ã®ãŸã‚ï¼‰
+    // ãŸã ã—ä»•æ§˜ã§ã¯ã€Œã‚´ãƒ¼ãƒ«ã«é…ç½®ã•ã‚Œã¦ã„ãªã„è·ç‰©ãŒåˆ°é”ä¸èƒ½ã€ã¨ã‚ã‚‹ã®ã§èª¿æ•´
     int unreachableNonGoaled = 0;
     for (int y = 0; y < mEditorCanvasSize.y; ++y)
     {
         for (int x = 0; x < mEditorCanvasSize.x; ++x)
         {
             char c = mEditorBoardData[y][x];
-            if (c == '$' && !visited[y][x]) // ƒS[ƒ‹‚Éæ‚Á‚Ä‚¢‚È‚¢‰×•¨A‚©‚Â–¢–K–â
+            if (c == '$' && !visited[y][x]) // ã‚´ãƒ¼ãƒ«ã«ä¹—ã£ã¦ã„ãªã„è·ç‰©ã€ã‹ã¤æœªè¨ªå•
             {
                 unreachableNonGoaled++;
             }
@@ -1261,7 +1265,7 @@ bool EditorScreen::CheckReachability()
 
 void EditorScreen::UpdateValidationState()
 {
-    // Šî–{“I‚È”‚Ìƒ`ƒFƒbƒN
+    // åŸºæœ¬çš„ãªæ•°ã®ãƒã‚§ãƒƒã‚¯
     int baggageCount = 0;
     int goalCount = 0;
     int playerCount = 0;
@@ -1275,7 +1279,7 @@ void EditorScreen::UpdateValidationState()
     std::string errorMsg = "";
     mIsValidLevel = true;
 
-    // 2. Šî–{ƒ‹[ƒ‹‚Ìƒ`ƒFƒbƒN
+    // 2. åŸºæœ¬ãƒ«ãƒ¼ãƒ«ã®ãƒã‚§ãƒƒã‚¯
     if (baggageCount != goalCount)
     {
         errorMsg += mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_COUNT_MISMATCH_STATE") + "\n";
@@ -1292,24 +1296,24 @@ void EditorScreen::UpdateValidationState()
         mIsValidLevel = false;
     }
 
-    // 3. Šî–{ƒ‹[ƒ‹‚ª’Ê‚Á‚Ä‚¢‚éê‡‚Ì‚İA‚“x‚È“’B”»’è‚ğs‚¤
+    // 3. åŸºæœ¬ãƒ«ãƒ¼ãƒ«ãŒé€šã£ã¦ã„ã‚‹å ´åˆã®ã¿ã€é«˜åº¦ãªåˆ°é”åˆ¤å®šã‚’è¡Œã†
     if (mIsValidLevel)
     {
-        // ¦CheckReachability‚Ì’†‚ÅisEnclosed”»’è‚às‚Á‚Ä‚¢‚é‚½‚ßŒÄ‚Ño‚·
+        // â€»CheckReachabilityã®ä¸­ã§isEnclosedåˆ¤å®šã‚‚è¡Œã£ã¦ã„ã‚‹ãŸã‚å‘¼ã³å‡ºã™
         if (!CheckReachability())
         {
-            // CheckReachability“à‚Å”­¶‚µ‚½ƒGƒ‰[ƒƒbƒZ[ƒW‚ğæ“¾‚·‚éd‘g‚İ‚ª•K—v
-            // Œ»ó‚ÍCheckReachability‚Ì–ß‚è’l‚¾‚¯‚Å”»’è
+            // CheckReachabilityå†…ã§ç™ºç”Ÿã—ãŸã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å–å¾—ã™ã‚‹ä»•çµ„ã¿ãŒå¿…è¦
+            // ç¾çŠ¶ã¯CheckReachabilityã®æˆ»ã‚Šå€¤ã ã‘ã§åˆ¤å®š
             errorMsg += mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_NOT_ENCLOSED_STATE") + "\n";
             mIsValidLevel = false;
         }
     }
 
-    // ‘S‚Ä‚Ì”»’è‚ğƒNƒŠƒA(isValid == true)‚µ‚½ê‡‚Ì‚İƒ{ƒ^ƒ“‚ğ—LŒø‰»
+    // å…¨ã¦ã®åˆ¤å®šã‚’ã‚¯ãƒªã‚¢(isValid == true)ã—ãŸå ´åˆã®ã¿ãƒœã‚¿ãƒ³ã‚’æœ‰åŠ¹åŒ–
     mSaveButton->setEnabled(mIsValidLevel);
     mApplyButton->setEnabled(mIsValidLevel);
 
-    // 4. ÅI“I‚È•\¦XV
+    // 4. æœ€çµ‚çš„ãªè¡¨ç¤ºæ›´æ–°
     if (mIsValidLevel)
     {
         mInfoBaggageGoaledLabel->setText(mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_STATUS") + mGame->GetLoc()->Get("EDITOR_RIGHT_PANEL_OK_STATE"));
@@ -1326,16 +1330,15 @@ void EditorScreen::PerformSave(bool closeAfterSave)
 {
     if (!mIsValidLevel) return;
 
-    // —]Œv‚È°ƒpƒlƒ‹‚ğØ‚è‹l‚ß‚½”Õ–Êƒf[ƒ^‚ğæ“¾
+    // ä½™è¨ˆãªåºŠãƒ‘ãƒãƒ«ã‚’åˆ‡ã‚Šè©°ã‚ãŸç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
     std::vector<std::string> trimmedBoard = GetTrimmedBoardData();
 
-    // ƒƒ‚ƒŠã‚ÌƒŠƒXƒg‚É’Ç‰ÁiŠù‘¶ˆ—j
+    if (!mGame->CallSave(trimmedBoard))
+        return;
+
     std::string newLevelName = "Edited_" + mGame->GetDateTime();
     mGame->AddBoard(newLevelName, trimmedBoard);
-    mLastSavedData = mEditorBoardData; // ƒZ[ƒuÏ‚İó‘Ô‚ÉXV
-
-    // ƒtƒ@ƒCƒ‹ƒ_ƒCƒAƒƒO‚ğŠJ‚¢‚Ä•Û‘¶
-    mGame->CallSave(trimmedBoard);
+    mLastSavedData = mEditorBoardData;
 
     if (closeAfterSave)
     {
@@ -1343,9 +1346,6 @@ void EditorScreen::PerformSave(bool closeAfterSave)
     }
     else
     {
-        // ƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚Å•Û‘¶Š®—¹’Ê’miCallSave‚ªƒLƒƒƒ“ƒZƒ‹‚³‚ê‚½ê‡‚Å‚ào‚é‚ªAd—lã‹–—ej
-        // CallSave“à‚ÅƒLƒƒƒ“ƒZƒ‹‚³‚ê‚½‚©‚ğ”»•Ê‚µ‚½‚¢ê‡‚ÍCallSave‚Ì–ß‚è’l‚ğbool‚É‚·‚é•K—v‚ª‚ ‚è‚Ü‚·‚ª
-        // ‚±‚±‚Å‚Íu•Û‘¶ƒtƒ[‚ªI‚í‚Á‚½v‚±‚Æ‚Ì’Ê’m‚Æ‚µ‚Ü‚·B
         mIsDialogOpen = true;
         auto msg = tgui::MessageBox::create(mGame->GetLoc()->Get("EDITOR_DIALOG_LBL_INFO"), mGame->GetLoc()->Get("EDITOR_DIALOG_LBL_TEXT"), { mGame->GetLoc()->Get("BTN_OK") });
         msg->setRenderer(mTheme->getRenderer("MessageBox"));
@@ -1362,26 +1362,26 @@ void EditorScreen::PerformApply()
 {
     if (!mIsValidLevel) return;
 
-    // —]Œv‚È°ƒpƒlƒ‹‚ğØ‚è‹l‚ß‚½”Õ–Êƒf[ƒ^‚ğæ“¾
+    // ä½™è¨ˆãªåºŠãƒ‘ãƒãƒ«ã‚’åˆ‡ã‚Šè©°ã‚ãŸç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
     std::vector<std::string> trimmedBoard = GetTrimmedBoardData();
 
-    // Œ»İ‚Ì”Õ–Ê‚ğ“K—p‚µ‚ÄƒQ[ƒ€ÄŠJ
+    // ç¾åœ¨ã®ç›¤é¢ã‚’é©ç”¨ã—ã¦ã‚²ãƒ¼ãƒ å†é–‹
     mGame->ApplyEditedBoard(trimmedBoard);
 
-    // ƒGƒfƒBƒ^‚ğ•Â‚¶‚é
+    // ã‚¨ãƒ‡ã‚£ã‚¿ã‚’é–‰ã˜ã‚‹
     Close();
 }
 
 void EditorScreen::CheckUnsavedChangesAndClose()
 {
-    // •ÏX‚ª‚ ‚é‚©ƒ`ƒFƒbƒN
+    // å¤‰æ›´ãŒã‚ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
     if (mEditorBoardData == mLastSavedData)
     {
-        Close(); // •ÏX‚È‚µ‚È‚ç‘¦I—¹
+        Close(); // å¤‰æ›´ãªã—ãªã‚‰å³çµ‚äº†
         return;
     }
 
-    // Šm”Fƒ_ƒCƒAƒƒO•\¦
+    // ç¢ºèªãƒ€ã‚¤ã‚¢ãƒ­ã‚°è¡¨ç¤º
     mIsDialogOpen = true;
     auto msgBox = tgui::MessageBox::create(mGame->GetLoc()->Get("EDITOR_EXIT_DIALOG_TITLE"),
         mGame->GetLoc()->Get("EDITOR_EXIT_DIALOG_TEXT"),
@@ -1394,18 +1394,19 @@ void EditorScreen::CheckUnsavedChangesAndClose()
         {
             if (mIsValidLevel)
             {
-                // ƒZ[ƒuŒã‚ÍƒGƒfƒBƒbƒg‰æ–Ê‚É–ß‚é‚Ì‚Åfalse
-                PerformSave(false);
+                mEditorWindow->remove(msgBox);
+                mIsDialogOpen = false;
+                PerformSave(true);
             }
             else
             {
-                // ƒZ[ƒu‚Å‚«‚È‚¢ó‘Ô‚È‚çŒx
+                // ã‚»ãƒ¼ãƒ–ã§ããªã„çŠ¶æ…‹ãªã‚‰è­¦å‘Š
                 mIsDialogOpen = true;
                 auto errBox = tgui::MessageBox::create("Error", "Cannot save invalid level!", { "OK" });
                 errBox->setRenderer(mTheme->getRenderer("MessageBox"));
                 errBox->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
                 mEditorWindow->add(errBox);
-                mEditorWindow->remove(msgBox); // Œ³‚Ìƒ_ƒCƒAƒƒO‚ÍÁ‚·
+                mEditorWindow->remove(msgBox); // å…ƒã®ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã¯æ¶ˆã™
                 errBox->onButtonPress([this, errBox]() {
                     mEditorWindow->remove(errBox);
                     mIsDialogOpen = false;
@@ -1414,11 +1415,11 @@ void EditorScreen::CheckUnsavedChangesAndClose()
         }
         else if (button == mGame->GetLoc()->Get("EDITOR_EXIT_DIALOG_BTN_DISCARD"))
         {
-            Close(); // ”jŠü‚µ‚ÄI—¹
+            Close(); // ç ´æ£„ã—ã¦çµ‚äº†
         }
         else
         {
-            mEditorWindow->remove(msgBox); // ƒLƒƒƒ“ƒZƒ‹
+            mEditorWindow->remove(msgBox); // ã‚­ãƒ£ãƒ³ã‚»ãƒ«
             mIsDialogOpen = false;
         }
         });

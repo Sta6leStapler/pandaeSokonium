@@ -3,54 +3,54 @@
 #include "IComponent.h"
 #include "SFML/Graphics.hpp"
 
-// ƒAƒNƒ^[‚ÌŠŠ‚ç‚©‚ÈÀ•WˆÚ“®‚ğŠÇ—‚·‚éƒRƒ“ƒ|[ƒlƒ“ƒg
-// •¨—“I‚ÈÀ•WˆÚ“®‚ğˆÚ“®ŠÔŠu‚Æ“¯Šú‚³‚¹AüŒ`•âŠÔ‚É‚æ‚éƒAƒjƒ[ƒVƒ‡ƒ“‚ğs‚¤
+// ã‚¢ã‚¯ã‚¿ãƒ¼ã®æ»‘ã‚‰ã‹ãªåº§æ¨™ç§»å‹•ã‚’ç®¡ç†ã™ã‚‹ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆ
+// ç‰©ç†çš„ãªåº§æ¨™ç§»å‹•ã‚’ç§»å‹•é–“éš”ã¨åŒæœŸã•ã›ã€ç·šå½¢è£œé–“ã«ã‚ˆã‚‹ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚’è¡Œã†
 class MoveAnimationComponent : public IComponent {
 public:
-    // ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+    // ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
     MoveAnimationComponent(class IActor* owner, int updateOrder = 10);
-    // ƒfƒXƒgƒ‰ƒNƒ^
+    // ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
     ~MoveAnimationComponent();
 
-    // –ˆƒtƒŒ[ƒ€‚ÌXVˆ—
-    // À•W‚Ì•âŠÔŒvZ‚ğs‚¤
+    // æ¯ãƒ•ãƒ¬ãƒ¼ãƒ ã®æ›´æ–°å‡¦ç†
+    // åº§æ¨™ã®è£œé–“è¨ˆç®—ã‚’è¡Œã†
     void Update(float deltaTime) override;
 
-    // “ü—Íˆ—‚Í‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚Å‚Í•s—v‚È‚½‚ß‹óÀ‘•‚Æ‚·‚é
+    // å…¥åŠ›å‡¦ç†ã¯ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã§ã¯ä¸è¦ãªãŸã‚ç©ºå®Ÿè£…ã¨ã™ã‚‹
     void ProcessInput(const sf::Event* event,
         const std::map<sf::Keyboard::Key, float>& key_held_duration,
         const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) override {
     }
 
-    // ƒAƒjƒ[ƒVƒ‡ƒ“‚ğŠJn‚·‚é
-    // ŠJn‚ÌƒXƒNƒŠ[ƒ“À•W‚Æ–Ú•W‚Æ‚È‚éƒXƒNƒŠ[ƒ“À•W‚ÆƒAƒjƒ[ƒVƒ‡ƒ“‚É‚©‚¯‚é•b”‚ğó‚¯æ‚é
-    // Player‚ÌˆÚ“®ŠÔŠu‚Æ“¯Šú‚³‚¹‚é 
+    // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚’é–‹å§‹ã™ã‚‹
+    // é–‹å§‹æ™‚ã®ã‚¹ã‚¯ãƒªãƒ¼ãƒ³åº§æ¨™ã¨ç›®æ¨™ã¨ãªã‚‹ã‚¹ã‚¯ãƒªãƒ¼ãƒ³åº§æ¨™ã¨ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã«ã‹ã‘ã‚‹ç§’æ•°ã‚’å—ã‘å–ã‚‹
+    // Playerã®ç§»å‹•é–“éš”ã¨åŒæœŸã•ã›ã‚‹ 
     void Start(const sf::Vector2f& start, const sf::Vector2f& end, float duration);
 
-    // ƒAƒjƒ[ƒVƒ‡ƒ“‚ªÀs’†‚©‚Ç‚¤‚©‚ğæ“¾‚·‚é
+    // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ãŒå®Ÿè¡Œä¸­ã‹ã©ã†ã‹ã‚’å–å¾—ã™ã‚‹
     bool IsAnimating() const { return mIsAnimating; }
 
-    // ƒAƒjƒ[ƒVƒ‡ƒ“‚Ìi’»—¦i0.0`1.0j‚ğæ“¾
+    // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã®é€²æ—ç‡ï¼ˆ0.0ï½1.0ï¼‰ã‚’å–å¾—
     float GetProgress() const {
         if (!mIsAnimating || mDuration <= 0.0f) return 1.0f;
         return mTimer / mDuration;
     }
 
-    // I—¹ŠÔÛiæs“ü—Í‹–—e”ÍˆÍj‚©‚Ç‚¤‚©‚ğ”»’è
+    // çµ‚äº†é–“éš›ï¼ˆå…ˆè¡Œå…¥åŠ›è¨±å®¹ç¯„å›²ï¼‰ã‹ã©ã†ã‹ã‚’åˆ¤å®š
     bool CanAcceptNextInput(float threshold = 0.9f) const {
         return !mIsAnimating || GetProgress() >= threshold;
     }
 
-    // IComponent ƒCƒ“ƒ^[ƒtƒF[ƒX‚ÌƒQƒbƒ^[
+    // IComponent ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ã®ã‚²ãƒƒã‚¿ãƒ¼
     int GetUpdateOrder() override { return mUpdateOrder; }
 
 private:
     class IActor* mOwner;
     int mUpdateOrder;
 
-    sf::Vector2f mStartPos; // ƒAƒjƒ[ƒVƒ‡ƒ“ŠJn’n“_
-    sf::Vector2f mEndPos;   // ƒAƒjƒ[ƒVƒ‡ƒ“I—¹’n“_
-    float mDuration;        // ƒAƒjƒ[ƒVƒ‡ƒ“Š—vŠÔ
-    float mTimer;           // Œo‰ßŠÔ
-    bool mIsAnimating;      // ƒAƒjƒ[ƒVƒ‡ƒ“’†ƒtƒ‰ƒO
+    sf::Vector2f mStartPos; // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³é–‹å§‹åœ°ç‚¹
+    sf::Vector2f mEndPos;   // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³çµ‚äº†åœ°ç‚¹
+    float mDuration;        // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³æ‰€è¦æ™‚é–“
+    float mTimer;           // çµŒéæ™‚é–“
+    bool mIsAnimating;      // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ãƒ•ãƒ©ã‚°
 };

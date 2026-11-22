@@ -7,26 +7,26 @@ class IActor
 public:
 	virtual ~IActor() = default;
 
-	// GameƒNƒ‰ƒX‚©‚çXVˆ—‚ğŒÄ‚Ño‚·
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰æ›´æ–°å‡¦ç†ã‚’å‘¼ã³å‡ºã™
 	virtual void Update(float deltaTime) = 0;
 
-	// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ğXV
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æ›´æ–°
 	virtual void UpdateComponents(float deltaTime) = 0;
 
-	// GameƒNƒ‰ƒX‚©‚ç“ü—Íˆ—‚ğŒÄ‚Ño‚·
+	// Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å…¥åŠ›å‡¦ç†ã‚’å‘¼ã³å‡ºã™
 	virtual void ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) = 0;
 
-	// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì“ü—Íˆ—‚ğs‚¤
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
 	virtual void ProcessInputComponents(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) = 0;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ì’Ç‰Á‚Æíœ
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®è¿½åŠ ã¨å‰Šé™¤
 	virtual void AddComponent(class IComponent* component) = 0;
 	virtual void RemoveComponent(class IComponent* component) = 0;
 
-	// ó‘Ô‚ªƒAƒNƒeƒBƒu‚©ƒNƒ[ƒWƒ“ƒO‚©‘Ò‹@’†‚©ŠÇ—
+	// çŠ¶æ…‹ãŒã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã‹ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ³ã‚°ã‹å¾…æ©Ÿä¸­ã‹ç®¡ç†
 	enum class ActorState { EActive, EClosing, EPending };
 
-	// ƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 	virtual class Game* GetGame() = 0;
 	virtual ActorState GetState() = 0;
 	virtual void SetState(const ActorState state) = 0;

@@ -1,0 +1,95 @@
+name: Cross-Platform Build and Test
+
+on:
+  push:
+    branches: [master, main, "feat/**", "feature/**"]
+  pull_request:
+
+jobs:
+  source-sync:
+    name: Verify CMake & vcxproj Source Sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check CMakeLists.txt and Sokoban-app.vcxproj sync
+        run: python3 scripts/check_source_sync.py
+
+  build-and-test:
+    name: Build, Test & Package (${{ matrix.os }})
+    needs: source-sync
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            pkg_platform: windows
+            preset: windows-msvc
+            build_preset: windows-msvc-release
+            test_preset: windows-msvc-release
+            build_out: build/windows-msvc/Release
+            deps_dir: build/windows-msvc/_deps
+            artifact_file: dist/pandaeSokonium-windows-x64.zip
+          - os: ubuntu-latest
+            pkg_platform: linux
+            preset: linux-release
+            build_preset: linux-release
+            test_preset: linux-release
+            build_out: build/linux-release
+            deps_dir: build/linux-release/_deps
+            artifact_file: dist/pandaeSokonium-linux-x64.tar.gz
+          - os: macos-latest
+            pkg_platform: macos
+            preset: macos-release
+            build_preset: macos-release
+            test_preset: macos-release
+            build_out: build/macos-release
+            deps_dir: build/macos-release/_deps
+            artifact_file: dist/pandaeSokonium-macos.tar.gz
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Linux SFML dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libx11-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libudev-dev libgl1-mesa-dev libfreetype-dev \
+            libopenal-dev libflac-dev libvorbis-dev
+
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.deps_dir }}
+          key: deps-${{ runner.os }}-sfml2.6.2-tgui1.6.1-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            deps-${{ runner.os }}-sfml2.6.2-tgui1.6.1-
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.build_preset }} --parallel
+
+      - name: Run CTest
+        run: ctest --preset ${{ matrix.test_preset }}
+
+      - name: Package portable archive
+        run: python scripts/package_release.py --platform ${{ matrix.pkg_platform }} --build-dir ${{ matrix.build_out }} --out-dir dist
+
+      - name: Upload portable package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pandaeSokonium-${{ matrix.pkg_platform }}
+          path: ${{ matrix.artifact_file }}
+          if-no-files-found: error

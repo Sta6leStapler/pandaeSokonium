@@ -18,7 +18,7 @@ public:
 	EditorScreen(Game* game, sf::RenderWindow* window, int loadMode);
 	virtual ~EditorScreen();
 
-	// IUIScreenƒCƒ“ƒ^[ƒtƒF[ƒX‚ÌƒI[ƒo[ƒ‰ƒCƒh
+	// IUIScreenã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ã®ã‚ªãƒ¼ãƒãƒ¼ãƒ©ã‚¤ãƒ‰
 	void Update(float deltaTime) override;
 	void Draw(sf::RenderWindow* window) override;
 	void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) override;
@@ -28,7 +28,7 @@ public:
 	void Close();
 
 private:
-	// ƒ^ƒCƒ‹ƒpƒŒƒbƒg
+	// ã‚¿ã‚¤ãƒ«ãƒ‘ãƒ¬ãƒƒãƒˆ
 	enum class SelectedTile
 	{
 		Wall,
@@ -36,51 +36,51 @@ private:
 		Goal,
 		Baggage,
 		Player,
-		Erase	// °‚É–ß‚·
+		Erase	// åºŠã«æˆ»ã™
 	};
 
-	// ‚±‚ÌƒNƒ‰ƒX“Á—L‚Ìƒwƒ‹ƒp[ŠÖ”
-	// ƒEƒBƒ“ƒhƒE‚ÌƒsƒNƒZƒ‹À•W‚ğƒOƒŠƒbƒhÀ•W‚É•ÏŠ·
+	// ã“ã®ã‚¯ãƒ©ã‚¹ç‰¹æœ‰ã®ãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ”ã‚¯ã‚»ãƒ«åº§æ¨™ã‚’ã‚°ãƒªãƒƒãƒ‰åº§æ¨™ã«å¤‰æ›
 	sf::Vector2i ScreenToGrid(const sf::Vector2f& screenPos) const;
-	// ƒOƒŠƒbƒhƒLƒƒƒ“ƒpƒX‚ÆƒOƒŠƒbƒhü‚Ì•`‰æ
+	// ã‚°ãƒªãƒƒãƒ‰ã‚­ãƒ£ãƒ³ãƒ‘ã‚¹ã¨ã‚°ãƒªãƒƒãƒ‰ç·šã®æç”»
 	void DrawCanvas();
-	// w’è‚µ‚½ƒOƒŠƒbƒhÀ•W‚Éƒ^ƒCƒ‹‚ğ”z’u‚·‚é
+	// æŒ‡å®šã—ãŸã‚°ãƒªãƒƒãƒ‰åº§æ¨™ã«ã‚¿ã‚¤ãƒ«ã‚’é…ç½®ã™ã‚‹
 	void PlaceTile(const sf::Vector2i& gridPos, bool isContinuous = false);
-	// î•ñƒpƒlƒ‹‚ÌƒeƒLƒXƒg‚ğXV
+	// æƒ…å ±ãƒ‘ãƒãƒ«ã®ãƒ†ã‚­ã‚¹ãƒˆã‚’æ›´æ–°
 	void UpdateInfoPanel();
-	// ƒLƒƒƒ“ƒoƒXƒTƒCƒY‚ğ“®“I‚É•ÏX
+	// ã‚­ãƒ£ãƒ³ãƒã‚¹ã‚µã‚¤ã‚ºã‚’å‹•çš„ã«å¤‰æ›´
 	void ResizeCanvasIfNeeded();
-	// Œ»İ‘I‘ğ‚³‚ê‚Ä‚¢‚é”ÍˆÍ‚ğw’è‚µ‚½ƒ^ƒCƒ‹‚Å“h‚è‚Â‚Ô‚·
+	// ç¾åœ¨é¸æŠã•ã‚Œã¦ã„ã‚‹ç¯„å›²ã‚’æŒ‡å®šã—ãŸã‚¿ã‚¤ãƒ«ã§å¡—ã‚Šã¤ã¶ã™
 	void FillSelection(SelectedTile tile);
-	// ƒoƒŠƒf[ƒVƒ‡ƒ“—pŠÖ”
-	bool CheckReachability(); // “’B‰Â”\«‚Æ•ÂÇ«‚Ìƒ`ƒFƒbƒN
-	void UpdateValidationState(); // ‘SƒoƒŠƒf[ƒVƒ‡ƒ“‚ğÀs‚µUIXV
-	// I—¹Šm”F‚ÆƒZ[ƒu
-	void CheckUnsavedChangesAndClose(); // I—¹‚Ìƒ`ƒFƒbƒN
-	void PerformSave(bool closeAfterSave); // ƒZ[ƒuÀs
-	void PerformApply(); // “K—pÀs
-	// ã‰º¶‰E‚Ì—]”’‚ğØ‚è‹l‚ß‚½”Õ–Êƒf[ƒ^‚ğ¶¬‚µ‚Ä•Ô‚·
+	// ãƒãƒªãƒ‡ãƒ¼ã‚·ãƒ§ãƒ³ç”¨é–¢æ•°
+	bool CheckReachability(); // åˆ°é”å¯èƒ½æ€§ã¨é–‰å¡æ€§ã®ãƒã‚§ãƒƒã‚¯
+	void UpdateValidationState(); // å…¨ãƒãƒªãƒ‡ãƒ¼ã‚·ãƒ§ãƒ³ã‚’å®Ÿè¡Œã—UIæ›´æ–°
+	// çµ‚äº†ç¢ºèªã¨ã‚»ãƒ¼ãƒ–
+	void CheckUnsavedChangesAndClose(); // çµ‚äº†æ™‚ã®ãƒã‚§ãƒƒã‚¯
+	void PerformSave(bool closeAfterSave); // ã‚»ãƒ¼ãƒ–å®Ÿè¡Œ
+	void PerformApply(); // é©ç”¨å®Ÿè¡Œ
+	// ä¸Šä¸‹å·¦å³ã®ä½™ç™½ã‚’åˆ‡ã‚Šè©°ã‚ãŸç›¤é¢ãƒ‡ãƒ¼ã‚¿ã‚’ç”Ÿæˆã—ã¦è¿”ã™
 	std::vector<std::string> GetTrimmedBoardData() const;
 
-	// ƒVƒXƒeƒ€ŠÖ˜A‚Ìƒƒ“ƒo•Ï”
+	// ã‚·ã‚¹ãƒ†ãƒ é–¢é€£ã®ãƒ¡ãƒ³ãƒå¤‰æ•°
 	Game* mGame;
 	UIState mState;
 	std::unique_ptr<tgui::Gui> mGui;
 	std::unique_ptr<tgui::Theme> mTheme;
 
-	// ‚±‚ÌƒNƒ‰ƒX“Á—L‚Ìƒƒ“ƒo•Ï”
-	SelectedTile mCurrentTile;	// Œ»İ‘I‘ğ’†‚Ìƒ^ƒCƒ‹
-	std::map<SelectedTile, char> mTileToChar;	// ƒ^ƒCƒ‹Enum‚Æ•Û‘¶—p•¶š‚Ìƒ}ƒbƒsƒ“ƒO
+	// ã“ã®ã‚¯ãƒ©ã‚¹ç‰¹æœ‰ã®ãƒ¡ãƒ³ãƒå¤‰æ•°
+	SelectedTile mCurrentTile;	// ç¾åœ¨é¸æŠä¸­ã®ã‚¿ã‚¤ãƒ«
+	std::map<SelectedTile, char> mTileToChar;	// ã‚¿ã‚¤ãƒ«Enumã¨ä¿å­˜ç”¨æ–‡å­—ã®ãƒãƒƒãƒ”ãƒ³ã‚°
 
-	// ”Õ–ÊŠÖ˜A
-	sf::Vector2i mEditorCanvasSize; // ”Õ–Ê‚ÌƒTƒCƒY
-	const int mCanvasSizeMin;	// ”Õ–Ê‚ÌÅ¬ƒTƒCƒY
-	const int mCanvasSizeMax;	// ”Õ–Ê‚ÌÅ‘åƒTƒCƒY
-	float mCanvasTileSize;        // 1ƒ^ƒCƒ‹‚ÌƒsƒNƒZƒ‹ƒTƒCƒY
-	sf::RectangleShape mGridLines[2]; // ƒOƒŠƒbƒh•`‰æ—p (c/‰¡)
-	sf::RectangleShape mSelectedCellHighlight; // ‘I‘ğ’†ƒ}ƒX‚ÌƒnƒCƒ‰ƒCƒg
+	// ç›¤é¢é–¢é€£
+	sf::Vector2i mEditorCanvasSize; // ç›¤é¢ã®ã‚µã‚¤ã‚º
+	const int mCanvasSizeMin;	// ç›¤é¢ã®æœ€å°ã‚µã‚¤ã‚º
+	const int mCanvasSizeMax;	// ç›¤é¢ã®æœ€å¤§ã‚µã‚¤ã‚º
+	float mCanvasTileSize;        // 1ã‚¿ã‚¤ãƒ«ã®ãƒ”ã‚¯ã‚»ãƒ«ã‚µã‚¤ã‚º
+	sf::RectangleShape mGridLines[2]; // ã‚°ãƒªãƒƒãƒ‰æç”»ç”¨ (ç¸¦/æ¨ª)
+	sf::RectangleShape mSelectedCellHighlight; // é¸æŠä¸­ãƒã‚¹ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆ
 
-	// ƒ^ƒCƒ‹•`‰æ—p‚ÌƒXƒvƒ‰ƒCƒg (ƒeƒNƒXƒ`ƒƒ‚ÍGame‚©‚ç”qØ)
+	// ã‚¿ã‚¤ãƒ«æç”»ç”¨ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ (ãƒ†ã‚¯ã‚¹ãƒãƒ£ã¯Gameã‹ã‚‰æ‹å€Ÿ)
 	sf::Sprite mFloorSprite;
 	sf::Sprite mWallSprite;
 	sf::Sprite mGoalSprite;
@@ -88,72 +88,72 @@ private:
 	sf::Sprite mShinyBaggageSprite;
 	sf::Sprite mPlayerSprite;
 
-	// ”Õ–Êƒf[ƒ^
-	std::vector<std::string> mEditorBoardData; // •ÒW’†‚Ì”Õ–Êƒf[ƒ^
-	sf::Vector2i mSelectedGridCell; // ƒL[ƒ{[ƒh/ƒ}ƒEƒX‚Å‘I‘ğ’†‚Ìƒ}ƒX
-	std::vector<std::string> mLastSavedData; // ÅŒã‚ÉƒZ[ƒu‚µ‚½ó‘Ôi•ÏXŒŸ’m—pj
-	bool mIsValidLevel; // Œ»İ‚Ì”Õ–Ê‚ª—LŒø‚©‚Ç‚¤‚©
+	// ç›¤é¢ãƒ‡ãƒ¼ã‚¿
+	std::vector<std::string> mEditorBoardData; // ç·¨é›†ä¸­ã®ç›¤é¢ãƒ‡ãƒ¼ã‚¿
+	sf::Vector2i mSelectedGridCell; // ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰/ãƒã‚¦ã‚¹ã§é¸æŠä¸­ã®ãƒã‚¹
+	std::vector<std::string> mLastSavedData; // æœ€å¾Œã«ã‚»ãƒ¼ãƒ–ã—ãŸçŠ¶æ…‹ï¼ˆå¤‰æ›´æ¤œçŸ¥ç”¨ï¼‰
+	bool mIsValidLevel; // ç¾åœ¨ã®ç›¤é¢ãŒæœ‰åŠ¹ã‹ã©ã†ã‹
 
-	// TGUIƒEƒBƒWƒFƒbƒg
-	tgui::ChildWindow::Ptr mEditorWindow;	// ƒGƒfƒBƒ^‘S‘Ì‚ğû‚ß‚éeƒEƒBƒ“ƒhƒE
-	tgui::CanvasSFML::Ptr mCanvasWidget;	// ”Õ–Ê‚ğ•`‰æ‚·‚é‚½‚ß‚ÌTGUIƒLƒƒƒ“ƒoƒX
-	tgui::Panel::Ptr mTilePalettePanel; // ¶‰º‚Ìƒ^ƒCƒ‹ƒpƒŒƒbƒg
-	tgui::Panel::Ptr mSystemPalettePanel; // ‰E‰º‚Ìƒ^ƒCƒ‹ƒpƒŒƒbƒg
-	tgui::Panel::Ptr mInfoPanel;        // ‰E‚Ìî•ñƒpƒlƒ‹
-	tgui::Label::Ptr mInfoLabel;        // ‰×•¨/ƒS[ƒ‹”•\¦—p
+	// TGUIã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆ
+	tgui::ChildWindow::Ptr mEditorWindow;	// ã‚¨ãƒ‡ã‚£ã‚¿å…¨ä½“ã‚’åã‚ã‚‹è¦ªã‚¦ã‚£ãƒ³ãƒ‰ã‚¦
+	tgui::CanvasSFML::Ptr mCanvasWidget;	// ç›¤é¢ã‚’æç”»ã™ã‚‹ãŸã‚ã®TGUIã‚­ãƒ£ãƒ³ãƒã‚¹
+	tgui::Panel::Ptr mTilePalettePanel; // å·¦ä¸‹ã®ã‚¿ã‚¤ãƒ«ãƒ‘ãƒ¬ãƒƒãƒˆ
+	tgui::Panel::Ptr mSystemPalettePanel; // å³ä¸‹ã®ã‚¿ã‚¤ãƒ«ãƒ‘ãƒ¬ãƒƒãƒˆ
+	tgui::Panel::Ptr mInfoPanel;        // å³ã®æƒ…å ±ãƒ‘ãƒãƒ«
+	tgui::Label::Ptr mInfoLabel;        // è·ç‰©/ã‚´ãƒ¼ãƒ«æ•°è¡¨ç¤ºç”¨
 	tgui::Label::Ptr mInfoBaggageGoaledLabel;
-	tgui::Button::Ptr mApplyButton; // “K—pƒ{ƒ^ƒ“
+	tgui::Button::Ptr mApplyButton; // é©ç”¨ãƒœã‚¿ãƒ³
 	tgui::Button::Ptr mSaveButton;
 	tgui::Button::Ptr mExitButton;
-	// ‘I‘ğ’†‚Ìƒ^ƒCƒ‹‚ğ¦‚·ƒ‰ƒWƒIƒ{ƒ^ƒ“
+	// é¸æŠä¸­ã®ã‚¿ã‚¤ãƒ«ã‚’ç¤ºã™ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
 	tgui::RadioButton::Ptr mWallRadioButton;
 	tgui::RadioButton::Ptr mFloorRadioButton;
 	tgui::RadioButton::Ptr mGoalRadioButton;
 	tgui::RadioButton::Ptr mBaggageRadioButton;
 	tgui::RadioButton::Ptr mPlayerRadioButton;
 	tgui::RadioButton::Ptr mEraseRadioButton;
-	// ƒ‚[ƒhØ‘Ö—pƒ‰ƒWƒIƒ{ƒ^ƒ“
+	// ãƒ¢ãƒ¼ãƒ‰åˆ‡æ›¿ç”¨ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³
 	tgui::RadioButtonGroup::Ptr mModeGroup;
 	tgui::RadioButton::Ptr mRadioDraw;
 	tgui::RadioButton::Ptr mRadioSelect;
-	// ”ÍˆÍ‘I‘ğ—p‚ÌƒAƒNƒVƒ‡ƒ“ƒ{ƒ^ƒ“
+	// ç¯„å›²é¸æŠæ™‚ç”¨ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒœã‚¿ãƒ³
 	tgui::BitmapButton::Ptr mBtnFillWall;
 	tgui::BitmapButton::Ptr mBtnFillFloor;
 	tgui::BitmapButton::Ptr mBtnFillGoal;
 	tgui::Button::Ptr mBtnDeleteArea;
 
-	// UIü‚è‚Ìƒƒ“ƒo•Ï”
-	// ƒ^ƒCƒ‹ƒpƒŒƒbƒg‚ÌƒTƒCƒY‚ÆƒIƒtƒZƒbƒg
+	// UIå‘¨ã‚Šã®ãƒ¡ãƒ³ãƒå¤‰æ•°
+	// ã‚¿ã‚¤ãƒ«ãƒ‘ãƒ¬ãƒƒãƒˆã®ã‚µã‚¤ã‚ºã¨ã‚ªãƒ•ã‚»ãƒƒãƒˆ
 	tgui::Layout2d mTilePaletteSize;
 	tgui::Layout2d mTilePaletteOffset;
-	// ƒ^ƒCƒ‹‘I‘ğƒ{ƒ^ƒ“‚ÌƒTƒCƒY‚ÆƒIƒtƒZƒbƒg‚Æ”z’uŠÔŠu
+	// ã‚¿ã‚¤ãƒ«é¸æŠãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚ºã¨ã‚ªãƒ•ã‚»ãƒƒãƒˆã¨é…ç½®é–“éš”
 	tgui::Layout2d mTileButtonSize;
 	tgui::Layout2d mTileButtonOffset;
 	tgui::Layout2d mTileButtonInterval;
-	// ƒ^ƒCƒ‹‘I‘ğƒ{ƒ^ƒ“‚ÌƒAƒCƒRƒ“‚ÌƒXƒP[ƒŠƒ“ƒO
+	// ã‚¿ã‚¤ãƒ«é¸æŠãƒœã‚¿ãƒ³ã®ã‚¢ã‚¤ã‚³ãƒ³ã®ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°
 	float mIconImageScale;
-	// ƒVƒXƒeƒ€ŠÖ˜A‚Ìƒ{ƒ^ƒ“‚ÌƒpƒŒƒbƒg‚ÌƒTƒCƒY‚ÆƒIƒtƒZƒbƒg
+	// ã‚·ã‚¹ãƒ†ãƒ é–¢é€£ã®ãƒœã‚¿ãƒ³ã®ãƒ‘ãƒ¬ãƒƒãƒˆã®ã‚µã‚¤ã‚ºã¨ã‚ªãƒ•ã‚»ãƒƒãƒˆ
 	tgui::Layout2d mSystemButtonPaletteSize;
 	tgui::Layout2d mSystemButtonPaletteOffset;
-	// ƒZ[ƒuƒ{ƒ^ƒ“‚ÆƒGƒfƒBƒ^I—¹ƒ{ƒ^ƒ“‚ÌƒTƒCƒY‚ÆƒIƒtƒZƒbƒg‚Æ”z’uŠÔŠu
+	// ã‚»ãƒ¼ãƒ–ãƒœã‚¿ãƒ³ã¨ã‚¨ãƒ‡ã‚£ã‚¿çµ‚äº†ãƒœã‚¿ãƒ³ã®ã‚µã‚¤ã‚ºã¨ã‚ªãƒ•ã‚»ãƒƒãƒˆã¨é…ç½®é–“éš”
 	tgui::Layout2d mSystemButtonSize;
 	tgui::Layout2d mSystemButtonOffset;
 	tgui::Layout2d mSystemButtonInterval;
-	// ƒ}ƒEƒX—pFŒ»İƒ}ƒEƒX‚ªæ‚Á‚Ä‚¢‚éƒOƒŠƒbƒhÀ•W
+	// ãƒã‚¦ã‚¹ç”¨ï¼šç¾åœ¨ãƒã‚¦ã‚¹ãŒä¹—ã£ã¦ã„ã‚‹ã‚°ãƒªãƒƒãƒ‰åº§æ¨™
 	sf::Vector2i mHoverGridCell;
-	// UX—pFŒ»İƒ}ƒEƒX‘€ìƒ‚[ƒh‚©‚Ç‚¤‚©i”–‚¢ƒnƒCƒ‰ƒCƒg‚Ì•\¦§Œä—pj
+	// UXç”¨ï¼šç¾åœ¨ãƒã‚¦ã‚¹æ“ä½œãƒ¢ãƒ¼ãƒ‰ã‹ã©ã†ã‹ï¼ˆè–„ã„ãƒã‚¤ãƒ©ã‚¤ãƒˆã®è¡¨ç¤ºåˆ¶å¾¡ç”¨ï¼‰
 	bool mIsMouseMode;
-	// ‘I‘ğƒJ[ƒ\ƒ‹‚ÌƒnƒCƒ‰ƒCƒg—pƒVƒFƒCƒvi”Z‚¢˜gj
+	// é¸æŠã‚«ãƒ¼ã‚½ãƒ«ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆç”¨ã‚·ã‚§ã‚¤ãƒ—ï¼ˆæ¿ƒã„æ ï¼‰
 	sf::RectangleShape mCursorHighlight;
-	// ƒ}ƒEƒXƒzƒo[‚ÌƒnƒCƒ‰ƒCƒg—pƒVƒFƒCƒvi”–‚¢Fj
+	// ãƒã‚¦ã‚¹ãƒ›ãƒãƒ¼ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆç”¨ã‚·ã‚§ã‚¤ãƒ—ï¼ˆè–„ã„è‰²ï¼‰
 	sf::RectangleShape mHoverHighlight;
-	// ƒ‚[ƒ_ƒ‹ƒ_ƒCƒAƒƒO‚ª•\¦’†‚©‚Ç‚¤‚©
+	// ãƒ¢ãƒ¼ãƒ€ãƒ«ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ãŒè¡¨ç¤ºä¸­ã‹ã©ã†ã‹
 	bool mIsDialogOpen;
 
-	// ‹éŒ`‘I‘ğ—p
-	bool mIsSelecting;          // ƒhƒ‰ƒbƒO’†‚©
-	sf::Vector2i mDragStartPos; // ƒhƒ‰ƒbƒOŠJnˆÊ’u
-	sf::Vector2i mDragEndPos;   // ƒhƒ‰ƒbƒOI—¹ˆÊ’uiŒ»İ‚Ìƒ}ƒEƒXˆÊ’uj
-	sf::RectangleShape mSelectionRect; // ‘I‘ğ”ÍˆÍ‚Ì•`‰æ—p
+	// çŸ©å½¢é¸æŠç”¨
+	bool mIsSelecting;          // ãƒ‰ãƒ©ãƒƒã‚°ä¸­ã‹
+	sf::Vector2i mDragStartPos; // ãƒ‰ãƒ©ãƒƒã‚°é–‹å§‹ä½ç½®
+	sf::Vector2i mDragEndPos;   // ãƒ‰ãƒ©ãƒƒã‚°çµ‚äº†ä½ç½®ï¼ˆç¾åœ¨ã®ãƒã‚¦ã‚¹ä½ç½®ï¼‰
+	sf::RectangleShape mSelectionRect; // é¸æŠç¯„å›²ã®æç”»ç”¨
 };
 

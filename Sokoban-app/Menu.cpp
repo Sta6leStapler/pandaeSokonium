@@ -1,5 +1,6 @@
 #include "Menu.h"
 #include "Game.h"
+#include <algorithm>
 #include <fstream>
 
 #include <iostream>
@@ -16,14 +17,14 @@ Menu::Menu(Game* game)
 {
 	mGame->AddActor(this);
 
-	// •`‰æ”ÍˆÍ
+	// æç”»ç¯„å›²
 	BoundingBox viewArea = mGame->GetBoardViewArea();
 
-	// ƒvƒŒƒCƒ„[‚Ìƒ^ƒCƒ‹‚ğ—pˆÓ
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğì¬
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¿ã‚¤ãƒ«ã‚’ç”¨æ„
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’ä½œæˆ
 	MenuComponent* mc = new MenuComponent(this, 100, 150);
 
-	// ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚Ş
+	// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚€
 	std::string filename = "Assets/playerE.png";
 	sf::Image image;
 	image.loadFromFile(filename);
@@ -39,15 +40,15 @@ Menu::Menu(Game* game)
 	mTextures.emplace(Direction::ESouth, game->LoadTexture(filename));
 
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ÉƒeƒNƒXƒ`ƒƒ‚ğƒZƒbƒg
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚»ãƒƒãƒˆ
 	mc->SetTexture(mTextures[Direction::ESouth]);
 	mComponent = mc;
 
-	// ƒXƒP[ƒŠƒ“ƒO‚ÆˆÊ’u‚Ì‰Šú‰»‚ğs‚¤
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ä½ç½®ã®åˆæœŸåŒ–ã‚’è¡Œã†
 	float minScale = std::min((viewArea.second.x - viewArea.first.x) / static_cast<float>(mTextures[Direction::EEast]->getSize().x * maxX), (viewArea.second.y - viewArea.first.y) / static_cast<float>(mTextures[Direction::EEast]->getSize().y * lines.size()));
 	mScale = sf::Vector2f(minScale, minScale);
 
-	// —]”’‚Ì•ª’†‰›‘µ‚¦
+	// ä½™ç™½ã®åˆ†ä¸­å¤®æƒãˆ
 	mPosition = sf::Vector2f(
 		((viewArea.second.x - viewArea.first.x) - (static_cast<float>(mTextures[Direction::EEast]->getSize().x * maxX) * minScale)) / 2.0f + static_cast<float>(mTextures[Direction::EEast]->getSize().x * mBoardCoordinate.x) * mScale.x,
 		((viewArea.second.y - viewArea.first.y) - (static_cast<float>(mTextures[Direction::EEast]->getSize().y * lines.size()) * minScale)) / 2.0f + static_cast<float>(mTextures[Direction::EEast]->getSize().y * mBoardCoordinate.y) * mScale.y
@@ -57,7 +58,7 @@ Menu::Menu(Game* game)
 Menu::~Menu()
 {
 	mGame->RemoveActor(this);
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğíœ‚·‚é
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’å‰Šé™¤ã™ã‚‹
 	delete mComponent;
 }
 
@@ -69,7 +70,7 @@ void Menu::Update(float deltaTime)
 	{
 		UpdateComponents(deltaTime);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌXVˆ—‚ª‚ ‚ê‚Î‘‚­
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æ›´æ–°å‡¦ç†ãŒã‚ã‚Œã°æ›¸ã
 
 	}
 }
@@ -83,12 +84,12 @@ void Menu::ProcessInput(const sf::Event::KeyEvent* keyState)
 {
 	if (mState.GetEState() == State::EActive)
 	{
-		// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌComponent‚Ì“ü—Íˆ—‚ğs‚¤
-		// ‚Ç‚ÌComponent‚à“Á‚É“Æ©‚Ìˆ—‚ğÀ‘•‚µ‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+		// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®Componentã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
+		// ã©ã®Componentã‚‚ç‰¹ã«ç‹¬è‡ªã®å‡¦ç†ã‚’å®Ÿè£…ã—ã¦ã„ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 		mComponent->ProcessInput(keyState);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌU‚é•‘‚¢‚ª‚ ‚ê‚Î‘‚­
-		// “ü—Í‚ÌƒN[ƒ‹ƒ_ƒEƒ“‚ª0ˆÈ‰º‚È‚ç“ü—Í‚ğó‚¯•t‚¯‚é
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æŒ¯ã‚‹èˆã„ãŒã‚ã‚Œã°æ›¸ã
+		// å…¥åŠ›ã®ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³ãŒ0ä»¥ä¸‹ãªã‚‰å…¥åŠ›ã‚’å—ã‘ä»˜ã‘ã‚‹
 		if (mMoveCooldown <= 0.0f)
 		{
 			mMoveCooldown = 0.13f;
@@ -124,25 +125,25 @@ void Menu::RemoveComponent(MenuComponent* component)
 
 void Menu::Reload()
 {
-	// TODO Šeí•K—v‚Èƒf[ƒ^‚ğGameƒNƒ‰ƒX‚©‚çæ“¾‚·‚é
+	// TODO å„ç¨®å¿…è¦ãªãƒ‡ãƒ¼ã‚¿ã‚’Gameã‚¯ãƒ©ã‚¹ã‹ã‚‰å–å¾—ã™ã‚‹
 	
 
-	// ƒEƒBƒ“ƒhƒEƒTƒCƒY
+	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚º
 	sf::Vector2f wSize = mGame->GetWindowSize();
 
-	// ƒvƒŒƒCƒ„[‚Ìƒ^ƒCƒ‹‚ğ—pˆÓ
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğì¬
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚¿ã‚¤ãƒ«ã‚’ç”¨æ„
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’ä½œæˆ
 	MenuComponent* mc = new MenuComponent(this, 100, 150);
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ÉƒeƒNƒXƒ`ƒƒ‚ğƒZƒbƒg
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã‚»ãƒƒãƒˆ
 	mc->SetTexture(mTextures[Direction::ESouth]);
 	mComponent = mc;
 
-	// ƒXƒP[ƒŠƒ“ƒO‚ÆˆÊ’u‚Ì‰Šú‰»‚ğs‚¤
+	// ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ä½ç½®ã®åˆæœŸåŒ–ã‚’è¡Œã†
 	float minScale = std::min(wSize.x / static_cast<float>(mTextures[Direction::EEast]->getSize().x * maxX), wSize.y / static_cast<float>(mTextures[Direction::EEast]->getSize().y * lines.size()));
 	mScale = sf::Vector2f(minScale, minScale);
 
-	// ”Õ–Ê‚Ì—]”’‚Ì•ª’†‰›‘µ‚¦
+	// ç›¤é¢ã®ä½™ç™½ã®åˆ†ä¸­å¤®æƒãˆ
 	mPosition = sf::Vector2f(
 		(wSize.x - (static_cast<float>(mTextures[Direction::EEast]->getSize().x * maxX) * minScale)) / 2.0f + static_cast<float>(mTextures[Direction::EEast]->getSize().x * mBoardCoordinate.x) * mScale.x,
 		(wSize.y - (static_cast<float>(mTextures[Direction::EEast]->getSize().y * lines.size()) * minScale)) / 2.0f + static_cast<float>(mTextures[Direction::EEast]->getSize().y * mBoardCoordinate.y) * mScale.y

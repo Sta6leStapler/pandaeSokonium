@@ -11,15 +11,15 @@ HUDHelper::HUDHelper(class Game* game)
 	: mGame(game)
 	, mBaggageNum(0)
 {
-	// ”Õ–Ê‚Ì‰Šú‰»
+	// ç›¤é¢ã®åˆæœŸåŒ–
 	mBoardStr = mGame->GetBoardData()[mGame->GetCurrentKey()];
 	mInitialBoardStr = mBoardStr;
-	// ”Õ–ÊƒTƒCƒY‚Ì‰Šú‰»
+	// ç›¤é¢ã‚µã‚¤ã‚ºã®åˆæœŸåŒ–
 	mSize = mGame->GetBoardSize();
-	// ƒvƒŒƒCƒ„[À•W‚Ì‰Šú‰»
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼åº§æ¨™ã®åˆæœŸåŒ–
 	mPlayerPos = mGame->GetPlayer()->GetBoardCoordinate();
 	mInitialPlayerPos = mPlayerPos;
-	// ‰×•¨‚ÌÀ•W‚ÉŠÖ‚·‚éƒƒ“ƒo•Ï”‚Ì‰Šú‰»
+	// è·ç‰©ã®åº§æ¨™ã«é–¢ã™ã‚‹ãƒ¡ãƒ³ãƒå¤‰æ•°ã®åˆæœŸåŒ–
 	for (const auto& baggage : mGame->GetBaggages())
 	{
 		sf::Vector2i tmpPos{ baggage->GetBoardCoordinate() };
@@ -37,7 +37,7 @@ HUDHelper::HUDHelper(class Game* game)
 	}
 	mInitialBaggagesPos = mBaggagesPos;
 	mBaggageNum = static_cast<int>(mBaggagesPos.size());
-	// ƒS[ƒ‹À•W‚Ì‰Šú‰»
+	// ã‚´ãƒ¼ãƒ«åº§æ¨™ã®åˆæœŸåŒ–
 	for (int y = 0; y < mSize.y; ++y)
 	{
 		for (int x = 0; x < mSize.x; ++x)
@@ -48,7 +48,7 @@ HUDHelper::HUDHelper(class Game* game)
 			}
 		}
 	}
-	// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğæ‚èœ‚¢‚½”Õ–Êî•ñ‚ğ‰Šú‰»
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’å–ã‚Šé™¤ã„ãŸç›¤é¢æƒ…å ±ã‚’åˆæœŸåŒ–
 	mBoardMapStr = mBoardStr;
 	for (const auto& baggage : mBaggagesPos)
 	{
@@ -69,14 +69,14 @@ HUDHelper::HUDHelper(class Game* game)
 	{
 		mBoardMapStr[mPlayerPos.y][mPlayerPos.x] = '.';
 	}
-	// ‚±‚±‚Ü‚Å”Õ–Ê‚ÌŠî‘b“Iî•ñ‚Ì‰Šú‰»
+	// ã“ã“ã¾ã§ç›¤é¢ã®åŸºç¤çš„æƒ…å ±ã®åˆæœŸåŒ–
 	
-	// ”Õ–Ê\‘¢‚Ì‰Šú‰»
+	// ç›¤é¢æ§‹é€ ã®åˆæœŸåŒ–
 	mBoardStates.mGoaledBaggages = mGoaledBaggages;
 	mBoardStates.mNonGoaledBaggages = mNonGoaledBaggages;
 	mBoardStates.mMovableArea = GetMovableArea();
 	mBoardStates.mDeadlockedBaggages = UpdateFreezeBaggagesMap();
-	// —š—ğ‚É‰Šú”Õ–Ê‚ğ’Ç‰Á
+	// å±¥æ­´ã«åˆæœŸç›¤é¢ã‚’è¿½åŠ 
 	std::set<std::pair<int, int>> baggagesSet{};
 	for (const auto& baggage : mBaggagesPos)
 	{
@@ -93,8 +93,8 @@ HUDHelper::~HUDHelper()
 
 void HUDHelper::Update()
 {
-	// ƒvƒŒƒCƒ„[‚¨‚æ‚Ñ‰×•¨‚ÌÀ•W‚ÌXV‚ÉŠî‚Ã‚«Šeƒƒ“ƒo•Ï”‚ğXV
-	// XV‚ğs‚¤”Õ–ÊŠÖ˜A‚Ìƒƒ“ƒo•Ï”‚ÍˆÈ‰º
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŠã‚ˆã³è·ç‰©ã®åº§æ¨™ã®æ›´æ–°ã«åŸºã¥ãå„ãƒ¡ãƒ³ãƒå¤‰æ•°ã‚’æ›´æ–°
+	// æ›´æ–°ã‚’è¡Œã†ç›¤é¢é–¢é€£ã®ãƒ¡ãƒ³ãƒå¤‰æ•°ã¯ä»¥ä¸‹
 	//	mBoardStr
 	//	mPlayerPos
 	//	mBaggagesPos
@@ -102,8 +102,8 @@ void HUDHelper::Update()
 	//	mNonGoaledBaggages
 	//	mBoardStates
 	//	mHistory
-	// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌXVŒã‚ÌÀ•W‚ğæ“¾
-	// •K‚¸ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌƒAƒNƒ^[‚ÌXVˆ—‚ÌŒã‚És‚¤
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®æ›´æ–°å¾Œã®åº§æ¨™ã‚’å–å¾—
+	// å¿…ãšãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ã‚¢ã‚¯ã‚¿ãƒ¼ã®æ›´æ–°å‡¦ç†ã®å¾Œã«è¡Œã†
 	sf::Vector2i nextPlayerPos{ mGame->GetPlayer()->GetBoardCoordinate() }, prevPlayerPos{ mPlayerPos };
 	std::vector<sf::Vector2i> nextBaggages{ mGame->GetBaggagesPos() };
 	std::unordered_map<int, sf::Vector2i> prevBaggagePos{ mBaggagesPos };
@@ -113,14 +113,14 @@ void HUDHelper::Update()
 		nextBaggagesSet.emplace(std::pair<int, int>{ baggage.x, baggage.y });
 	}
 
-	// ‚Ü‚¸ˆÊ’u‚Ì•Ï‚í‚Á‚½‰×•¨‚ª‚ ‚é‚©‚Ç‚¤‚©‚ğ’²‚×‚é
+	// ã¾ãšä½ç½®ã®å¤‰ã‚ã£ãŸè·ç‰©ãŒã‚ã‚‹ã‹ã©ã†ã‹ã‚’èª¿ã¹ã‚‹
 	bool isMoved = false;
 	std::unordered_map<int, sf::Vector2i> currentBaggages{ mBaggagesPos };
 	std::vector<std::pair<std::pair<int, sf::Vector2i>, sf::Vector2i>> changedBaggages{};
 	std::unordered_map<int, sf::Vector2i> tmpBaggages{ currentBaggages };
 	for (const auto& currentBaggage : tmpBaggages)
 	{
-		// XVŒã‚Ì‰×•¨‚ÌƒŠƒXƒg‚©‚çA‘Î‰‚·‚é‰×•¨‚ª‘¶İ‚·‚é‚©’²‚×‚é
+		// æ›´æ–°å¾Œã®è·ç‰©ã®ãƒªã‚¹ãƒˆã‹ã‚‰ã€å¯¾å¿œã™ã‚‹è·ç‰©ãŒå­˜åœ¨ã™ã‚‹ã‹èª¿ã¹ã‚‹
 		bool existsBaggage = false;
 		for (const auto& nextBaggage : nextBaggages)
 		{
@@ -131,21 +131,21 @@ void HUDHelper::Update()
 			}
 		}
 
-		// XVŒã‚Ì‰×•¨‚ÌÀ•W‚ÌƒŠƒXƒg‚ÉAŒ»İ‚Ì‘ÎÛ‚É‚µ‚Ä‚¢‚é‰×•¨‚ÌÀ•W‚ª‘¶İ‚·‚é‚È‚ç‚ÎAXV‚·‚é‰×•¨‚ÌƒŠƒXƒg‚©‚çíœ
+		// æ›´æ–°å¾Œã®è·ç‰©ã®åº§æ¨™ã®ãƒªã‚¹ãƒˆã«ã€ç¾åœ¨ã®å¯¾è±¡ã«ã—ã¦ã„ã‚‹è·ç‰©ã®åº§æ¨™ãŒå­˜åœ¨ã™ã‚‹ãªã‚‰ã°ã€æ›´æ–°ã™ã‚‹è·ç‰©ã®ãƒªã‚¹ãƒˆã‹ã‚‰å‰Šé™¤
 		if (existsBaggage)
 		{
 			currentBaggages.erase(currentBaggage.first);
 			nextBaggages.erase(std::find(nextBaggages.begin(), nextBaggages.end(), currentBaggage.second));
 		}
-		// ‚»‚¤‚Å‚È‚¯‚ê‚ÎA‰×•¨‚ÌˆÊ’u‚ª•Ï‚í‚Á‚½‚©‚Ç‚¤‚©‚Ì”»’è‚ğ^‚É‚·‚é
+		// ãã†ã§ãªã‘ã‚Œã°ã€è·ç‰©ã®ä½ç½®ãŒå¤‰ã‚ã£ãŸã‹ã©ã†ã‹ã®åˆ¤å®šã‚’çœŸã«ã™ã‚‹
 		else
 		{
 			isMoved = true;
 		}
 	}
 
-	// ˆÊ’u‚ÌXV‚Ì‚ ‚Á‚½‰×•¨‚Ì”‚ÆA‰×•¨‚ÌˆÚ“®‘OŒã‚ÌÀ•W‚ğæ“¾
-	// note ‰×•¨‚Ìu–{—ˆ‚ÌvˆÚ“®‘O‚ÆˆÚ“®Œã‚ÌˆÊ’u‚Ì‘Î‰‚ª³‚µ‚­‚È‚¢‰Â”\«‚ª‚ ‚é‚ªA–â‘è‚Í‚È‚¢‚Í‚¸
+	// ä½ç½®ã®æ›´æ–°ã®ã‚ã£ãŸè·ç‰©ã®æ•°ã¨ã€è·ç‰©ã®ç§»å‹•å‰å¾Œã®åº§æ¨™ã‚’å–å¾—
+	// note è·ç‰©ã®ã€Œæœ¬æ¥ã®ã€ç§»å‹•å‰ã¨ç§»å‹•å¾Œã®ä½ç½®ã®å¯¾å¿œãŒæ­£ã—ããªã„å¯èƒ½æ€§ãŒã‚ã‚‹ãŒã€å•é¡Œã¯ãªã„ã¯ãš
 	int count = 0;
 	for (const auto& baggage : currentBaggages)
 	{
@@ -153,22 +153,22 @@ void HUDHelper::Update()
 		++count;
 	}
 
-	// ƒpƒ^[ƒ“
-	// 1.1	ƒvƒŒƒCƒ„[‚ªˆÚ“®‚µ‚Ä‚¨‚ç‚¸A‰×•¨‚àˆÚ“®‚µ‚Ä‚¢‚È‚¢
-	//		ƒvƒŒƒCƒ„[‚Æ‰×•¨‚Æ”Õ–Ê\‘¢‚ÌXVˆ—‚Ís‚í‚È‚¢
-	// 1.2	ƒvƒŒƒCƒ„[‚ÍˆÚ“®‚µ‚Ä‚¢‚È‚¢‚ªA‰×•¨‚ÍˆÚ“®‚µ‚Ä‚¢‚é (=ÀÛ‚ÍƒvƒŒƒCƒ„[‚ªˆÚ“®‚µ‚½)
-	//		‰×•¨‚Æ”Õ–Ê\‘¢‚ÌXVˆ—‚ğs‚¤
-	// 2.1.	ƒvƒŒƒCƒ„[‚ªˆÚ“®‚µA‰×•¨‚ÍˆÚ“®‚µ‚Ä‚¨‚ç‚¸AƒvƒŒƒCƒ„[‚Ì‚¢‚é°ƒGƒŠƒA‚à•Ï‚í‚Á‚Ä‚¢‚È‚¢
-	//		ƒvƒŒƒCƒ„[‚ÌXVˆ—‚ğs‚¤
-	// 2.2.	ƒvƒŒƒCƒ„[‚ªˆÚ“®‚µA‰×•¨‚ÍˆÚ“®‚µ‚Ä‚¢‚È‚¢‚ªAƒvƒŒƒCƒ„[‚Ì‚¢‚é°ƒGƒŠƒA‚ª•Ï‚í‚Á‚½
-	//		ƒvƒŒƒCƒ„[‚Æ”Õ–Ê\‘¢‚ÌXVˆ—‚ğs‚¤
-	// 3.	ƒvƒŒƒCƒ„[‚ªˆÚ“®‚µA‰×•¨‚àˆÚ“®‚µ‚½
-	//		‘S‚Ä‚ÌXVˆ—‚ğs‚¤
+	// ãƒ‘ã‚¿ãƒ¼ãƒ³
+	// 1.1	ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ã—ã¦ãŠã‚‰ãšã€è·ç‰©ã‚‚ç§»å‹•ã—ã¦ã„ãªã„
+	//		ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã¨ç›¤é¢æ§‹é€ ã®æ›´æ–°å‡¦ç†ã¯è¡Œã‚ãªã„
+	// 1.2	ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¯ç§»å‹•ã—ã¦ã„ãªã„ãŒã€è·ç‰©ã¯ç§»å‹•ã—ã¦ã„ã‚‹ (=å®Ÿéš›ã¯ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ã—ãŸ)
+	//		è·ç‰©ã¨ç›¤é¢æ§‹é€ ã®æ›´æ–°å‡¦ç†ã‚’è¡Œã†
+	// 2.1.	ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ã—ã€è·ç‰©ã¯ç§»å‹•ã—ã¦ãŠã‚‰ãšã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã„ã‚‹åºŠã‚¨ãƒªã‚¢ã‚‚å¤‰ã‚ã£ã¦ã„ãªã„
+	//		ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®æ›´æ–°å‡¦ç†ã‚’è¡Œã†
+	// 2.2.	ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ã—ã€è·ç‰©ã¯ç§»å‹•ã—ã¦ã„ãªã„ãŒã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã„ã‚‹åºŠã‚¨ãƒªã‚¢ãŒå¤‰ã‚ã£ãŸ
+	//		ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨ç›¤é¢æ§‹é€ ã®æ›´æ–°å‡¦ç†ã‚’è¡Œã†
+	// 3.	ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ã—ã€è·ç‰©ã‚‚ç§»å‹•ã—ãŸ
+	//		å…¨ã¦ã®æ›´æ–°å‡¦ç†ã‚’è¡Œã†
 	// 
-	// 1.2‚ÍÀ¿“I‚É3‚Æ“¯‚¶‚È‚Ì‚ÅA‰×•¨‚ÌˆÚ“®‚©‚çŒ©‚é
-	// ‰×•¨‚ÌˆÚ“®‚ª‚ ‚ê‚ÎA1.2‚Æ3‚Ìˆ—‚ğs‚¢A‚»‚¤‚Å‚È‚¯‚ê‚ÎŸ‚ÌğŒ•ªŠò‚ÉˆÚ‚é
-	// 1.1‚Æ2‚Ì•ªŠò‚ğ‚·‚é (ƒvƒŒƒCƒ„[‚ªˆÚ“®‚µ‚Ä‚¢‚é‚©‚Ç‚¤‚©‚ğŠm”F)
-	// 2‚Ì’†‚Å2.1‚Æ2.2‚Ì•ªŠò‚ğ‚·‚é
+	// 1.2ã¯å®Ÿè³ªçš„ã«3ã¨åŒã˜ãªã®ã§ã€è·ç‰©ã®ç§»å‹•ã‹ã‚‰è¦‹ã‚‹
+	// è·ç‰©ã®ç§»å‹•ãŒã‚ã‚Œã°ã€1.2ã¨3ã®å‡¦ç†ã‚’è¡Œã„ã€ãã†ã§ãªã‘ã‚Œã°æ¬¡ã®æ¡ä»¶åˆ†å²ã«ç§»ã‚‹
+	// 1.1ã¨2ã®åˆ†å²ã‚’ã™ã‚‹ (ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ã—ã¦ã„ã‚‹ã‹ã©ã†ã‹ã‚’ç¢ºèª)
+	// 2ã®ä¸­ã§2.1ã¨2.2ã®åˆ†å²ã‚’ã™ã‚‹
 	
 	/////////////////////////////////////////////////////////////////////////////
 
@@ -178,53 +178,53 @@ void HUDHelper::Update()
 	{
 		nextBaggagesPairSet.emplace(baggage);
 	}
-	// 1.2, 3		‰×•¨‚ªˆÚ“®‚µ‚Ä‚¢‚é‚©‚Ç‚¤‚©‚Å•ªŠò
-	// ‰×•¨‚ªˆÚ“®‚µ‚Ä‚¢‚éê‡
+	// 1.2, 3		è·ç‰©ãŒç§»å‹•ã—ã¦ã„ã‚‹ã‹ã©ã†ã‹ã§åˆ†å²
+	// è·ç‰©ãŒç§»å‹•ã—ã¦ã„ã‚‹å ´åˆ
 	if (count > 0)
 	{
-		// ‰×•¨‚âƒvƒŒƒCƒ„[‚Ì”z’u‚ª•Ï‚í‚Á‚½‚Ì‚È‚ç‚ÎA”Õ–ÊŠÖ˜A‚Ìƒƒ“ƒo•Ï”‚ÌXV‚Æ‹l‚İ”»’è‚ğs‚¤
-		// ƒƒ“ƒo•Ï”‚ÌXV
+		// è·ç‰©ã‚„ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®é…ç½®ãŒå¤‰ã‚ã£ãŸã®ãªã‚‰ã°ã€ç›¤é¢é–¢é€£ã®ãƒ¡ãƒ³ãƒå¤‰æ•°ã®æ›´æ–°ã¨è©°ã¿åˆ¤å®šã‚’è¡Œã†
+		// ãƒ¡ãƒ³ãƒå¤‰æ•°ã®æ›´æ–°
 		mPlayerPos = nextPlayerPos;
-		// ˆÊ’u‚Ì•Ï‚í‚Á‚½‰×•¨‚Ì‚İXV
+		// ä½ç½®ã®å¤‰ã‚ã£ãŸè·ç‰©ã®ã¿æ›´æ–°
 		for (const auto& item : changedBaggages)
 		{
 			mBaggagesPos[item.first.first] = item.second;
 
-			// ƒS[ƒ‹‚É”z’u‚³‚ê‚Ä‚¢‚é‚©‚Ç‚¤‚©‚ª•Ï‚í‚éê‡A‚»‚¿‚ç‚àXV
-			// item‚Ífirst.second‚ªˆÚ“®‘O‚ÌˆÊ’uAsecond‚ªˆÚ“®Œã‚ÌˆÊ’u
-			// ƒS[ƒ‹ -> •’Ê‚Ì°‚Ìê‡
-			// ˆÚ“®‘O‚ªƒS[ƒ‹Ï‚İ‰×•¨‚ÌƒŠƒXƒg‚É‘¶İ‚µAˆÚ“®Œã‚ªƒS[ƒ‹ƒŠƒXƒg‚É‘¶İ‚µ‚È‚¢
+			// ã‚´ãƒ¼ãƒ«ã«é…ç½®ã•ã‚Œã¦ã„ã‚‹ã‹ã©ã†ã‹ãŒå¤‰ã‚ã‚‹å ´åˆã€ãã¡ã‚‰ã‚‚æ›´æ–°
+			// itemã¯first.secondãŒç§»å‹•å‰ã®ä½ç½®ã€secondãŒç§»å‹•å¾Œã®ä½ç½®
+			// ã‚´ãƒ¼ãƒ« -> æ™®é€šã®åºŠã®å ´åˆ
+			// ç§»å‹•å‰ãŒã‚´ãƒ¼ãƒ«æ¸ˆã¿è·ç‰©ã®ãƒªã‚¹ãƒˆã«å­˜åœ¨ã—ã€ç§»å‹•å¾ŒãŒã‚´ãƒ¼ãƒ«ãƒªã‚¹ãƒˆã«å­˜åœ¨ã—ãªã„
 			if (mGoaledBaggages.count(item.first.first) && std::find(mGoals.begin(), mGoals.end(), item.second) == mGoals.end())
 			{
 				mGoaledBaggages.erase(item.first.first);
 				mNonGoaledBaggages.emplace(item.first.first, item.second);
 			}
-			// •’Ê‚Ì° -> ƒS[ƒ‹‚Ìê‡
-			// ˆÚ“®‘O‚ª–¢ƒS[ƒ‹‰×•¨‚ÌƒŠƒXƒg‚É‘¶İ‚µAˆÚ“®Œã‚ªƒS[ƒ‹ƒŠƒXƒg‚É‘¶İ‚·‚é
+			// æ™®é€šã®åºŠ -> ã‚´ãƒ¼ãƒ«ã®å ´åˆ
+			// ç§»å‹•å‰ãŒæœªã‚´ãƒ¼ãƒ«è·ç‰©ã®ãƒªã‚¹ãƒˆã«å­˜åœ¨ã—ã€ç§»å‹•å¾ŒãŒã‚´ãƒ¼ãƒ«ãƒªã‚¹ãƒˆã«å­˜åœ¨ã™ã‚‹
 			else if (mNonGoaledBaggages.count(item.first.first) && std::find(mGoals.begin(), mGoals.end(), item.second) != mGoals.end())
 			{
 				mNonGoaledBaggages.erase(item.first.first);
 				mGoaledBaggages.emplace(item.first.first, item.second);
 			}
-			// •’Ê‚Ì° -> •’Ê‚Ì°‚Ìê‡
-			// ˆÚ“®‘O‚ª–¢ƒS[ƒ‹‰×•¨‚ÌƒŠƒXƒg‚É‘¶İ‚µAˆÚ“®Œã‚ªƒS[ƒ‹ƒŠƒXƒg‚É‘¶İ‚µ‚È‚¢
+			// æ™®é€šã®åºŠ -> æ™®é€šã®åºŠã®å ´åˆ
+			// ç§»å‹•å‰ãŒæœªã‚´ãƒ¼ãƒ«è·ç‰©ã®ãƒªã‚¹ãƒˆã«å­˜åœ¨ã—ã€ç§»å‹•å¾ŒãŒã‚´ãƒ¼ãƒ«ãƒªã‚¹ãƒˆã«å­˜åœ¨ã—ãªã„
 			else if (mNonGoaledBaggages.count(item.first.first) && std::find(mGoals.begin(), mGoals.end(), item.second) == mGoals.end())
 			{
 				mNonGoaledBaggages[item.first.first] = item.second;
 			}
-			// ƒS[ƒ‹ -> ƒS[ƒ‹‚Ìê‡
-			// ˆÚ“®‘O‚ªƒS[ƒ‹Ï‚İ‰×•¨‚ÌƒŠƒXƒg‚É‘¶İ‚µAˆÚ“®Œã‚ªƒS[ƒ‹ƒŠƒXƒg‚É‘¶İ‚·‚é
+			// ã‚´ãƒ¼ãƒ« -> ã‚´ãƒ¼ãƒ«ã®å ´åˆ
+			// ç§»å‹•å‰ãŒã‚´ãƒ¼ãƒ«æ¸ˆã¿è·ç‰©ã®ãƒªã‚¹ãƒˆã«å­˜åœ¨ã—ã€ç§»å‹•å¾ŒãŒã‚´ãƒ¼ãƒ«ãƒªã‚¹ãƒˆã«å­˜åœ¨ã™ã‚‹
 			else if (mGoaledBaggages.count(item.first.first) && std::find(mGoals.begin(), mGoals.end(), item.second) != mGoals.end())
 			{
 				mGoaledBaggages[item.first.first] = item.second;
 			}
 
 		}
-		// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚Ì•ÏX‚ğ”Õ–Êƒf[ƒ^‚É”½‰f‚³‚¹‚é
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã®å¤‰æ›´ã‚’ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã«åæ˜ ã•ã›ã‚‹
 		UpdateBoardStr();
 
-		// —š—ğ‚ÉŒ»İ‚ÌƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚Ì‘g‚İ‡‚í‚¹‚ª‚ ‚é‚©’²‚×A–³‚¯‚ê‚Î—š—ğ‚É’Ç‰Á
-		// Šù‚É‚ ‚é‚È‚ç‚ÎA—š—ğ‚©‚çæ“¾‚·‚é
+		// å±¥æ­´ã«ç¾åœ¨ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã®çµ„ã¿åˆã‚ã›ãŒã‚ã‚‹ã‹èª¿ã¹ã€ç„¡ã‘ã‚Œã°å±¥æ­´ã«è¿½åŠ 
+		// æ—¢ã«ã‚ã‚‹ãªã‚‰ã°ã€å±¥æ­´ã‹ã‚‰å–å¾—ã™ã‚‹
 		if (!mHistory.count(std::pair<std::pair<int, int>, std::set<std::pair<int, int>>>{ nextPlayerPosPair, nextBaggagesPairSet }))
 		{
 			mBoardStates.mMovableArea = GetMovableArea();
@@ -238,23 +238,23 @@ void HUDHelper::Update()
 			mBoardStates = mHistory[std::pair<std::pair<int, int>, std::set<std::pair<int, int>>>{ nextPlayerPosPair, nextBaggagesPairSet }];
 		}
 	}
-	// ‰×•¨‚ªˆÚ“®‚µ‚Ä‚¢‚È‚¢ê‡
-	// 2.1, 2.2	ƒvƒŒƒCƒ„[‚ªˆÚ“®‚µ‚Ä‚¢‚é‚©‚Å•ªŠò
+	// è·ç‰©ãŒç§»å‹•ã—ã¦ã„ãªã„å ´åˆ
+	// 2.1, 2.2	ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ã—ã¦ã„ã‚‹ã‹ã§åˆ†å²
 	else if (mPlayerPos != nextPlayerPos)
 	{
-		// ƒvƒŒƒCƒ„[‚Ì‚¢‚é°ƒGƒŠƒA‚ª•Ï‚í‚Á‚½‚©‚Å•ªŠò
-		// 2.1	•Ï‚í‚Á‚Ä‚¢‚È‚¢ê‡
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã„ã‚‹åºŠã‚¨ãƒªã‚¢ãŒå¤‰ã‚ã£ãŸã‹ã§åˆ†å²
+		// 2.1	å¤‰ã‚ã£ã¦ã„ãªã„å ´åˆ
 		if (isMovableArea(mPlayerPos, nextPlayerPos))
 		{
-			// ƒƒ“ƒo•Ï”‚ÌXV
+			// ãƒ¡ãƒ³ãƒå¤‰æ•°ã®æ›´æ–°
 			mPlayerPos = nextPlayerPos;
-			// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚Ì•ÏX‚ğ”Õ–Êƒf[ƒ^‚É”½‰f‚³‚¹‚é
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã®å¤‰æ›´ã‚’ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã«åæ˜ ã•ã›ã‚‹
 			UpdateBoardStr();
 
-			// ‰×•¨‚ªˆÚ“®‚µ‚Ä‚¨‚ç‚¸AƒvƒŒƒCƒ„[‚à°ƒGƒŠƒA‚ª•Ï‚í‚Á‚Ä‚¢‚È‚¢‚½‚ßA”Õ–Ê\‘¢ (mBoardStates) ‚à‚»‚Ì‚Ü‚Ü
-			// ‚½‚¾‚µAƒvƒŒƒCƒ„[‚ÍˆÚ“®‚µ‚Ä‚¢‚é‚Ì‚ÅA—š—ğ‚É‚Í’Ç‰Á‚·‚é
-			// —š—ğ‚ÉŒ»İ‚ÌƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚Ì‘g‚İ‡‚í‚¹‚ª‚ ‚é‚©’²‚×A–³‚¯‚ê‚Î—š—ğ‚É’Ç‰Á
-			// Šù‚É‚ ‚é‚È‚ç‚ÎA—š—ğ‚©‚çæ“¾‚·‚é
+			// è·ç‰©ãŒç§»å‹•ã—ã¦ãŠã‚‰ãšã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚‚åºŠã‚¨ãƒªã‚¢ãŒå¤‰ã‚ã£ã¦ã„ãªã„ãŸã‚ã€ç›¤é¢æ§‹é€  (mBoardStates) ã‚‚ãã®ã¾ã¾
+			// ãŸã ã—ã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¯ç§»å‹•ã—ã¦ã„ã‚‹ã®ã§ã€å±¥æ­´ã«ã¯è¿½åŠ ã™ã‚‹
+			// å±¥æ­´ã«ç¾åœ¨ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã®çµ„ã¿åˆã‚ã›ãŒã‚ã‚‹ã‹èª¿ã¹ã€ç„¡ã‘ã‚Œã°å±¥æ­´ã«è¿½åŠ 
+			// æ—¢ã«ã‚ã‚‹ãªã‚‰ã°ã€å±¥æ­´ã‹ã‚‰å–å¾—ã™ã‚‹
 			if (!mHistory.count(std::pair<std::pair<int, int>, std::set<std::pair<int, int>>>{ nextPlayerPosPair, nextBaggagesPairSet }))
 			{
 				mHistory.emplace(std::pair<std::pair<int, int>, std::set<std::pair<int, int>>>{ nextPlayerPosPair, nextBaggagesPairSet }, mBoardStates);
@@ -265,17 +265,17 @@ void HUDHelper::Update()
 			}
 
 		}
-		// 2.2	•Ï‚í‚Á‚½ê‡
+		// 2.2	å¤‰ã‚ã£ãŸå ´åˆ
 		else
 		{
-			// ƒƒ“ƒo•Ï”‚ÌXV
+			// ãƒ¡ãƒ³ãƒå¤‰æ•°ã®æ›´æ–°
 			mPlayerPos = nextPlayerPos;
-			// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚Ì•ÏX‚ğ”Õ–Êƒf[ƒ^‚É”½‰f‚³‚¹‚é
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã®å¤‰æ›´ã‚’ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã«åæ˜ ã•ã›ã‚‹
 			UpdateBoardStr();
 
-			// ƒvƒŒƒCƒ„[‚Ì°ƒGƒŠƒA‚ª•Ï‚í‚Á‚½‚Ì‚ÅA”Õ–Ê\‘¢ (mBoardStates) ‚ğXV‚µ‚Ä—š—ğ‚É’Ç‰Á
-			// —š—ğ‚ÉŒ»İ‚ÌƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚Ì‘g‚İ‡‚í‚¹‚ª‚ ‚é‚©’²‚×A–³‚¯‚ê‚Î—š—ğ‚É’Ç‰Á
-			// Šù‚É‚ ‚é‚È‚ç‚ÎA—š—ğ‚©‚çæ“¾‚·‚é
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åºŠã‚¨ãƒªã‚¢ãŒå¤‰ã‚ã£ãŸã®ã§ã€ç›¤é¢æ§‹é€  (mBoardStates) ã‚’æ›´æ–°ã—ã¦å±¥æ­´ã«è¿½åŠ 
+			// å±¥æ­´ã«ç¾åœ¨ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã®çµ„ã¿åˆã‚ã›ãŒã‚ã‚‹ã‹èª¿ã¹ã€ç„¡ã‘ã‚Œã°å±¥æ­´ã«è¿½åŠ 
+			// æ—¢ã«ã‚ã‚‹ãªã‚‰ã°ã€å±¥æ­´ã‹ã‚‰å–å¾—ã™ã‚‹
 			if (!mHistory.count(std::pair<std::pair<int, int>, std::set<std::pair<int, int>>>{ nextPlayerPosPair, nextBaggagesPairSet }))
 			{
 				mBoardStates.mMovableArea = GetMovableArea();
@@ -308,7 +308,7 @@ bool HUDHelper::isDeadlockedBaggage(const sf::Vector2i& pos)
 HUDHelper::Direction HUDHelper::RollDirection()
 {
 	std::uniform_int_distribution<int> rand(0, 3);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	switch (rand(mt))
 	{
 	case 0:
@@ -343,28 +343,28 @@ sf::Vector2i HUDHelper::RollCoordinate(const int& xMin, const int& xMax, const i
 int HUDHelper::RollCoordinateX()
 {
 	std::uniform_int_distribution<int> randX(1, mSize.x - 2);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	return randX(mt);
 }
 
 int HUDHelper::RollCoordinateX(const int& xMin, const int& xMax)
 {
 	std::uniform_int_distribution<int> randX(xMin, xMax);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	return randX(mt);
 }
 
 int HUDHelper::RollCoordinateY()
 {
 	std::uniform_int_distribution<int> randX(1, mSize.y - 2);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	return randX(mt);
 }
 
 int HUDHelper::RollCoordinateY(const int& yMin, const int& yMax)
 {
 	std::uniform_int_distribution<int> randX(yMin, yMax);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	return randX(mt);
 }
 
@@ -413,7 +413,7 @@ std::vector<sf::Vector2i> HUDHelper::GetRandomDirections()
 
 bool HUDHelper::isArrangementValid()
 {
-	// ŠeX‚Ì‰×•¨‚ª‹l‚İ‚©‚Ç‚¤‚©Šm”F‚·‚é
+	// å„ã€…ã®è·ç‰©ãŒè©°ã¿ã‹ã©ã†ã‹ç¢ºèªã™ã‚‹
 	for (const auto baggagePos : mBaggagesPos)
 	{
 		if (isFreezeBaggage(baggagePos.second))
@@ -429,7 +429,7 @@ std::unordered_map<int, sf::Vector2i> HUDHelper::UpdateFreezeBaggagesMap()
 {
 	std::unordered_map<int, sf::Vector2i> result{};
 
-	// ‹l‚İ‚Ì‰×•¨‚ğƒŠƒXƒg‚É’Ç‰Á‚µ‚Ä‚¢‚­
+	// è©°ã¿ã®è·ç‰©ã‚’ãƒªã‚¹ãƒˆã«è¿½åŠ ã—ã¦ã„ã
 	for (const auto baggagePos : mBaggagesPos)
 	{
 		if (isFreezeBaggage(baggagePos.second))
@@ -443,13 +443,13 @@ std::unordered_map<int, sf::Vector2i> HUDHelper::UpdateFreezeBaggagesMap()
 
 std::vector<sf::Vector2i> HUDHelper::GetCandidates()
 {
-	// ‰Ÿ‚·‚±‚Æ‚Ì‚Å‚«‚é‰×•¨‚ÌŒó•â‚ğæ“¾
+	// æŠ¼ã™ã“ã¨ã®ã§ãã‚‹è·ç‰©ã®å€™è£œã‚’å–å¾—
 	std::vector<sf::Vector2i> result{};
 	for (const auto& baggage : mBaggagesPos)
 	{
 		std::set<std::pair<int, int>> targetPosSet{};
 
-		// ‰×•¨‚Ìã‰º‚Æ¶‰E‚ÉˆÚ“®‚Ì—]—T‚ª‚ ‚é‚©‚ğ’²‚×‚é
+		// è·ç‰©ã®ä¸Šä¸‹ã¨å·¦å³ã«ç§»å‹•ã®ä½™è£•ãŒã‚ã‚‹ã‹ã‚’èª¿ã¹ã‚‹
 		if ((mBoardStr[baggage.second.y][baggage.second.x + 1] == ' ' ||
 			mBoardStr[baggage.second.y][baggage.second.x + 1] == '.' ||
 			mBoardStr[baggage.second.y][baggage.second.x + 1] == '@' ||
@@ -518,30 +518,30 @@ std::vector<sf::Vector2i> HUDHelper::GetCandidates()
 
 bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 {
-	// ‚ ‚­‚Ü‚Å‚±‚Ì‰×•¨©g‚ª‹l‚İ‚©‚Ç‚¤‚©‚ğ”»•Ê‚·‚éŠÖ”‚Å‚ ‚èA‰×•¨‘S‘Ì‚Ì”z’u‚©‚ç‹l‚İ”»’è‚ğs‚¤‚í‚¯‚Å‚Í‚È‚¢
-	// ‰×•¨‚ÌüˆÍ‚Ì’nŒ`‚©‚ç‹l‚İ”»’è‚ğs‚¤ˆ—‚ÆA‰×•¨‚ªƒS[ƒ‹‚ÉˆÚ“®‚Å‚«‚é‚©‚Ç‚¤‚©‚Å‹l‚İ”»’è‚ğs‚¤ˆ—‚Ì2ƒXƒeƒbƒv‚©‚ç‚È‚é
+	// ã‚ãã¾ã§ã“ã®è·ç‰©è‡ªèº«ãŒè©°ã¿ã‹ã©ã†ã‹ã‚’åˆ¤åˆ¥ã™ã‚‹é–¢æ•°ã§ã‚ã‚Šã€è·ç‰©å…¨ä½“ã®é…ç½®ã‹ã‚‰è©°ã¿åˆ¤å®šã‚’è¡Œã†ã‚ã‘ã§ã¯ãªã„
+	// è·ç‰©ã®å‘¨å›²ã®åœ°å½¢ã‹ã‚‰è©°ã¿åˆ¤å®šã‚’è¡Œã†å‡¦ç†ã¨ã€è·ç‰©ãŒã‚´ãƒ¼ãƒ«ã«ç§»å‹•ã§ãã‚‹ã‹ã©ã†ã‹ã§è©°ã¿åˆ¤å®šã‚’è¡Œã†å‡¦ç†ã®2ã‚¹ãƒ†ãƒƒãƒ—ã‹ã‚‰ãªã‚‹
 
-	// ƒS[ƒ‹ˆÊ’u‚É‚ ‚é‰×•¨‚Í‹l‚İ‚Å‚Í‚È‚¢
+	// ã‚´ãƒ¼ãƒ«ä½ç½®ã«ã‚ã‚‹è·ç‰©ã¯è©°ã¿ã§ã¯ãªã„
 	if (std::find(mGoals.begin(), mGoals.end(), baggagePos) != mGoals.end())
 	{
-		// ‚±‚±‚Åfalse‚ğ•Ô‚·‚Ì‚ÍA‰×•¨‚ªƒS[ƒ‹‚É“’B‚Å‚«‚éˆÈãA‹l‚İ‚Å‚ ‚é‚Æ’f’è‚Å‚«‚È‚¢‚©‚ç
-		// ‹l‚İ‚Å‚È‚¢‚±‚Æ‚ğ•ÛØ‚·‚é‚à‚Ì‚Å‚Í‚È‚¢
-		// NOTE ‚æ‚Á‚ÄA‹l‚İ”»’è‚Ìˆ—‚Ì•ÏX‚É”º‚¢A‚±‚±‚Ìˆ—‚ğ•Ï‚¦‚é‰Â”\«‚Í‚ ‚é
+		// ã“ã“ã§falseã‚’è¿”ã™ã®ã¯ã€è·ç‰©ãŒã‚´ãƒ¼ãƒ«ã«åˆ°é”ã§ãã‚‹ä»¥ä¸Šã€è©°ã¿ã§ã‚ã‚‹ã¨æ–­å®šã§ããªã„ã‹ã‚‰
+		// è©°ã¿ã§ãªã„ã“ã¨ã‚’ä¿è¨¼ã™ã‚‹ã‚‚ã®ã§ã¯ãªã„
+		// NOTE ã‚ˆã£ã¦ã€è©°ã¿åˆ¤å®šã®å‡¦ç†ã®å¤‰æ›´ã«ä¼´ã„ã€ã“ã“ã®å‡¦ç†ã‚’å¤‰ãˆã‚‹å¯èƒ½æ€§ã¯ã‚ã‚‹
 		return false;
 	}
 
-	// ”Õ–Ê‚ÌŠp‚Ì‰×•¨‚Í“®‚©‚¹‚È‚¢
+	// ç›¤é¢ã®è§’ã®è·ç‰©ã¯å‹•ã‹ã›ãªã„
 	if (baggagePos == sf::Vector2i{ 1, 1 } && baggagePos == sf::Vector2i{ mSize.x, 1 } || baggagePos == sf::Vector2i{ 1, mSize.y } || baggagePos == sf::Vector2i{ mSize.x, mSize.y })
 	{
 		return true;
 	}
 
-	// ‰×•¨‚ÌüˆÍ‚Ì’nŒ`‚ğŒ©‚ÄA“®‚©‚¹‚é‚©‚Ç‚¤‚©‚ğ’²‚×‚é
-	// TODO ‰×•¨‚ğ“®‚©‚¹‚È‚¢Œ`ó‚Ì’†‚ÉA1‚Â‚Å‚àƒS[ƒ‹ó‘Ô‚Å‚È‚¢‰×•¨‚ª•´‚ê‚Ä‚¢‚½‚çOUT
+	// è·ç‰©ã®å‘¨å›²ã®åœ°å½¢ã‚’è¦‹ã¦ã€å‹•ã‹ã›ã‚‹ã‹ã©ã†ã‹ã‚’èª¿ã¹ã‚‹
+	// TODO è·ç‰©ã‚’å‹•ã‹ã›ãªã„å½¢çŠ¶ã®ä¸­ã«ã€1ã¤ã§ã‚‚ã‚´ãƒ¼ãƒ«çŠ¶æ…‹ã§ãªã„è·ç‰©ãŒç´›ã‚Œã¦ã„ãŸã‚‰OUT
 	for (int i = 0; i < directions.size(); i++)
 	{
 		// $$ ## #$ #$ $#
-		// $$ $$ $# $$ ## ‚ÌŒ`ó
+		// $$ $$ $# $$ ## ã®å½¢çŠ¶
 		if ((mBoardStr[baggagePos.y + directions[i].y][baggagePos.x + directions[i].x] == '#' || mBoardStr[baggagePos.y + directions[i].y][baggagePos.x + directions[i].x] == '$') &&
 			(mBoardStr[baggagePos.y + directions[i].y + directions[(i + 1) % 4].y][baggagePos.x + directions[i].x + directions[(i + 1) % 4].x] == '#' || mBoardStr[baggagePos.y + directions[i].y + directions[(i + 1) % 4].y][baggagePos.x + directions[i].x + directions[(i + 1) % 4].x] == '$') &&
 			(mBoardStr[baggagePos.y + directions[(i + 1) % 4].y][baggagePos.x + directions[(i + 1) % 4].x] == '#' || mBoardStr[baggagePos.y + directions[(i + 1) % 4].y][baggagePos.x + directions[(i + 1) % 4].x] == '$'))
@@ -550,7 +550,7 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 		}
 
 		// $#
-		// #  ‚ÌŒ`ó
+		// #  ã®å½¢çŠ¶
 		if (mBoardStr[baggagePos.y + directions[i].y][baggagePos.x + directions[i].x] == '#' &&
 			mBoardStr[baggagePos.y + directions[(i + 1) % 4].y][baggagePos.x + directions[(i + 1) % 4].x] == '#')
 		{
@@ -558,7 +558,7 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 		}
 
 		//  $#
-		// #$  ‚ÌŒ`ó
+		// #$  ã®å½¢çŠ¶
 		if (mBoardStr[baggagePos.y + directions[i].y][baggagePos.x + directions[i].x] == '#' &&
 			mBoardStr[baggagePos.y + directions[(i + 1) % 4].y][baggagePos.x + directions[(i + 1) % 4].x] == '$' &&
 			mBoardStr[baggagePos.y + directions[(i + 1) % 4].y + directions[(i + 2) % 4].y][baggagePos.x + directions[(i + 1) % 4].x + directions[(i + 2) % 4].x] == '#')
@@ -567,7 +567,7 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 		}
 
 		// #$
-		//  $# ‚ÌŒ`ó
+		//  $# ã®å½¢çŠ¶
 		if (mBoardStr[baggagePos.y + directions[i].y + directions[(i + 1) % 4].y][baggagePos.x + directions[i].x + directions[(i + 1) % 4].x] == '#' &&
 			mBoardStr[baggagePos.y + directions[(i + 1) % 4].y][baggagePos.x + directions[(i + 1) % 4].x] == '$' &&
 			mBoardStr[baggagePos.y + directions[(i + 2) % 4].y][baggagePos.x + directions[(i + 2) % 4].x] == '#')
@@ -577,7 +577,7 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 
 		// #
 		// $$
-		//  $# ‚ÌŒ`ó
+		//  $# ã®å½¢çŠ¶
 		if (mBoardStr[baggagePos.y + directions[i].y + directions[(i + 1) % 4].y][baggagePos.x + directions[i].x + directions[(i + 1) % 4].x] == '#' &&
 			mBoardStr[baggagePos.y + directions[(i + 1) % 4].y][baggagePos.x + directions[(i + 1) % 4].x] == '$' &&
 			mBoardStr[baggagePos.y + directions[(i + 2) % 4].y][baggagePos.x + directions[(i + 2) % 4].x] == '$' &&
@@ -587,15 +587,15 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 		}
 	}
 
-	// ‰×•¨‚ÌˆÚ“®‰Â”\‚È”ÍˆÍ“à‚ÉƒS[ƒ‹‚ª‚ ‚é‚©’²‚×‚é
-	// ƒS[ƒ‹‚É“’B‚Å‚«‚È‚¢‚Ì‚È‚ç‚Î‹l‚İ‚ÅA‚»‚¤‚Å‚È‚¯‚ê‚Î‹l‚İ‚©‚Ç‚¤‚©‚Í‚í‚©‚ç‚È‚¢
-	// ’Tõ—p‚Ì”Õ–Ê (‰×•¨‚ÆƒvƒŒƒCƒ„[‚ğæ‚èœ‚¢‚½”Õ–Ê‚ğ—p‚¢‚é)
+	// è·ç‰©ã®ç§»å‹•å¯èƒ½ãªç¯„å›²å†…ã«ã‚´ãƒ¼ãƒ«ãŒã‚ã‚‹ã‹èª¿ã¹ã‚‹
+	// ã‚´ãƒ¼ãƒ«ã«åˆ°é”ã§ããªã„ã®ãªã‚‰ã°è©°ã¿ã§ã€ãã†ã§ãªã‘ã‚Œã°è©°ã¿ã‹ã©ã†ã‹ã¯ã‚ã‹ã‚‰ãªã„
+	// æ¢ç´¢ç”¨ã®ç›¤é¢ (è·ç‰©ã¨ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’å–ã‚Šé™¤ã„ãŸç›¤é¢ã‚’ç”¨ã„ã‚‹)
 	bool nonExistsRoute = true;
 	Board currentBoard = mBoardMapStr;
 	std::set<std::pair<int, int>> targetPosSet{};
 
-	// ‰×•¨‚Ìã‰º‚Æ¶‰E‚ÉˆÚ“®‚Ì—]—T‚ª‚ ‚é‚©‚ğ’²‚×‚é
-	// ‚»‚ÌêŠ‚ÉƒvƒŒƒCƒ„[‚ªˆÚ“®‚Å‚«‚é‚Æ‚ÍŒÀ‚ç‚È‚¢
+	// è·ç‰©ã®ä¸Šä¸‹ã¨å·¦å³ã«ç§»å‹•ã®ä½™è£•ãŒã‚ã‚‹ã‹ã‚’èª¿ã¹ã‚‹
+	// ãã®å ´æ‰€ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ã§ãã‚‹ã¨ã¯é™ã‚‰ãªã„
 	if ((currentBoard[baggagePos.y][baggagePos.x + 1] == ' ' ||
 		currentBoard[baggagePos.y][baggagePos.x + 1] == '.' ||
 		currentBoard[baggagePos.y][baggagePos.x + 1] == '@' ||
@@ -621,15 +621,15 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 		targetPosSet.emplace(std::pair<int, int>{ baggagePos.x, baggagePos.y - 1 });
 	}
 
-	// ‰×•¨‚Ìã‰º‚à‚µ‚­‚Í¶‰E‚ÉˆÚ“®‰Â”\‚È—]—T‚ª‚ ‚ê‚Î‘±s
+	// è·ç‰©ã®ä¸Šä¸‹ã‚‚ã—ãã¯å·¦å³ã«ç§»å‹•å¯èƒ½ãªä½™è£•ãŒã‚ã‚Œã°ç¶šè¡Œ
 	if (!targetPosSet.empty())
 	{
-		// ’Tõ—p‚Ì”Õ–Ê‚ÉƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğİ’u‚·‚é
+		// æ¢ç´¢ç”¨ã®ç›¤é¢ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’è¨­ç½®ã™ã‚‹
 		currentBoard[mPlayerPos.y][mPlayerPos.x] = '@';
 		currentBoard[baggagePos.y][baggagePos.x] = '$';
 
-		// ‰×•¨‚Ì‰^”À‚ğƒVƒ~ƒ…ƒŒ[ƒg‚·‚é‚½‚ß‚ÌƒvƒŒƒCƒ„[‚Ì‰ŠúˆÊ’u‚ğæ“¾‚·‚é
-		// ‹ï‘Ì“I‚É‚ÍA‰×•¨‚Ì‰^”ÀŠJnˆÊ’u‚ÉƒvƒŒƒCƒ„[‚ªˆÚ“®‚Å‚«‚é‚©‚ğ’²‚×‚é
+		// è·ç‰©ã®é‹æ¬ã‚’ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ãƒˆã™ã‚‹ãŸã‚ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸä½ç½®ã‚’å–å¾—ã™ã‚‹
+		// å…·ä½“çš„ã«ã¯ã€è·ç‰©ã®é‹æ¬é–‹å§‹ä½ç½®ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•ã§ãã‚‹ã‹ã‚’èª¿ã¹ã‚‹
 		bool existsRoute = false;
 		for (const auto& targetPos : targetPosSet)
 		{
@@ -640,21 +640,21 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 			}
 		}
 
-		// ‰×•¨‚Ìã‰º¶‰E‚Ì—]—T‚ÉƒvƒŒƒCƒ„[‚ªˆÚ“®‰Â”\‚È‚ç‚Î‘±s
+		// è·ç‰©ã®ä¸Šä¸‹å·¦å³ã®ä½™è£•ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒç§»å‹•å¯èƒ½ãªã‚‰ã°ç¶šè¡Œ
 		if (existsRoute)
 		{
-			// •ûŒü‚ğ‰Á–¡‚µ‚½’Tõ—š—ğ
-			// ex. explored[4][7][1] = true ‚È‚çA(7,4)‚ÌˆÊ’u‚É‚ ‚é‰×•¨‚ğ‰º•ûŒü‚É“®‚©‚·“®‚«‚ğŠù‚É‚µ‚½‚±‚Æ‚ğ•\‚·
+			// æ–¹å‘ã‚’åŠ å‘³ã—ãŸæ¢ç´¢å±¥æ­´
+			// ex. explored[4][7][1] = true ãªã‚‰ã€(7,4)ã®ä½ç½®ã«ã‚ã‚‹è·ç‰©ã‚’ä¸‹æ–¹å‘ã«å‹•ã‹ã™å‹•ãã‚’æ—¢ã«ã—ãŸã“ã¨ã‚’è¡¨ã™
 			std::vector<std::vector<std::vector<bool>>> explored(mSize.y, std::vector<std::vector<bool>>(mSize.x, std::vector<bool>(directions.size(), false)));
 			
-			// •—Dæ’Tõ‚É—p‚¢‚éƒLƒ…[‚Ì—v‘f
+			// å¹…å„ªå…ˆæ¢ç´¢ã«ç”¨ã„ã‚‹ã‚­ãƒ¥ãƒ¼ã®è¦ç´ 
 			struct CurrentState
 			{
 				Board mBoard;
 				sf::Vector2i mPlayer;
 				sf::Vector2i mBaggage;
 
-				// ”äŠr‰‰Zq‚Ì’è‹`
+				// æ¯”è¼ƒæ¼”ç®—å­ã®å®šç¾©
 				bool operator<(const CurrentState& other) const
 				{
 					if (mPlayer.x < other.mPlayer.x) return true;
@@ -678,9 +678,9 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 
 				if (std::find(mGoals.begin(), mGoals.end(), current.mBaggage) != mGoals.end())
 				{
-					// ‚±‚±‚Åfalse‚ğ•Ô‚·‚Ì‚ÍA‰×•¨‚ªƒS[ƒ‹‚É“’B‚Å‚«‚éˆÈãA‹l‚İ‚Å‚ ‚é‚Æ’f’è‚Å‚«‚È‚¢‚©‚ç
-					// ‹l‚İ‚Å‚È‚¢‚±‚Æ‚ğ•ÛØ‚·‚é‚à‚Ì‚Å‚Í‚È‚¢
-					// NOTE ‚æ‚Á‚ÄA‹l‚İ”»’è‚Ìˆ—‚Ì•ÏX‚É”º‚¢A‚±‚±‚Ìˆ—‚ğ•Ï‚¦‚é‰Â”\«‚Í‚ ‚é
+					// ã“ã“ã§falseã‚’è¿”ã™ã®ã¯ã€è·ç‰©ãŒã‚´ãƒ¼ãƒ«ã«åˆ°é”ã§ãã‚‹ä»¥ä¸Šã€è©°ã¿ã§ã‚ã‚‹ã¨æ–­å®šã§ããªã„ã‹ã‚‰
+					// è©°ã¿ã§ãªã„ã“ã¨ã‚’ä¿è¨¼ã™ã‚‹ã‚‚ã®ã§ã¯ãªã„
+					// NOTE ã‚ˆã£ã¦ã€è©°ã¿åˆ¤å®šã®å‡¦ç†ã®å¤‰æ›´ã«ä¼´ã„ã€ã“ã“ã®å‡¦ç†ã‚’å¤‰ãˆã‚‹å¯èƒ½æ€§ã¯ã‚ã‚‹
 					nonExistsRoute = false;
 				}
 
@@ -689,7 +689,7 @@ bool HUDHelper::isFreezeBaggage(const sf::Vector2i& baggagePos)
 					sf::Vector2i nextBaggagePos{ current.mBaggage + dir };
 					if (!explored[current.mBaggage.y][current.mBaggage.x][GetDirectionIndex(dir)])
 					{
-						// ‰×•¨‚ÌŸ‚ÌˆÚ“®æ‚ª•Çƒ}ƒX‚Å‚È‚­A‚©‚ÂƒvƒŒƒCƒ„[‚ª‰^”ÀŠJnˆÊ’u‚ÉˆÚ“®‚Å‚«‚é‚Ì‚È‚ç‚ÎAƒLƒ…[‚É’Ç‰Á
+						// è·ç‰©ã®æ¬¡ã®ç§»å‹•å…ˆãŒå£ãƒã‚¹ã§ãªãã€ã‹ã¤ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒé‹æ¬é–‹å§‹ä½ç½®ã«ç§»å‹•ã§ãã‚‹ã®ãªã‚‰ã°ã€ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ 
 						if (current.mBoard[nextBaggagePos.y][nextBaggagePos.x] != '#')
 						{
 							if (isMovableArea(current.mPlayer, current.mBaggage - dir, current.mBoard))
@@ -825,10 +825,10 @@ std::vector<sf::Vector2i> HUDHelper::GetMovableArea()
 
 void HUDHelper::UpdateBoardStr()
 {
-	// ˆê’U”Õ–Êã‚ÌƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğíœ
+	// ä¸€æ—¦ç›¤é¢ä¸Šã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’å‰Šé™¤
 	mBoardStr = mBoardMapStr;
 
-	// Šù‚ÉXV‚³‚ê‚Ä‚¢‚éƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÊ’u‚É”z’u
+	// æ—¢ã«æ›´æ–°ã•ã‚Œã¦ã„ã‚‹ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ä½ç½®ã«é…ç½®
 	if (std::find(mGoals.begin(), mGoals.end(), mPlayerPos) == mGoals.end())
 	{
 		mBoardStr[mPlayerPos.y][mPlayerPos.x] = '@';

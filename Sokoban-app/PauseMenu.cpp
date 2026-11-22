@@ -4,7 +4,7 @@
 
 PauseMenu::PauseMenu(Game* game, sf::RenderWindow* window)
 	: mGame(game)
-	, mGui(std::make_unique<tgui::Gui>(*window)) // Game‚©‚çƒEƒBƒ“ƒhƒE‚ğæ“¾
+	, mGui(std::make_unique<tgui::Gui>(*window)) // Gameã‹ã‚‰ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’å–å¾—
 	, mState(EActive)
 {
 	mGame->PushUI(this);
@@ -14,12 +14,12 @@ PauseMenu::PauseMenu(Game* game, sf::RenderWindow* window)
 
 	mWindow = tgui::ChildWindow::create();
 	mWindow->setRenderer(mGame->GetTheme().getRenderer("ChildWindow"));
-	mWindow->setSize(400, 300);
+	mWindow->setSize(420, 420);
 	mWindow->setPosition((mGame->GetWindowSize().x - mWindow->getSize().x) / 2.0f, (mGame->GetWindowSize().y - mWindow->getSize().y) / 2.0f);
 	mWindow->onClose([this]() { Close(); });
 	mGui->add(mWindow);
 
-	OnLanguageChanged(); // ‰ŠúƒeƒLƒXƒgİ’è
+	OnLanguageChanged(); // åˆæœŸãƒ†ã‚­ã‚¹ãƒˆè¨­å®š
 }
 
 PauseMenu::~PauseMenu() {
@@ -28,40 +28,103 @@ PauseMenu::~PauseMenu() {
 
 void PauseMenu::OnLanguageChanged()
 {
-	mWindow->removeAllWidgets(); // ˆê’UƒNƒŠƒA‚µ‚ÄÄ\’zi‚Ü‚½‚Í•Û‚µ‚½ƒƒ“ƒo‚ğXVj
+	mWindow->removeAllWidgets(); // ä¸€æ—¦ã‚¯ãƒªã‚¢ã—ã¦å†æ§‹ç¯‰ï¼ˆã¾ãŸã¯ä¿æŒã—ãŸãƒ¡ãƒ³ãƒã‚’æ›´æ–°ï¼‰
 	mWindow->setTitle(mGame->GetLoc()->Get("MENU_PAUSED"));
 
-	float yPos = 20;
-	// ÄŠJƒ{ƒ^ƒ“
+	const float windowW = mWindow->getSize().x;
+	float yPos = 18.0f;
+
+	// å†é–‹ãƒœã‚¿ãƒ³
 	auto resumeBtn = tgui::Button::create(mGame->GetLoc()->Get("BTN_RESUME"));
 	resumeBtn->setRenderer(mGame->GetTheme().getRenderer("Button"));
-	resumeBtn->setSize(200, 40);
-	resumeBtn->setPosition((mWindow->getSize().x - resumeBtn->getSize().x) / 2.0f, yPos);
-	resumeBtn->onPress([this]() { Close(); });
+	resumeBtn->setSize(220, 38);
+	resumeBtn->setPosition((windowW - resumeBtn->getSize().x) / 2.0f, yPos);
+	resumeBtn->onPress([this]() {
+		mGame->PlaySound(SoundManager::SoundEffect::ButtonClick);
+		Close();
+		});
 	mWindow->add(resumeBtn);
 
-	yPos += 60;
-	// Œ¾ŒêØ‚è‘Ö‚¦ƒRƒ“ƒ{ƒ{ƒbƒNƒX
+	yPos += 54.0f;
+	// è¨€èªåˆ‡ã‚Šæ›¿ãˆã‚³ãƒ³ãƒœãƒœãƒƒã‚¯ã‚¹
 	auto langCombo = tgui::ComboBox::create();
 	langCombo->setRenderer(mGame->GetTheme().getRenderer("ComboBox"));
-	langCombo->setSize(200, 30);
-	langCombo->setPosition((mWindow->getSize().x - langCombo->getSize().x) / 2.0f, yPos);
+	langCombo->setSize(220, 30);
+	langCombo->setPosition((windowW - langCombo->getSize().x) / 2.0f, yPos);
 	langCombo->setDefaultText(mGame->GetLoc()->Get("LBL_LANGUAGE"));
-	langCombo->addItem(u8"“ú–{Œê", "jp");
+	langCombo->addItem(u8"æ—¥æœ¬èª", "jp");
 	langCombo->addItem("English", "en");
 
 	langCombo->onItemSelect([this](const tgui::String& item, const tgui::String& id) {
-		mGame->GetLoc()->LoadLanguage("Assets/Languages/" + id.toStdString() + ".txt");
-		mGame->NotifyLanguageChanged(); // ‘SUI‚Ö’Ê’m
+		if (!mGame->GetLoc()->LoadLanguage(mGame->GetPaths().Asset("Assets/Languages/" + id.toStdString() + ".txt")))
+			return;
+		mGame->NotifyLanguageChanged(); // å…¨UIã¸é€šçŸ¥
 		});
 	mWindow->add(langCombo);
 
-	yPos += 100;
-	// I—¹ƒ{ƒ^ƒ“
+	// åŠ¹æœéŸ³éŸ³é‡ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ & ãƒŸãƒ¥ãƒ¼ãƒˆåˆ‡ã‚Šæ›¿ãˆ
+	yPos += 50.0f;
+	const float currentVol = mGame->GetSoundManager() ? mGame->GetSoundManager()->GetVolume() : 70.0f;
+	const bool currentMuted = mGame->GetSoundManager() ? mGame->GetSoundManager()->IsMuted() : false;
+
+	auto volumeLabel = tgui::Label::create(mGame->GetLoc()->Get("LBL_SFX_VOLUME") + std::to_string(static_cast<int>(currentVol)) + "%");
+	volumeLabel->setRenderer(mGame->GetTheme().getRenderer("Label"));
+	volumeLabel->setPosition((windowW - 220.0f) / 2.0f, yPos);
+	volumeLabel->setTextSize(15);
+	mWindow->add(volumeLabel);
+
+	yPos += 26.0f;
+	auto volumeSlider = tgui::Slider::create(0.0f, 100.0f);
+	volumeSlider->setRenderer(mGame->GetTheme().getRenderer("Slider"));
+	volumeSlider->setSize(220, 18);
+	volumeSlider->setPosition((windowW - 220.0f) / 2.0f, yPos);
+	volumeSlider->setStep(1.0f);
+	volumeSlider->setValue(currentVol);
+	volumeSlider->onValueChange([this, volumeLabel](float value) {
+		if (mGame->GetSoundManager())
+		{
+			mGame->GetSoundManager()->SetVolume(value);
+		}
+		volumeLabel->setText(mGame->GetLoc()->Get("LBL_SFX_VOLUME") + std::to_string(static_cast<int>(value)) + "%");
+		mGame->PlaySound(SoundManager::SoundEffect::ButtonClick);
+		});
+	mWindow->add(volumeSlider);
+
+	yPos += 32.0f;
+	auto muteCheck = tgui::CheckBox::create(mGame->GetLoc()->Get("CHK_SFX_MUTE"));
+	muteCheck->setRenderer(mGame->GetTheme().getRenderer("CheckBox"));
+	muteCheck->setPosition((windowW - 220.0f) / 2.0f, yPos);
+	muteCheck->setChecked(currentMuted);
+	muteCheck->onChange([this](bool checked) {
+		if (mGame->GetSoundManager())
+		{
+			mGame->GetSoundManager()->SetMuted(checked);
+			if (!checked)
+			{
+				mGame->PlaySound(SoundManager::SoundEffect::ButtonClick);
+			}
+		}
+		});
+	mWindow->add(muteCheck);
+
+	// ã‚µãƒ¼ãƒ‰ãƒ‘ãƒ¼ãƒ†ã‚£ãƒ©ã‚¤ã‚»ãƒ³ã‚¹æƒ…å ±ãƒœã‚¿ãƒ³
+	yPos += 44.0f;
+	auto licenseBtn = tgui::Button::create(mGame->GetLoc()->Get("BTN_LICENSES"));
+	licenseBtn->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	licenseBtn->setSize(220, 34);
+	licenseBtn->setPosition((windowW - licenseBtn->getSize().x) / 2.0f, yPos);
+	licenseBtn->onPress([this]() {
+		mGame->PlaySound(SoundManager::SoundEffect::ButtonClick);
+		mGame->DisplayLicenseWindow();
+		});
+	mWindow->add(licenseBtn);
+
+	// çµ‚äº†ãƒœã‚¿ãƒ³
+	yPos += 50.0f;
 	auto quitBtn = tgui::Button::create(mGame->GetLoc()->Get("BTN_QUIT"));
 	quitBtn->setRenderer(mGame->GetTheme().getRenderer("Button"));
-	quitBtn->setSize(200, 40);
-	quitBtn->setPosition((mWindow->getSize().x - quitBtn->getSize().x) / 2.0f, yPos);
+	quitBtn->setSize(220, 38);
+	quitBtn->setPosition((windowW - quitBtn->getSize().x) / 2.0f, yPos);
 	quitBtn->onPress([this]() { mGame->SetState(Game::GameState::EQuit); });
 	mWindow->add(quitBtn);
 }

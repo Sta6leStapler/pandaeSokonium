@@ -1,6 +1,9 @@
 #include "MySolution.h"
 #include <queue>
 #include <algorithm>
+#include <cfloat>
+#include <climits>
+#include <cmath>
 
 MySolution::MySolution(
 	const sf::Vector2i& size,
@@ -76,18 +79,18 @@ MySolution::MySolution(
 
 void MySolution::InitSettings()
 {
-	// •Çƒ^ƒCƒ‹‚Ì”z’u”‚ğ‹‚ß‚é
+	// å£ã‚¿ã‚¤ãƒ«ã®é…ç½®æ•°ã‚’æ±‚ã‚ã‚‹
 	int wallCount = static_cast<int>(((mSize.x - 2) * (mSize.y - 2) - mBaggageNum - 1) * mInitialWallRatio);
 	SetWallTiles(wallCount);
 
-	// ”Õ–Êî•ñ‚ÌƒRƒs[
+	// ç›¤é¢æƒ…å ±ã®ã‚³ãƒ”ãƒ¼
 	Board cpBoard = mBoardStr;
 	std::vector<sf::Vector2i> cpBaggagePos;
 
-	// w’è‚³‚ê‚½”‚¾‚¯‰×•¨‚ğ”z’u
+	// æŒ‡å®šã•ã‚ŒãŸæ•°ã ã‘è·ç‰©ã‚’é…ç½®
 	while (mBaggagesCoordinate.size() < mBaggageNum)
 	{
-		// ‚±‚êˆÈã‰×•¨‚ğ”z’u‚Å‚«‚È‚¢ê‡A‘S‚Ä‚Ì‰×•¨‚ğíœ‚µ‚Ä‚â‚è’¼‚µ
+		// ã“ã‚Œä»¥ä¸Šè·ç‰©ã‚’é…ç½®ã§ããªã„å ´åˆã€å…¨ã¦ã®è·ç‰©ã‚’å‰Šé™¤ã—ã¦ã‚„ã‚Šç›´ã—
 		if (existsFreeSpace(cpBoard, cpBaggagePos))
 		{
 			for (int i = 0; i < mBaggagesCoordinate.size(); i++)
@@ -105,10 +108,10 @@ void MySolution::InitSettings()
 
 		sf::Vector2i tmpCoordinate(RollCoordinate(2, mSize.x - 3, 2, mSize.y - 3));
 
-		// ”z’uæ‚ÌÀ•W‚É”í‚è‚ª‚È‚¢‚±‚Æ‚ğŠm”F
+		// é…ç½®å…ˆã®åº§æ¨™ã«è¢«ã‚ŠãŒãªã„ã“ã¨ã‚’ç¢ºèª
 		if (mBoardStr[tmpCoordinate.y][tmpCoordinate.x] != '#' && std::find(mBaggagesCoordinate.begin(), mBaggagesCoordinate.end(), tmpCoordinate) == mBaggagesCoordinate.end())
 		{
-			// ‹l‚İ‚Ì‰×•¨‚Ì”z’u‚ª‚È‚¢‚±‚Æ‚ğŠm”F‚·‚é
+			// è©°ã¿ã®è·ç‰©ã®é…ç½®ãŒãªã„ã“ã¨ã‚’ç¢ºèªã™ã‚‹
 			cpBoard[tmpCoordinate.y][tmpCoordinate.x] = '$';
 			cpBaggagePos.emplace_back(tmpCoordinate);
 			if (isArrangementValid(cpBoard, cpBaggagePos))
@@ -124,7 +127,7 @@ void MySolution::InitSettings()
 		}
 	}
 
-	// ƒvƒŒƒCƒ„[‚Ì‰ŠúˆÊ’u‚ğƒ‰ƒ“ƒ_ƒ€‚ÉŒˆ’è
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸä½ç½®ã‚’ãƒ©ãƒ³ãƒ€ãƒ ã«æ±ºå®š
 	sf::Vector2i initP{ -1, -1 };
 	do
 	{
@@ -135,28 +138,28 @@ void MySolution::InitSettings()
 
 void MySolution::RunSimulation()
 {
-	// ”Õ–Êî•ñ‚ÌƒRƒs[
+	// ç›¤é¢æƒ…å ±ã®ã‚³ãƒ”ãƒ¼
 	Board cpBoard = mBoardStr;
 
-	// ‰¼‘z‰×•¨‚ÌŒ»İ’n
+	// ä»®æƒ³è·ç‰©ã®ç¾åœ¨åœ°
 	std::vector<sf::Vector2i> vbPoints;
 
-	// ƒVƒ~ƒ…ƒŒ[ƒg‚ğÀs
+	// ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ãƒˆã‚’å®Ÿè¡Œ
 	for (int count = 0; count < mBuildsNum; count++)
 	{
-		// ”Õ–Êã‚ÅˆÚ“®‚µ‚½‰ñ”‚ğƒJƒEƒ“ƒg‚·‚é•Ï”
-		// ƒvƒŒƒCƒ„[
+		// ç›¤é¢ä¸Šã§ç§»å‹•ã—ãŸå›æ•°ã‚’ã‚«ã‚¦ãƒ³ãƒˆã™ã‚‹å¤‰æ•°
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼
 		std::vector<std::vector<unsigned int>> PPassCount(mSize.y, std::vector<unsigned int>(mSize.x, 0));
-		// ‰×•¨
+		// è·ç‰©
 		std::vector<std::vector<unsigned int>> BPassCount(mSize.y, std::vector<unsigned int>(mSize.x, 0));
 
-		// °ƒ^ƒCƒ‹‚ğ‚ ‚ç‚©‚¶‚ß’è‚ß‚ç‚ê‚½Š„‡‚¾‚¯–K–âÏ‚İ‚É‚·‚é
+		// åºŠã‚¿ã‚¤ãƒ«ã‚’ã‚ã‚‰ã‹ã˜ã‚å®šã‚ã‚‰ã‚ŒãŸå‰²åˆã ã‘è¨ªå•æ¸ˆã¿ã«ã™ã‚‹
 		SetVisitedStatus(PPassCount, cpBoard);
 
-		// ”Õ–Êî•ñ‚ÌƒRƒs[
+		// ç›¤é¢æƒ…å ±ã®ã‚³ãƒ”ãƒ¼
 		cpBoard = mBoardStr;
 
-		// ‰¼‘zƒvƒŒƒCƒ„[‚ÌŒ»İ’n
+		// ä»®æƒ³ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç¾åœ¨åœ°
 		sf::Vector2i vpPoint(0, 0);
 		for (int i = 1; i < mSize.y; i++)
 		{
@@ -170,32 +173,32 @@ void MySolution::RunSimulation()
 			}
 		}
 
-		// ‰¼‘z‰×•¨‚ÌŒ»İ’n
+		// ä»®æƒ³è·ç‰©ã®ç¾åœ¨åœ°
 		vbPoints = mBaggagesCoordinate;
 
-		// ƒvƒŒƒCƒ„[‚Ì‰ŠúˆÊ’u‚Æ‰×•¨‚Ì‰ŠúˆÊ’u‚ÌÀ•W‚Ì‚İˆÚ“®‚µ‚½‰ñ”‚ÌƒJƒEƒ“ƒg‚ğ‘‚â‚·
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸä½ç½®ã¨è·ç‰©ã®åˆæœŸä½ç½®ã®åº§æ¨™ã®ã¿ç§»å‹•ã—ãŸå›æ•°ã®ã‚«ã‚¦ãƒ³ãƒˆã‚’å¢—ã‚„ã™
 		PPassCount[vpPoint.y][vpPoint.x]++;
 		for (const auto& item : vbPoints)
 		{
 			BPassCount[item.y][item.x]++;
 		}
 
-		// ‰×•¨‚ğ1‰ñˆÈãˆÚ“®‚³‚¹‚½‚©‚Ç‚¤‚©‚Ìƒtƒ‰ƒO
+		// è·ç‰©ã‚’1å›ä»¥ä¸Šç§»å‹•ã•ã›ãŸã‹ã©ã†ã‹ã®ãƒ•ãƒ©ã‚°
 		std::vector<bool> isMoved(mBaggageNum, false);
 
-		// ‰ğ‚ÌãŠE‚ğƒŠƒZƒbƒg
+		// è§£ã®ä¸Šç•Œã‚’ãƒªã‚»ãƒƒãƒˆ
 		mSolveUpper = 0;
 
-		// ’nŒ`\’z‚Ü‚Å‚Ì”Õ–Ê‚Ì—š—ğ
+		// åœ°å½¢æ§‹ç¯‰ã¾ã§ã®ç›¤é¢ã®å±¥æ­´
 		std::vector<History> currentHistory = { History{ cpBoard, PPassCount, BPassCount, mSolveUpper } };
 
-		// ’¼‘O‚É‰^‚ñ‚¾‰×•¨‚ÌƒCƒ“ƒfƒbƒNƒX
+		// ç›´å‰ã«é‹ã‚“ã è·ç‰©ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
 		int prevBaggageIndex = -1;
 
-		// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÚ“®
+		// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ç§»å‹•
 		for (int i = 0; i < mRunsNum || isLoopEnd(cpBoard, isMoved, PPassCount, BPassCount); i++)
 		{
-			// ‰Ÿ‚¹‚é‰×•¨‚Æ‰Ÿ‚µn‚ß‚ç‚ê‚éˆÊ’u‚ÌƒŠƒXƒg‚ğ‹‚ß‚é
+			// æŠ¼ã›ã‚‹è·ç‰©ã¨æŠ¼ã—å§‹ã‚ã‚‰ã‚Œã‚‹ä½ç½®ã®ãƒªã‚¹ãƒˆã‚’æ±‚ã‚ã‚‹
 			CandidateItems movableBaggages{};
 			SetCandidates(vpPoint, vbPoints, cpBoard, movableBaggages, prevBaggageIndex);
 
@@ -204,7 +207,7 @@ void MySolution::RunSimulation()
 				break;
 			}
 
-			// ‰Ÿ‚·‰×•¨‚Æ‰Ÿ‚µn‚ß‚éˆÊ’u‚ÌƒŠƒXƒg‚©‚çAƒvƒŒƒCƒ„[‚ÌˆÚ“®Œo˜H‚ğ‹‚ß‚é
+			// æŠ¼ã™è·ç‰©ã¨æŠ¼ã—å§‹ã‚ã‚‹ä½ç½®ã®ãƒªã‚¹ãƒˆã‹ã‚‰ã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•çµŒè·¯ã‚’æ±‚ã‚ã‚‹
 			std::unordered_map<int, std::vector<Route>> pRoutes{};
 			SetRoutes(vpPoint, vbPoints, cpBoard, pRoutes, movableBaggages, PPassCount, BPassCount);
 
@@ -213,27 +216,27 @@ void MySolution::RunSimulation()
 				break;
 			}
 
-			// Œo˜H‚ğ‘I‘ğ‚·‚é
+			// çµŒè·¯ã‚’é¸æŠã™ã‚‹
 			//auto bId = GetRandomElement(pRoutes).first;
 			std::pair<int, Route> pRoute(GetBestRoute(pRoutes, cpBoard, vpPoint, vbPoints, PPassCount, BPassCount, i, movableBaggages));//(bid, GetRandomElement(pRoutes[bId]));
 			isMoved[pRoute.first] = true;
 
-			// ¡‰ñ‰^‚Ô‰×•¨‚ÌƒCƒ“ƒfƒbƒNƒX‚ğ‹L˜^
+			// ä»Šå›é‹ã¶è·ç‰©ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’è¨˜éŒ²
 			prevBaggageIndex = pRoute.first;
 
-			// ƒvƒŒƒCƒ„[‚ÌˆÚ“®Œo˜H‚É‰ˆ‚Á‚ÄƒvƒŒƒCƒ„[‚Æ‰×•¨‚ğˆÚ“®‚³‚¹‚é
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•çµŒè·¯ã«æ²¿ã£ã¦ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã‚’ç§»å‹•ã•ã›ã‚‹
 			MoveOnPath(pRoute.second, cpBoard, vpPoint, vbPoints[pRoute.first], PPassCount, BPassCount, true);
 
-			// ‰ğ‚ÌãŠE‚ğ‹‚ß‚é‚½‚ß‚ÉAŒo˜H‚Ì’·‚³‚¾‚¯‰ÁZ
+			// è§£ã®ä¸Šç•Œã‚’æ±‚ã‚ã‚‹ãŸã‚ã«ã€çµŒè·¯ã®é•·ã•ã ã‘åŠ ç®—
 			mSolveUpper += static_cast<int>(pRoute.second.size());
 
-			// —š—ğ‚Éd•¡‚ª‚È‚¢‚©Šm”F‚·‚é
+			// å±¥æ­´ã«é‡è¤‡ãŒãªã„ã‹ç¢ºèªã™ã‚‹
 			if (existsDuplicateHistory(currentHistory, cpBoard))
 			{
 				currentHistory.emplace_back(History{ cpBoard, PPassCount, BPassCount, mSolveUpper });
 			}
-			// d•¡‚ª‚ ‚Á‚½ê‡
-			// ‚Æ‚è‚ ‚¦‚¸AŒ»İ‚Íd•¡‚ª¶‚¶‚é‰×•¨‚Ì‰^”À‚Ì1‚Â‘O‚Ì‰×•¨‚Ì‰^”À‚ÌÅIó‘Ô‚ğo—Í‚Æ‚µ‚ÄI—¹
+			// é‡è¤‡ãŒã‚ã£ãŸå ´åˆ
+			// ã¨ã‚Šã‚ãˆãšã€ç¾åœ¨ã¯é‡è¤‡ãŒç”Ÿã˜ã‚‹è·ç‰©ã®é‹æ¬ã®1ã¤å‰ã®è·ç‰©ã®é‹æ¬ã®æœ€çµ‚çŠ¶æ…‹ã‚’å‡ºåŠ›ã¨ã—ã¦çµ‚äº†
 			else
 			{
 				cpBoard = currentHistory.back().mBoard;
@@ -244,7 +247,7 @@ void MySolution::RunSimulation()
 			}
 		}
 
-		// ˆÚ“®‚µ‚½‰ñ”‚ğŠî‚ÉA’nŒ`‚ğŒ`¬
+		// ç§»å‹•ã—ãŸå›æ•°ã‚’åŸºã«ã€åœ°å½¢ã‚’å½¢æˆ
 		for (int i = 0; i < mSize.y; i++)
 		{
 			for (int j = 0; j < mSize.x; j++)
@@ -256,11 +259,11 @@ void MySolution::RunSimulation()
 			}
 		}
 
-		// —š—ğ‚É’Ç‰Á
+		// å±¥æ­´ã«è¿½åŠ 
 		mBoardHistory.emplace_back(currentHistory);
 	}
 
-	// ƒS[ƒ‹ˆÊ’u‚Ìİ’è
+	// ã‚´ãƒ¼ãƒ«ä½ç½®ã®è¨­å®š
 	for (const auto& vbPoint : vbPoints)
 	{
 		if (mBoardStr[vbPoint.y][vbPoint.x] == ' ')
@@ -278,7 +281,7 @@ void MySolution::RunSimulation()
 	}
 
 
-	// –³‘Ê‚È°ƒ^ƒCƒ‹‚ğÁ‚·
+	// ç„¡é§„ãªåºŠã‚¿ã‚¤ãƒ«ã‚’æ¶ˆã™
 	std::vector<sf::Vector2i> tileList;
 	do
 	{
@@ -305,48 +308,48 @@ void MySolution::RunSimulation()
 		}
 	} while (!tileList.empty());
 
-	// ‰×•¨‚ÆƒS[ƒ‹‚Ì‘Î‰‚ğì‚é
+	// è·ç‰©ã¨ã‚´ãƒ¼ãƒ«ã®å¯¾å¿œã‚’ä½œã‚‹
 	for (int i = 0; i < mBaggageNum; i++)
 	{
 		mInitToGoalList.emplace_back(std::make_pair(mBaggagesCoordinate[i], vbPoints[i]));
 	}
 
-	// ‰ğ‚Ì•\¦
+	// è§£ã®è¡¨ç¤º
 	std::cout << "Solution length : " << mSolveUpper << std::endl << "Solution : " << mSolutionDirection << std::endl;
 }
 
 void MySolution::SetWallTiles(const int& wallCount)
 {
-	// ”Õ–Ê‚ÌƒRƒs[
+	// ç›¤é¢ã®ã‚³ãƒ”ãƒ¼
 	Board cpBoard = mBoardStr;
-	// ”z’u‚³‚ê‚½•Ç‚Ì”‚ÌƒJƒEƒ“ƒg
+	// é…ç½®ã•ã‚ŒãŸå£ã®æ•°ã®ã‚«ã‚¦ãƒ³ãƒˆ
 	int count = 0;
-	// •Ç‚ª‹K’è”‚É’B‚·‚é‚Ü‚Å”z’u
+	// å£ãŒè¦å®šæ•°ã«é”ã™ã‚‹ã¾ã§é…ç½®
 	while (count < wallCount)
 	{
-		// ƒ‰ƒ“ƒ_ƒ€‚ÈÀ•W‚ğæ“¾
+		// ãƒ©ãƒ³ãƒ€ãƒ ãªåº§æ¨™ã‚’å–å¾—
 		sf::Vector2i tmpPos = RollCoordinate();
-		// æ“¾‚µ‚½À•W‚ª°ƒ^ƒCƒ‹‚©‚Ç‚¤‚©
+		// å–å¾—ã—ãŸåº§æ¨™ãŒåºŠã‚¿ã‚¤ãƒ«ã‹ã©ã†ã‹
 		if (cpBoard[tmpPos.y][tmpPos.x] == ' ')
 		{
-			// ˆê“I‚É•Ç‚É‘‚«Š·‚¦‚é
+			// ä¸€æ™‚çš„ã«å£ã«æ›¸ãæ›ãˆã‚‹
 			cpBoard[tmpPos.y][tmpPos.x] = '#';
 
-			// 3•ûˆÈã‚ª•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é°ƒ^ƒCƒ‹‚ª‘¶İ‚µ‚È‚¢‚©Šm”F
+			// 3æ–¹ä»¥ä¸ŠãŒå£ã§å›²ã¾ã‚Œã¦ã„ã‚‹åºŠã‚¿ã‚¤ãƒ«ãŒå­˜åœ¨ã—ãªã„ã‹ç¢ºèª
 			if (hasEnclosedFloor(cpBoard))
 			{
 				cpBoard[tmpPos.y][tmpPos.x] = ' ';
 				continue;
 			}
 
-			// ”Õ–Ê‚ª2‚ÂˆÈã‚É•ª’f‚³‚ê‚Ä‚¢‚È‚¢‚©‚ğ”»’è
+			// ç›¤é¢ãŒ2ã¤ä»¥ä¸Šã«åˆ†æ–­ã•ã‚Œã¦ã„ãªã„ã‹ã‚’åˆ¤å®š
 			if (isBoardPartitioned(cpBoard))
 			{
 				cpBoard[tmpPos.y][tmpPos.x] = ' ';
 				continue;
 			}
 
-			// ‚¢‚¸‚ê‚É‚àŠY“–‚µ‚È‚¢ê‡‚ÍAƒJƒEƒ“ƒg‚ğ‘‚â‚·
+			// ã„ãšã‚Œã«ã‚‚è©²å½“ã—ãªã„å ´åˆã¯ã€ã‚«ã‚¦ãƒ³ãƒˆã‚’å¢—ã‚„ã™
 			++count;
 		}
 	}
@@ -355,15 +358,15 @@ void MySolution::SetWallTiles(const int& wallCount)
 
 bool MySolution::hasEnclosedFloor(const Board& board)
 {
-	// °ƒ^ƒCƒ‹‚ÌüˆÍ3•ûŒüˆÈã‚ª•Çƒ^ƒCƒ‹‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‚©‚Ç‚¤‚©‚Ì”»’è‚ğs‚¤
+	// åºŠã‚¿ã‚¤ãƒ«ã®å‘¨å›²3æ–¹å‘ä»¥ä¸ŠãŒå£ã‚¿ã‚¤ãƒ«ã§å›²ã¾ã‚Œã¦ã„ã‚‹ã‹ã©ã†ã‹ã®åˆ¤å®šã‚’è¡Œã†
 	for (int x = 1; x < mSize.x - 1; ++x)
 	{
 		for (int y = 1; y < mSize.y - 1; ++y)
 		{
-			// °ƒ^ƒCƒ‹‚È‚ç’²‚×‚é
+			// åºŠã‚¿ã‚¤ãƒ«ãªã‚‰èª¿ã¹ã‚‹
 			if (board[y][x] == ' ')
 			{
-				// üˆÍ3•ûŒü‚ğ’²‚×‚é
+				// å‘¨å›²3æ–¹å‘ã‚’èª¿ã¹ã‚‹
 				for (int i = 0; i < 4; ++i)
 				{
 					if (board[y + directions[i].y][x + directions[i].x] == '#' &&
@@ -383,12 +386,12 @@ bool MySolution::hasEnclosedFloor(const Board& board)
 
 bool MySolution::isBoardPartitioned(const Board& board)
 {
-	// ”Õ–Ê‚ª2‚ÂˆÈã‚É•ª’f‚³‚ê‚Ä‚¢‚È‚¢‚©‚ğ”»’è
-	// •—Dæ’Tõ‚Å’²‚×‚é
-	// –¢’Tõ‚©‚Ç‚¤‚©
+	// ç›¤é¢ãŒ2ã¤ä»¥ä¸Šã«åˆ†æ–­ã•ã‚Œã¦ã„ãªã„ã‹ã‚’åˆ¤å®š
+	// å¹…å„ªå…ˆæ¢ç´¢ã§èª¿ã¹ã‚‹
+	// æœªæ¢ç´¢ã‹ã©ã†ã‹
 	std::vector<std::vector<bool>> isUnachieved(mSize.y, std::vector<bool>(mSize.x, true));
 	std::queue<sf::Vector2i> q;
-	// “K“–‚È°ƒ^ƒCƒ‹‚ğ’T‚·
+	// é©å½“ãªåºŠã‚¿ã‚¤ãƒ«ã‚’æ¢ã™
 	sf::Vector2i initPos{ -1, -1 };
 	for (int y = 1; y < mSize.y - 1; ++y)
 	{
@@ -424,12 +427,12 @@ bool MySolution::isBoardPartitioned(const Board& board)
 		}
 	}
 	
-	// –¢’Tõ‚Ì°ƒ^ƒCƒ‹‚ª‚È‚¢‚©‚Ç‚¤‚©Šm”F‚·‚é
+	// æœªæ¢ç´¢ã®åºŠã‚¿ã‚¤ãƒ«ãŒãªã„ã‹ã©ã†ã‹ç¢ºèªã™ã‚‹
 	for (int x = 1; x < mSize.x - 1; ++x)
 	{
 		for (int y = 1; y < mSize.y - 1; ++y)
 		{
-			// °‚©‚Â–¢’Tõ‚Ìƒ^ƒCƒ‹‚ª‚ ‚ê‚Î^‚ğ•Ô‚·
+			// åºŠã‹ã¤æœªæ¢ç´¢ã®ã‚¿ã‚¤ãƒ«ãŒã‚ã‚Œã°çœŸã‚’è¿”ã™
 			if (board[y][x] == ' ' && isUnachieved[y][x])
 			{
 				return true;
@@ -442,7 +445,7 @@ bool MySolution::isBoardPartitioned(const Board& board)
 
 void MySolution::SetVisitedStatus(std::vector<std::vector<unsigned int>>& visitedCount, const Board& board)
 {
-	// °ƒ^ƒCƒ‹‚ÌƒŠƒXƒg
+	// åºŠã‚¿ã‚¤ãƒ«ã®ãƒªã‚¹ãƒˆ
 	std::vector<sf::Vector2i> floors;
 	for (int x = 0; x < mSize.x; ++x)
 	{
@@ -467,11 +470,11 @@ void MySolution::SetVisitedStatus(std::vector<std::vector<unsigned int>>& visite
 
 bool MySolution::isLoopEnd(const Board& board, const std::vector<bool>& isMoved, const std::vector<std::vector<unsigned int>>& pPassCount, const std::vector<std::vector<unsigned int>>& bPassCount)
 {
-	// NOTE Œ»ó‚Í‚±‚Ì‹@”\‚Í–³Œø‰»
-	// ‘S‚Ä‚Ì‰×•¨‚ğ“®‚©‚µ‚Ä‚¢‚é
-	// ‰×•¨‚ÌüˆÍ3•û‚ª•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚È‚¢
-	// TODO ‰ŠúˆÊ’u‚Å“®‚©‚¹‚È‚¢‰×•¨‚ª‚È‚¢
-	// ‚¢‚¸‚ê‚à–‚½‚µ‚Ä‚¢‚éê‡‚ÍI—¹‚Å‚«‚é
+	// NOTE ç¾çŠ¶ã¯ã“ã®æ©Ÿèƒ½ã¯ç„¡åŠ¹åŒ–
+	// å…¨ã¦ã®è·ç‰©ã‚’å‹•ã‹ã—ã¦ã„ã‚‹
+	// è·ç‰©ã®å‘¨å›²3æ–¹ãŒå£ã§å›²ã¾ã‚Œã¦ã„ãªã„
+	// TODO åˆæœŸä½ç½®ã§å‹•ã‹ã›ãªã„è·ç‰©ãŒãªã„
+	// ã„ãšã‚Œã‚‚æº€ãŸã—ã¦ã„ã‚‹å ´åˆã¯çµ‚äº†ã§ãã‚‹
 
 	return false;
 	
@@ -485,7 +488,7 @@ bool MySolution::isLoopEnd(const Board& board, const std::vector<bool>& isMoved,
 		for (int i = 0; i < 4; ++i)
 		{
 			// $$ ## #$ #$ $#
-			// $$ $$ $# $$ ## ‚ÌŒ`ó
+			// $$ $$ $# $$ ## ã®å½¢çŠ¶
 			if (((pPassCount[bPos.y + directions[i].y][bPos.x + directions[i].x] == 0 &&
 				bPassCount[bPos.y + directions[i].y][bPos.x + directions[i].x] == 0) ||
 				mBoardStr[bPos.y + directions[i].y][bPos.x + directions[i].x] == '$' ||
@@ -503,7 +506,7 @@ bool MySolution::isLoopEnd(const Board& board, const std::vector<bool>& isMoved,
 			}
 
 			// $#
-			// #  ‚ÌŒ`ó
+			// #  ã®å½¢çŠ¶
 			if ((pPassCount[bPos.y + directions[i].y][bPos.x + directions[i].x] == 0 &&
 				bPassCount[bPos.y + directions[i].y][bPos.x + directions[i].x] == 0) &&
 				(pPassCount[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == 0 &&
@@ -513,7 +516,7 @@ bool MySolution::isLoopEnd(const Board& board, const std::vector<bool>& isMoved,
 			}
 
 			//  $#
-			// #$  ‚ÌŒ`ó
+			// #$  ã®å½¢çŠ¶
 			if ((pPassCount[bPos.y + directions[i].y][bPos.x + directions[i].x] == 0 &&
 				bPassCount[bPos.y + directions[i].y][bPos.x + directions[i].x] == 0) &&
 				(mBoardStr[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$' ||
@@ -525,7 +528,7 @@ bool MySolution::isLoopEnd(const Board& board, const std::vector<bool>& isMoved,
 			}
 
 			// #$
-			//  $# ‚ÌŒ`ó
+			//  $# ã®å½¢çŠ¶
 			if ((pPassCount[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == 0 &&
 				bPassCount[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == 0) &&
 				(mBoardStr[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$' ||
@@ -538,7 +541,7 @@ bool MySolution::isLoopEnd(const Board& board, const std::vector<bool>& isMoved,
 
 			// #
 			// $$
-			//  $# ‚ÌŒ`ó
+			//  $# ã®å½¢çŠ¶
 			if ((pPassCount[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == 0 &&
 				bPassCount[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == 0) &&
 				(mBoardStr[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$' ||
@@ -585,7 +588,7 @@ bool MySolution::isLoopEnd(const Board& board, const std::vector<bool>& isMoved,
 MySolution::Direction MySolution::RollDirection()
 {
 	std::uniform_int_distribution<int> rand(0, 3);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	switch (rand(mt))
 	{
 	case 0:
@@ -620,28 +623,28 @@ sf::Vector2i MySolution::RollCoordinate(const int& xMin, const int& xMax, const 
 int MySolution::RollCoordinateX()
 {
 	std::uniform_int_distribution<int> randX(1, mSize.x - 2);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	return randX(mt);
 }
 
 int MySolution::RollCoordinateX(const int& xMin, const int& xMax)
 {
 	std::uniform_int_distribution<int> randX(xMin, xMax);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	return randX(mt);
 }
 
 int MySolution::RollCoordinateY()
 {
 	std::uniform_int_distribution<int> randX(1, mSize.y - 2);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	return randX(mt);
 }
 
 int MySolution::RollCoordinateY(const int& yMin, const int& yMax)
 {
 	std::uniform_int_distribution<int> randX(yMin, yMax);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	return randX(mt);
 }
 
@@ -692,7 +695,7 @@ std::vector<sf::Vector2i> MySolution::GetAroundWalls(const sf::Vector2i& point)
 {
 	std::vector<sf::Vector2i> result;
 
-	// ã‰E¶‰º‚Ì‡‚É’²‚×‚é
+	// ä¸Šå³å·¦ä¸‹ã®é †ã«èª¿ã¹ã‚‹
 	if (point.y > 1)
 	{
 		if (mBoardStr[point.y - 1][point.x] == '#')
@@ -730,20 +733,20 @@ std::vector<sf::Vector2i> MySolution::GetAroundWalls(const sf::Vector2i& point)
 
 bool MySolution::isArrangementValid(const Board& board, const std::vector<sf::Vector2i>& bPositions)
 {
-	// “®‚©‚¹‚È‚¢‰×•¨‚ª‚ ‚é‚©‚Ç‚¤‚©‚ğ”»’è‚·‚é
-	// ”Õ–Ê‚ÌŠp‚Ì‰×•¨‚Í“®‚©‚¹‚È‚¢
+	// å‹•ã‹ã›ãªã„è·ç‰©ãŒã‚ã‚‹ã‹ã©ã†ã‹ã‚’åˆ¤å®šã™ã‚‹
+	// ç›¤é¢ã®è§’ã®è·ç‰©ã¯å‹•ã‹ã›ãªã„
 	if (board[1][1] == '$' || board[board.size() - 2][1] == '$' || board[1][board[1].size() - 2] == '$' || board[board.size() - 2][board[1].size() - 2] == '$')
 	{
 		return false;
 	}
 
-	// ‰×•¨‚ÌüˆÍ‚ğŒ©‚ÄA“®‚©‚¹‚é‚©‚Ç‚¤‚©‚ğ’²‚×‚é
+	// è·ç‰©ã®å‘¨å›²ã‚’è¦‹ã¦ã€å‹•ã‹ã›ã‚‹ã‹ã©ã†ã‹ã‚’èª¿ã¹ã‚‹
 	for (const auto& bPos : bPositions)
 	{
 		for (int i = 0; i < directions.size(); i++)
 		{
 			// $$ ## #$ #$ $#
-			// $$ $$ $# $$ ## ‚ÌŒ`ó
+			// $$ $$ $# $$ ## ã®å½¢çŠ¶
 			if ((board[bPos.y + directions[i].y][bPos.x + directions[i].x] == '#' || board[bPos.y + directions[i].y][bPos.x + directions[i].x] == '$') &&
 				(board[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == '#' || board[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == '$') &&
 				(board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '#' || board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$'))
@@ -752,7 +755,7 @@ bool MySolution::isArrangementValid(const Board& board, const std::vector<sf::Ve
 			}
 
 			// $#
-			// #  ‚ÌŒ`ó
+			// #  ã®å½¢çŠ¶
 			if (board[bPos.y + directions[i].y][bPos.x + directions[i].x] == '#' &&
 				board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '#')
 			{
@@ -760,7 +763,7 @@ bool MySolution::isArrangementValid(const Board& board, const std::vector<sf::Ve
 			}
 
 			//  $#
-			// #$  ‚ÌŒ`ó
+			// #$  ã®å½¢çŠ¶
 			if (board[bPos.y + directions[i].y][bPos.x + directions[i].x] == '#' &&
 				board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$' &&
 				board[bPos.y + directions[(i + 1) % 4].y + directions[(i + 2) % 4].y][bPos.x + directions[(i + 1) % 4].x + directions[(i + 2) % 4].x] == '#')
@@ -769,7 +772,7 @@ bool MySolution::isArrangementValid(const Board& board, const std::vector<sf::Ve
 			}
 
 			// #$
-			//  $# ‚ÌŒ`ó
+			//  $# ã®å½¢çŠ¶
 			if (board[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == '#' &&
 				board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$' &&
 				board[bPos.y + directions[(i + 2) % 4].y][bPos.x + directions[(i + 2) % 4].x] == '#')
@@ -779,7 +782,7 @@ bool MySolution::isArrangementValid(const Board& board, const std::vector<sf::Ve
 
 			// #
 			// $$
-			//  $# ‚ÌŒ`ó
+			//  $# ã®å½¢çŠ¶
 			if (board[bPos.y + directions[i].y + directions[(i + 1) % 4].y][bPos.x + directions[i].x + directions[(i + 1) % 4].x] == '#' &&
 				board[bPos.y + directions[(i + 1) % 4].y][bPos.x + directions[(i + 1) % 4].x] == '$' &&
 				board[bPos.y + directions[(i + 2) % 4].y][bPos.x + directions[(i + 2) % 4].x] == '$' &&
@@ -801,12 +804,12 @@ bool MySolution::existsFreeSpace(const Board& board, const std::vector<sf::Vecto
 		{
 			if (board[y][x] != '@' && board[y][x] != '$')
 			{
-				// 1‚Â‚Å‚à”z’u‚Å‚«‚éêŠ‚ª‚ ‚ê‚Î‹U‚ğo—Í
-				// flag‚Í”z’u‚Å‚«‚È‚¢‚±‚Æ‚ğŠm”F‚µŸ‘æ‹U‚É‚µAŸ‚ÌˆÊ’u‚ğ’²‚×‚é‚©‚Ç‚¤‚©‚ğ”»’è
+				// 1ã¤ã§ã‚‚é…ç½®ã§ãã‚‹å ´æ‰€ãŒã‚ã‚Œã°å½ã‚’å‡ºåŠ›
+				// flagã¯é…ç½®ã§ããªã„ã“ã¨ã‚’ç¢ºèªã—æ¬¡ç¬¬å½ã«ã—ã€æ¬¡ã®ä½ç½®ã‚’èª¿ã¹ã‚‹ã‹ã©ã†ã‹ã‚’åˆ¤å®š
 				bool flag = true;
 				for (int i = 0; i < 4; i++)
 				{
-					// l•û‚ª•Ç‚â‰×•¨‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‚©
+					// å››æ–¹ãŒå£ã‚„è·ç‰©ã§å›²ã¾ã‚Œã¦ã„ã‚‹ã‹
 					if ((board[y + directions[i].y][x + directions[i].x] == '$' || board[y + directions[i].y][x + directions[i].x] == '#') &&
 						(board[y + directions[i].y + directions[(i + 1) % 4].y][x + directions[i].x + directions[(i + 1) % 4].x] == '$' || board[y + directions[i].y + directions[(i + 1) % 4].y][x + directions[i].x + directions[(i + 1) % 4].x] == '#') &&
 						(board[y + directions[(i + 1) % 4].y][x + directions[(i + 1) % 4].x] == '$' || board[y + directions[(i + 1) % 4].y][x + directions[(i + 1) % 4].x] == '#'))
@@ -815,7 +818,7 @@ bool MySolution::existsFreeSpace(const Board& board, const std::vector<sf::Vecto
 						break;
 					}
 
-					// c‰¡‚É•Ç‚ª‚ ‚é‚©
+					// ç¸¦æ¨ªã«å£ãŒã‚ã‚‹ã‹
 					if (board[y + directions[i].y][x + directions[i].x] == '#' &&
 						board[y + directions[(i + 1) % 4].y][x + directions[(i + 1) % 4].x] == '#')
 					{
@@ -849,26 +852,26 @@ bool MySolution::existsDuplicateHistory(const std::vector<History> history, cons
 
 void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, CandidateItems& outList, const int& prevBaggageIndex)
 {
-	// ‰×•¨‚²‚Æ‚ÉAƒvƒŒƒCƒ„[‚ª‰Ÿ‚µn‚ß‚éˆÊ’u‚ÉˆÚ“®‚Å‚«‚éÀ•W‚ÌƒŠƒXƒg‚ğ‹‚ß‚é
-	// ‘S‚Ä‚Ì‰×•¨‚ğ•Ç‚Æ‚İ‚È‚µ‚½”Õ–Ê‚ğl‚¦‚é
+	// è·ç‰©ã”ã¨ã«ã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒæŠ¼ã—å§‹ã‚ã‚‹ä½ç½®ã«ç§»å‹•ã§ãã‚‹åº§æ¨™ã®ãƒªã‚¹ãƒˆã‚’æ±‚ã‚ã‚‹
+	// å…¨ã¦ã®è·ç‰©ã‚’å£ã¨ã¿ãªã—ãŸç›¤é¢ã‚’è€ƒãˆã‚‹
 	Board baseBoard = board;
 	for (const auto& bPos : bPositions)
 	{
 		baseBoard[bPos.y][bPos.x] = '#';
 	}
 
-	// ’¼‘O‚É‰^‚ñ‚¾‰×•¨ˆÈŠO‚Ì‘S‚Ä‚Ì‰×•¨‚É‘Î‚µ‚Ä’²‚×‚é
+	// ç›´å‰ã«é‹ã‚“ã è·ç‰©ä»¥å¤–ã®å…¨ã¦ã®è·ç‰©ã«å¯¾ã—ã¦èª¿ã¹ã‚‹
 	for (int i = 0; i < static_cast<int>(bPositions.size()); i++)
 	{
 		if (i != prevBaggageIndex)
 		{
-			// ‘ÎÛ‚Ì‰×•¨‚ÌÀ•W‚Ì‚İ‚ğ‰×•¨‚É–ß‚·
+			// å¯¾è±¡ã®è·ç‰©ã®åº§æ¨™ã®ã¿ã‚’è·ç‰©ã«æˆ»ã™
 			Board tmpBoard = baseBoard;
 			tmpBoard[bPositions[i].y][bPositions[i].x] = '$';
 
-			// ’Tõ‚µ‚½‚©‚Ç‚¤‚©‚ğ•Û‚·‚é•Ï”
+			// æ¢ç´¢ã—ãŸã‹ã©ã†ã‹ã‚’ä¿æŒã™ã‚‹å¤‰æ•°
 			std::vector<std::vector<bool>> unexplored(mSize.y, std::vector<bool>(mSize.x, true));
-			// ‰×•¨‚ÌÀ•W‚ğ’TõÏ‚İ‚É‚·‚é
+			// è·ç‰©ã®åº§æ¨™ã‚’æ¢ç´¢æ¸ˆã¿ã«ã™ã‚‹
 			unexplored[pPos.y][pPos.x] = false;
 
 			std::queue<sf::Vector2i> q;
@@ -879,19 +882,19 @@ void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::V
 				const sf::Vector2i current = q.front();
 				q.pop();
 
-				// ’Tõ’†‚ÌŒ»İ’n‚Ìl•ûŒü‚ğ’²‚×‚é
+				// æ¢ç´¢ä¸­ã®ç¾åœ¨åœ°ã®å››æ–¹å‘ã‚’èª¿ã¹ã‚‹
 				std::vector<sf::Vector2i> tmpDir = GetRandomDirections();
 				for (const auto& dir : tmpDir)
 				{
 					sf::Vector2i next(current.x + dir.x, current.y + dir.y);
 
-					// Œ»İ’²‚×‚Ä‚¢‚é•ûŒü‚ª°ƒ^ƒCƒ‹‚ÅA–¢’Tõ‚È‚ç’Tõ‚ğ‘±‚¯‚é
+					// ç¾åœ¨èª¿ã¹ã¦ã„ã‚‹æ–¹å‘ãŒåºŠã‚¿ã‚¤ãƒ«ã§ã€æœªæ¢ç´¢ãªã‚‰æ¢ç´¢ã‚’ç¶šã‘ã‚‹
 					if (tmpBoard[next.y][next.x] == ' ' && unexplored[next.y][next.x])
 					{
 						q.emplace(next);
 						unexplored[next.y][next.x] = false;
 					}
-					// Œ»İ’²‚×‚Ä‚¢‚é•ûŒü‚É‰×•¨‚ª‚ ‚èA‚»‚Ì•ûŒü‚É‰Ÿ‚·‚±‚Æ‚ª‚Å‚«‚é‚Ì‚È‚ç‚ÎŠY“–‰×•¨‚ÌÀ•W‚ÌƒŠƒXƒg‚É’Ç‰Á
+					// ç¾åœ¨èª¿ã¹ã¦ã„ã‚‹æ–¹å‘ã«è·ç‰©ãŒã‚ã‚Šã€ãã®æ–¹å‘ã«æŠ¼ã™ã“ã¨ãŒã§ãã‚‹ã®ãªã‚‰ã°è©²å½“è·ç‰©ã®åº§æ¨™ã®ãƒªã‚¹ãƒˆã«è¿½åŠ 
 					else if (tmpBoard[next.y][next.x] == '$' && tmpBoard[next.y + dir.y][next.x + dir.x] == ' ' && next - dir == current)
 					{
 						if (outList.find(i) == outList.end())
@@ -916,24 +919,24 @@ void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::V
 
 void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::Vector2i>& bPositions, const Board& board, std::vector<int>& outList)
 {
-	// ‰×•¨‚²‚Æ‚ÉAƒvƒŒƒCƒ„[‚ª‰Ÿ‚µn‚ß‚éˆÊ’u‚ÉˆÚ“®‚Å‚«‚éÀ•W‚ÌƒŠƒXƒg‚ğ‹‚ß‚é
-	// ‘S‚Ä‚Ì‰×•¨‚ğ•Ç‚Æ‚İ‚È‚µ‚½”Õ–Ê‚ğl‚¦‚é
+	// è·ç‰©ã”ã¨ã«ã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒæŠ¼ã—å§‹ã‚ã‚‹ä½ç½®ã«ç§»å‹•ã§ãã‚‹åº§æ¨™ã®ãƒªã‚¹ãƒˆã‚’æ±‚ã‚ã‚‹
+	// å…¨ã¦ã®è·ç‰©ã‚’å£ã¨ã¿ãªã—ãŸç›¤é¢ã‚’è€ƒãˆã‚‹
 	Board baseBoard = board;
 	for (const auto& bPos : bPositions)
 	{
 		baseBoard[bPos.y][bPos.x] = '#';
 	}
 
-	// ‘S‚Ä‚Ì‰×•¨‚É‘Î‚µ‚Ä’²‚×‚é
+	// å…¨ã¦ã®è·ç‰©ã«å¯¾ã—ã¦èª¿ã¹ã‚‹
 	for (int i = 0; i < static_cast<int>(bPositions.size()); i++)
 	{
-		// ‘ÎÛ‚Ì‰×•¨‚ÌÀ•W‚Ì‚İ‚ğ‰×•¨‚É–ß‚·
+		// å¯¾è±¡ã®è·ç‰©ã®åº§æ¨™ã®ã¿ã‚’è·ç‰©ã«æˆ»ã™
 		Board tmpBoard = baseBoard;
 		tmpBoard[bPositions[i].y][bPositions[i].x] = '$';
 
-		// ’Tõ‚µ‚½‚©‚Ç‚¤‚©‚ğ•Û‚·‚é•Ï”
+		// æ¢ç´¢ã—ãŸã‹ã©ã†ã‹ã‚’ä¿æŒã™ã‚‹å¤‰æ•°
 		std::vector<std::vector<bool>> unexplored(mSize.y, std::vector<bool>(mSize.x, true));
-		// ‰×•¨‚ÌÀ•W‚ğ’TõÏ‚İ‚É‚·‚é
+		// è·ç‰©ã®åº§æ¨™ã‚’æ¢ç´¢æ¸ˆã¿ã«ã™ã‚‹
 		unexplored[pPos.y][pPos.x] = false;
 
 		std::queue<sf::Vector2i> q;
@@ -944,19 +947,19 @@ void MySolution::SetCandidates(const sf::Vector2i& pPos, const std::vector<sf::V
 			const sf::Vector2i current = q.front();
 			q.pop();
 
-			// ’Tõ’†‚ÌŒ»İ’n‚Ìl•ûŒü‚ğ’²‚×‚é
+			// æ¢ç´¢ä¸­ã®ç¾åœ¨åœ°ã®å››æ–¹å‘ã‚’èª¿ã¹ã‚‹
 			std::vector<sf::Vector2i> tmpDir = GetRandomDirections();
 			for (const auto& dir : tmpDir)
 			{
 				sf::Vector2i next(current.x + dir.x, current.y + dir.y);
 
-				// Œ»İ’²‚×‚Ä‚¢‚é•ûŒü‚ª°ƒ^ƒCƒ‹‚ÅA–¢’Tõ‚È‚ç’Tõ‚ğ‘±‚¯‚é
+				// ç¾åœ¨èª¿ã¹ã¦ã„ã‚‹æ–¹å‘ãŒåºŠã‚¿ã‚¤ãƒ«ã§ã€æœªæ¢ç´¢ãªã‚‰æ¢ç´¢ã‚’ç¶šã‘ã‚‹
 				if (tmpBoard[next.y][next.x] == ' ' && unexplored[next.y][next.x])
 				{
 					q.emplace(next);
 					unexplored[next.y][next.x] = false;
 				}
-				// Œ»İ’²‚×‚Ä‚¢‚é•ûŒü‚É‰×•¨‚ª‚ ‚èA‚»‚Ì•ûŒü‚É‰Ÿ‚·‚±‚Æ‚ª‚Å‚«‚é‚Ì‚È‚ç‚ÎŠY“–‰×•¨‚ÌÀ•W‚ÌƒŠƒXƒg‚É’Ç‰Á
+				// ç¾åœ¨èª¿ã¹ã¦ã„ã‚‹æ–¹å‘ã«è·ç‰©ãŒã‚ã‚Šã€ãã®æ–¹å‘ã«æŠ¼ã™ã“ã¨ãŒã§ãã‚‹ã®ãªã‚‰ã°è©²å½“è·ç‰©ã®åº§æ¨™ã®ãƒªã‚¹ãƒˆã«è¿½åŠ 
 				else if (tmpBoard[next.y][next.x] == '$' && tmpBoard[next.y + dir.y][next.x + dir.x] == ' ' && next - dir == current)
 				{
 					if (std::find(outList.begin(), outList.end(), i) == outList.end())
@@ -983,9 +986,9 @@ void MySolution::SetRoutes(
 	const std::vector<std::vector<unsigned int>>& pPassed,
 	const std::vector<std::vector<unsigned int>>& bPassed)
 {
-	// ‰×•¨‚²‚Æ‚É‰^‚Ñ‚Ş‚±‚Æ‚ª‰Â”\‚È‘S‚Ä‚ÌÀ•W‚Ö‚ÌŒo˜H‚ÌƒŠƒXƒg‚ğì‚é
-	// ƒvƒŒƒCƒ„[‚ª‰×•¨‚Ì—×‚Ü‚ÅˆÚ“®‚·‚é’iŠK‚Å‚ÍŒo˜H‚ğì‚ç‚¸A‰×•¨‚ğ1ƒ}ƒX‰Ÿ‚·‚½‚Ñ‚ÉŒo˜H‚Æ‚µ‚Ä“o˜^‚µ‚Ä‚¨‚­
-	// ‰×•¨‚ğ‰Ÿ‚µ‚½‚Æ‚«‚ÉA‰Ÿ‚µ‚½Œã‚ÌÀ•W‚ªŠù‚Éì‚ç‚ê‚½Œo˜H‚Ì’†‚É‚ ‚èA‚©‚Â‚»‚ÌŒo˜H‚æ‚è‰^‚Ñ‚Ş‚Ü‚Å‚Ì‹——£‚ª’·‚¢ê‡‚ÍAŒo˜H‚É’Ç‰Á‚µ‚È‚¢
+	// è·ç‰©ã”ã¨ã«é‹ã³è¾¼ã‚€ã“ã¨ãŒå¯èƒ½ãªå…¨ã¦ã®åº§æ¨™ã¸ã®çµŒè·¯ã®ãƒªã‚¹ãƒˆã‚’ä½œã‚‹
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒè·ç‰©ã®éš£ã¾ã§ç§»å‹•ã™ã‚‹æ®µéšã§ã¯çµŒè·¯ã‚’ä½œã‚‰ãšã€è·ç‰©ã‚’1ãƒã‚¹æŠ¼ã™ãŸã³ã«çµŒè·¯ã¨ã—ã¦ç™»éŒ²ã—ã¦ãŠã
+	// è·ç‰©ã‚’æŠ¼ã—ãŸã¨ãã«ã€æŠ¼ã—ãŸå¾Œã®åº§æ¨™ãŒæ—¢ã«ä½œã‚‰ã‚ŒãŸçµŒè·¯ã®ä¸­ã«ã‚ã‚Šã€ã‹ã¤ãã®çµŒè·¯ã‚ˆã‚Šé‹ã³è¾¼ã‚€ã¾ã§ã®è·é›¢ãŒé•·ã„å ´åˆã¯ã€çµŒè·¯ã«è¿½åŠ ã—ãªã„
 	std::map<std::pair<std::pair<int, int>, std::pair<int, int>>, Route> routes;
 	Board baseBoard(board);
 	for (const auto& bPos : bPositions)
@@ -995,14 +998,14 @@ void MySolution::SetRoutes(
 
 	for (const auto& initPosition : initPositions)
 	{
-		// ‘ÎÛ‚Ì‰×•¨ˆÈŠO‚ğ•Ç‚Æ‚İ‚È‚µ‚½”Õ–Ê‚ğì‚é
+		// å¯¾è±¡ã®è·ç‰©ä»¥å¤–ã‚’å£ã¨ã¿ãªã—ãŸç›¤é¢ã‚’ä½œã‚‹
 		Board tmpBoard = baseBoard;
 		tmpBoard[bPositions[initPosition.first].y][bPositions[initPosition.first].x] = '$';
 
-		// ƒ_ƒCƒNƒXƒgƒ‰–@‚Ì’Tõ‚Å—p‚¢‚éA”Õ–Ê‚ğ•\Œ»‚·‚éƒOƒ‰ƒt
-		// °ƒ^ƒCƒ‹‚ÌÀ•W‚ğƒL[‚Æ‚µA‚»‚Ì°ƒ^ƒCƒ‹‚É—×Ú‚µ‚Ä‚¢‚é°ƒ^ƒCƒ‹‚ÆA‚»‚Ì‹——£‚ğ•\‚·˜A‘z”z—ñ‚ğŠi”[
+		// ãƒ€ã‚¤ã‚¯ã‚¹ãƒˆãƒ©æ³•ã®æ¢ç´¢ã§ç”¨ã„ã‚‹ã€ç›¤é¢ã‚’è¡¨ç¾ã™ã‚‹ã‚°ãƒ©ãƒ•
+		// åºŠã‚¿ã‚¤ãƒ«ã®åº§æ¨™ã‚’ã‚­ãƒ¼ã¨ã—ã€ãã®åºŠã‚¿ã‚¤ãƒ«ã«éš£æ¥ã—ã¦ã„ã‚‹åºŠã‚¿ã‚¤ãƒ«ã¨ã€ãã®è·é›¢ã‚’è¡¨ã™é€£æƒ³é…åˆ—ã‚’æ ¼ç´
 		std::map<std::pair<int, int>, std::map<std::pair<int, int>, unsigned int>> graph;
-		// ‰Šú‰»
+		// åˆæœŸåŒ–
 		for (int x = 1; x < mSize.x - 1; x++)
 		{
 			for (int y = 1; y < mSize.y - 1; y++)
@@ -1014,14 +1017,14 @@ void MySolution::SetRoutes(
 					{
 						if (tmpBoard[y + dir.y][x + dir.x] == ' ' || tmpBoard[y + dir.y][x + dir.x] == '@' || tmpBoard[y + dir.y][x + dir.x] == '$')
 						{
-							// Œ»İ‚Ìƒ^ƒCƒ‹‚©A—×Ú‚µ‚Ä‚¢‚éƒ^ƒCƒ‹‚Ì‚¢‚¸‚ê‚©‚ª–¢“’B•”•ª‚Ìê‡
-							// •Ó‚Ìd‚İ‚ğ”Õ–Ê‚Ìc~‰¡~4‚Ì”’l‚Éİ’è
+							// ç¾åœ¨ã®ã‚¿ã‚¤ãƒ«ã‹ã€éš£æ¥ã—ã¦ã„ã‚‹ã‚¿ã‚¤ãƒ«ã®ã„ãšã‚Œã‹ãŒæœªåˆ°é”éƒ¨åˆ†ã®å ´åˆ
+							// è¾ºã®é‡ã¿ã‚’ç›¤é¢ã®ç¸¦Ã—æ¨ªÃ—4ã®æ•°å€¤ã«è¨­å®š
 							if ((pPassed[y][x] == 0 && bPassed[y][x] == 0) || (pPassed[y + dir.y][x + dir.x] == 0 && bPassed[y + dir.y][x + dir.x] == 0))
 							{
 								graph[std::make_pair(x, y)][std::make_pair(x + dir.x, y + dir.y)] = mSize.x * mSize.y * 4;
 							}
-							// Œ»İ‚Ìƒ^ƒCƒ‹‚ÆA—×Ú‚µ‚Ä‚¢‚éƒ^ƒCƒ‹‚Ì—¼•û‚ªŠù‚É’Ê‚Á‚½•”•ª‚Ìê‡
-							// •Ó‚Ìd‚İ‚ğ1‚Éİ’è
+							// ç¾åœ¨ã®ã‚¿ã‚¤ãƒ«ã¨ã€éš£æ¥ã—ã¦ã„ã‚‹ã‚¿ã‚¤ãƒ«ã®ä¸¡æ–¹ãŒæ—¢ã«é€šã£ãŸéƒ¨åˆ†ã®å ´åˆ
+							// è¾ºã®é‡ã¿ã‚’1ã«è¨­å®š
 							else
 							{
 								graph[std::make_pair(x, y)][std::make_pair(x + dir.x, y + dir.y)] = 1;
@@ -1032,13 +1035,13 @@ void MySolution::SetRoutes(
 			}
 		}
 
-		// ƒXƒ^[ƒg’n“_‚©‚ç‚ÌŠe°ƒ^ƒCƒ‹‚Ö‚Ì‹——£‚ğ•\‚·•Ï”
-		// ‚½‚¾‚µA“¯‚¶ƒ^ƒCƒ‹‚Å‚ ‚Á‚Ä‚àAˆÚ“®Œ³‚Ìƒ^ƒCƒ‹‚²‚Æ‚Éê‡•ª‚¯‚·‚é
-		// first -> ˆÚ“®Œ³‚Ìƒ^ƒCƒ‹
-		// second -> ˆÚ“®æ‚Ìƒ^ƒCƒ‹
-		// ‹——£‚ÍˆÚ“®æ‚Ìƒ^ƒCƒ‹‚Ü‚Å‚Ì‹——£
+		// ã‚¹ã‚¿ãƒ¼ãƒˆåœ°ç‚¹ã‹ã‚‰ã®å„åºŠã‚¿ã‚¤ãƒ«ã¸ã®è·é›¢ã‚’è¡¨ã™å¤‰æ•°
+		// ãŸã ã—ã€åŒã˜ã‚¿ã‚¤ãƒ«ã§ã‚ã£ã¦ã‚‚ã€ç§»å‹•å…ƒã®ã‚¿ã‚¤ãƒ«ã”ã¨ã«å ´åˆåˆ†ã‘ã™ã‚‹
+		// first -> ç§»å‹•å…ƒã®ã‚¿ã‚¤ãƒ«
+		// second -> ç§»å‹•å…ˆã®ã‚¿ã‚¤ãƒ«
+		// è·é›¢ã¯ç§»å‹•å…ˆã®ã‚¿ã‚¤ãƒ«ã¾ã§ã®è·é›¢
 		std::map<std::pair<std::pair<int, int>, std::pair<int, int>>, int> distances;
-		//‰Šú‰»
+		//åˆæœŸåŒ–
 		for (const auto& fromPos : graph)
 		{
 			for (const auto& toPos : fromPos.second)
@@ -1053,15 +1056,15 @@ void MySolution::SetRoutes(
 			distances[std::make_pair(std::make_pair(bPositions[initPosition.first].x, bPositions[initPosition.first].y), std::make_pair(pos.x, pos.y))] = 0;
 		}
 
-		// À•W‚ÆÅ’Z‹——£‚ğ•Û‚·‚é—Dæ“x•t‚«ƒLƒ…[
-		// 1. –Ú•W‚Ì°ƒ^ƒCƒ‹‚Ü‚Å‚Ìd‚İ‚ğ‰Á–¡‚µ‚½‹——£
-		// 2. ƒvƒŒƒCƒ„[‚ÌÀ•W
-		// 3. –Ú•W‚Ì°ƒ^ƒCƒ‹‚ÌÀ•W
-		// 4. 1‚Â‘O‚Ì°ƒ^ƒCƒ‹‚ÌÀ•W
-		// 5. –Ú•W‚Ì°ƒ^ƒCƒ‹‚ÖˆÚ“®‚·‚é‚Ü‚Å‚ÌƒvƒŒƒCƒ„[‚ÌŒo˜H
-		// 6. –Ú•W‚Ì°ƒ^ƒCƒ‹‚ÖˆÚ“®‚³‚¹‚½‚Æ‚«‚Ì”Õ–Ê‚Ìó‘Ô
-		// 7. –Ú•W‚Ì°ƒ^ƒCƒ‹‚ÖˆÚ“®‚³‚¹‚½‚Æ‚«‚ÌƒvƒŒƒCƒ„[‚Ì“¥”jó‹µ
-		// 8. –Ú•W‚Ì°ƒ^ƒCƒ‹‚ÖˆÚ“®‚³‚¹‚½‚Æ‚«‚Ì‰×•¨‚Ì“¥”jó‹µ
+		// åº§æ¨™ã¨æœ€çŸ­è·é›¢ã‚’ä¿æŒã™ã‚‹å„ªå…ˆåº¦ä»˜ãã‚­ãƒ¥ãƒ¼
+		// 1. ç›®æ¨™ã®åºŠã‚¿ã‚¤ãƒ«ã¾ã§ã®é‡ã¿ã‚’åŠ å‘³ã—ãŸè·é›¢
+		// 2. ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åº§æ¨™
+		// 3. ç›®æ¨™ã®åºŠã‚¿ã‚¤ãƒ«ã®åº§æ¨™
+		// 4. 1ã¤å‰ã®åºŠã‚¿ã‚¤ãƒ«ã®åº§æ¨™
+		// 5. ç›®æ¨™ã®åºŠã‚¿ã‚¤ãƒ«ã¸ç§»å‹•ã™ã‚‹ã¾ã§ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®çµŒè·¯
+		// 6. ç›®æ¨™ã®åºŠã‚¿ã‚¤ãƒ«ã¸ç§»å‹•ã•ã›ãŸã¨ãã®ç›¤é¢ã®çŠ¶æ…‹
+		// 7. ç›®æ¨™ã®åºŠã‚¿ã‚¤ãƒ«ã¸ç§»å‹•ã•ã›ãŸã¨ãã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®è¸ç ´çŠ¶æ³
+		// 8. ç›®æ¨™ã®åºŠã‚¿ã‚¤ãƒ«ã¸ç§»å‹•ã•ã›ãŸã¨ãã®è·ç‰©ã®è¸ç ´çŠ¶æ³
 		struct Elem
 		{
 			int mLen;
@@ -1095,21 +1098,21 @@ void MySolution::SetRoutes(
 
 		while (!pq.empty())
 		{
-			// C++‚Ì—Dæ“x•t‚«ƒLƒ…[‚ÍƒfƒtƒHƒ‹ƒg‚ª~‡‚È‚Ì‚ÅA•„†‚ğ“ü‚ê‘Ö‚¦‚é
-			// ƒLƒ…[‚É’Ç‰Á‚·‚é‚Æ‚«‚Í•‰‚Ì’l‚É‚µ‚ÄAæ‚èo‚·‚Æ‚«‚Í³‚Ì’l‚É‚·‚é
+			// C++ã®å„ªå…ˆåº¦ä»˜ãã‚­ãƒ¥ãƒ¼ã¯ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆãŒé™é †ãªã®ã§ã€ç¬¦å·ã‚’å…¥ã‚Œæ›¿ãˆã‚‹
+			// ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ ã™ã‚‹ã¨ãã¯è² ã®å€¤ã«ã—ã¦ã€å–ã‚Šå‡ºã™ã¨ãã¯æ­£ã®å€¤ã«ã™ã‚‹
 			Elem currentElem = pq.top();
 			pq.pop();
 
-			// Šù‚ÉÅ’ZŒo˜H‚ªXV‚³‚ê‚Ä‚¢‚éê‡
+			// æ—¢ã«æœ€çŸ­çµŒè·¯ãŒæ›´æ–°ã•ã‚Œã¦ã„ã‚‹å ´åˆ
 			if (-currentElem.mLen > distances[std::make_pair(Vec2iToPair(currentElem.bPos), Vec2iToPair(currentElem.prevPos))])
 			{
 				continue;
 			}
 
-			// ‰×•¨‚Ì—×Ú•”•ª‚ğ’²‚×‚é
+			// è·ç‰©ã®éš£æ¥éƒ¨åˆ†ã‚’èª¿ã¹ã‚‹
 			for (const auto& neighbor : graph[Vec2iToPair(currentElem.bPos)])
 			{
-				// ƒvƒŒƒCƒ„[‚Í‰×•¨‚ğ–Ú“I‚Ì—×Ú•”•ª‚ÖˆÚ“®‚³‚¹‚é‚½‚ß‚ÌˆÊ’u‚ÉˆÚ“®‚Å‚«‚é‚©H
+				// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¯è·ç‰©ã‚’ç›®çš„ã®éš£æ¥éƒ¨åˆ†ã¸ç§»å‹•ã•ã›ã‚‹ãŸã‚ã®ä½ç½®ã«ç§»å‹•ã§ãã‚‹ã‹ï¼Ÿ
 				sf::Vector2i neighborPos{ neighbor.first.first, neighbor.first.second };
 				Route toNextPos(FindRouteToBaggage(currentElem.pPos, currentElem.bPos - (neighborPos - currentElem.bPos), currentElem.currentBoard, currentElem.currentPPassed, currentElem.currentBPassed));
 				if ((currentElem.currentBoard[neighbor.first.second][neighbor.first.first] == ' ' ||
@@ -1117,11 +1120,11 @@ void MySolution::SetRoutes(
 					(currentElem.pPos == currentElem.bPos - (neighborPos - currentElem.bPos) ||
 					!toNextPos.empty()))
 				{
-					// Ÿ‚Ì’n“_‚Ü‚Å‚Ì‹——£
+					// æ¬¡ã®åœ°ç‚¹ã¾ã§ã®è·é›¢
 					int neighbor_dist = -currentElem.mLen + neighbor.second;
-					// Œ»İ’n‚©‚çŸ‚Ì’n“_‚Ü‚Å‚ÌˆÊ’u‚ÆŒü‚«
+					// ç¾åœ¨åœ°ã‹ã‚‰æ¬¡ã®åœ°ç‚¹ã¾ã§ã®ä½ç½®ã¨å‘ã
 					std::pair<std::pair<int, int>, std::pair<int, int>> path(neighbor.first, Vec2iToPair(currentElem.bPos));
-					// Å’Z‹——£‚Å‚ ‚ê‚ÎAƒLƒ…[‚É’Ç‰Á
+					// æœ€çŸ­è·é›¢ã§ã‚ã‚Œã°ã€ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ 
 					if (neighbor_dist < distances[path])
 					{
 						Elem nextElem(currentElem);
@@ -1133,7 +1136,7 @@ void MySolution::SetRoutes(
 						distances[path] = neighbor_dist;
 						pq.push(nextElem);
 
-						// Œo˜H‚ğXV
+						// çµŒè·¯ã‚’æ›´æ–°
 						routes[path] = nextElem.pRoute;
 					}
 				}
@@ -1150,13 +1153,13 @@ void MySolution::SetRoutes(
 
 Route MySolution::FindRouteToBaggage(const sf::Vector2i& pCoordinate, const sf::Vector2i& goal, const Board& board, const std::vector<std::vector<unsigned int>>& pPassed, const std::vector<std::vector<unsigned int>>& bPassed)
 {
-	// ƒvƒŒƒCƒ„[‚ÌŒ»İ’n“_‚©‚ç–Ú•W’n“_‚Ü‚Å‚ÌŒo˜H‚ğÀ•W‚ÌƒŠƒXƒg‚Å•Ô‚·
-	// Œo˜H‚ªŒ©‚Â‚©‚ç‚È‚¢ê‡‚Í‹ó‚Ì”z—ñ‚ğ•Ô‚·
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç¾åœ¨åœ°ç‚¹ã‹ã‚‰ç›®æ¨™åœ°ç‚¹ã¾ã§ã®çµŒè·¯ã‚’åº§æ¨™ã®ãƒªã‚¹ãƒˆã§è¿”ã™
+	// çµŒè·¯ãŒè¦‹ã¤ã‹ã‚‰ãªã„å ´åˆã¯ç©ºã®é…åˆ—ã‚’è¿”ã™
 	Route result;
 
-	// ƒ_ƒCƒNƒXƒgƒ‰–@‚Ì’Tõ‚Å—p‚¢‚éƒOƒ‰ƒt
+	// ãƒ€ã‚¤ã‚¯ã‚¹ãƒˆãƒ©æ³•ã®æ¢ç´¢ã§ç”¨ã„ã‚‹ã‚°ãƒ©ãƒ•
 	std::map<std::pair<int, int>, std::map<std::pair<int, int>, unsigned int>> graph;
-	// ‰Šú‰»
+	// åˆæœŸåŒ–
 	for (int x = 1; x < mSize.x - 1; x++)
 	{
 		for (int y = 1; y < mSize.y - 1; y++)
@@ -1168,14 +1171,14 @@ Route MySolution::FindRouteToBaggage(const sf::Vector2i& pCoordinate, const sf::
 				{
 					if (board[y + dir.y][x + dir.x] == ' ' || board[y + dir.y][x + dir.x] == '@')
 					{
-						// Œ»İ‚Ìƒ^ƒCƒ‹‚©A—×Ú‚µ‚Ä‚¢‚éƒ^ƒCƒ‹‚Ì‚¢‚¸‚ê‚©‚ª–¢“’B•”•ª‚Ìê‡
-						// •Ó‚Ìd‚İ‚ğ”Õ–Ê‚Ìc~‰¡‚Ì”’l‚Éİ’è
+						// ç¾åœ¨ã®ã‚¿ã‚¤ãƒ«ã‹ã€éš£æ¥ã—ã¦ã„ã‚‹ã‚¿ã‚¤ãƒ«ã®ã„ãšã‚Œã‹ãŒæœªåˆ°é”éƒ¨åˆ†ã®å ´åˆ
+						// è¾ºã®é‡ã¿ã‚’ç›¤é¢ã®ç¸¦Ã—æ¨ªã®æ•°å€¤ã«è¨­å®š
 						if ((pPassed[y][x] == 0 && bPassed[y][x] == 0) || (pPassed[y + dir.y][x + dir.x] == 0 && bPassed[y + dir.y][x + dir.x] == 0))
 						{
 							graph[std::make_pair(x, y)][std::make_pair(x + dir.x, y + dir.y)] = mSize.x * mSize.y;
 						}
-						// Œ»İ‚Ìƒ^ƒCƒ‹‚ÆA—×Ú‚µ‚Ä‚¢‚éƒ^ƒCƒ‹‚Ì—¼•û‚ªŠù‚É’Ê‚Á‚½•”•ª‚Ìê‡
-						// •Ó‚Ìd‚İ‚ğ1‚Éİ’è
+						// ç¾åœ¨ã®ã‚¿ã‚¤ãƒ«ã¨ã€éš£æ¥ã—ã¦ã„ã‚‹ã‚¿ã‚¤ãƒ«ã®ä¸¡æ–¹ãŒæ—¢ã«é€šã£ãŸéƒ¨åˆ†ã®å ´åˆ
+						// è¾ºã®é‡ã¿ã‚’1ã«è¨­å®š
 						else
 						{
 							graph[std::make_pair(x, y)][std::make_pair(x + dir.x, y + dir.y)] = 1;
@@ -1186,20 +1189,20 @@ Route MySolution::FindRouteToBaggage(const sf::Vector2i& pCoordinate, const sf::
 		}
 	}
 	
-	// ƒS[ƒ‹’n“_‚ªl•û‚ğ•Ç‚Æ‰×•¨‚ÉˆÍ‚Ü‚ê‚Ä‚¢‚éê‡‚Í‹ó‚Ì‚Ü‚Üo—Í
+	// ã‚´ãƒ¼ãƒ«åœ°ç‚¹ãŒå››æ–¹ã‚’å£ã¨è·ç‰©ã«å›²ã¾ã‚Œã¦ã„ã‚‹å ´åˆã¯ç©ºã®ã¾ã¾å‡ºåŠ›
 	if (graph[std::make_pair(goal.x, goal.y)].empty())
 	{
 		return result;
 	}
 
-	// ƒXƒ^[ƒg’n“_‚©‚ç‚ÌŠe°ƒ^ƒCƒ‹‚Ö‚Ì‹——£‚ğ•\‚·•Ï”
+	// ã‚¹ã‚¿ãƒ¼ãƒˆåœ°ç‚¹ã‹ã‚‰ã®å„åºŠã‚¿ã‚¤ãƒ«ã¸ã®è·é›¢ã‚’è¡¨ã™å¤‰æ•°
 	std::map<std::pair<int, int>, int> distance;
-	//‰Šú‰»
+	//åˆæœŸåŒ–
 	for (const auto& item : graph)
 	{
 		distance[item.first] = INT_MAX;
 	}
-	// ƒXƒ^[ƒg’n“_‚ÌÀ•W‚Í‹——£‚ğ0‚Æ‚µ‚Ä‚¨‚­
+	// ã‚¹ã‚¿ãƒ¼ãƒˆåœ°ç‚¹ã®åº§æ¨™ã¯è·é›¢ã‚’0ã¨ã—ã¦ãŠã
 	distance[std::make_pair(pCoordinate.x, pCoordinate.y)] = 0;
 	
 	std::priority_queue<std::pair<int, std::pair<int, int>>> pq;
@@ -1211,7 +1214,7 @@ Route MySolution::FindRouteToBaggage(const sf::Vector2i& pCoordinate, const sf::
 		std::pair<int, int> current = pq.top().second;
 		pq.pop();
 
-		// Šù‚ÉÅ’ZŒo˜H‚ªXV‚³‚ê‚Ä‚¢‚éê‡
+		// æ—¢ã«æœ€çŸ­çµŒè·¯ãŒæ›´æ–°ã•ã‚Œã¦ã„ã‚‹å ´åˆ
 		if (dist > distance[current])
 		{
 			continue;
@@ -1228,13 +1231,13 @@ Route MySolution::FindRouteToBaggage(const sf::Vector2i& pCoordinate, const sf::
 		}
 	}
 	
-	// Œo˜H‚ªŒ©‚Â‚©‚ç‚È‚©‚Á‚½ê‡‚Í‹ó‚Ì‚Ü‚Üo—Í
+	// çµŒè·¯ãŒè¦‹ã¤ã‹ã‚‰ãªã‹ã£ãŸå ´åˆã¯ç©ºã®ã¾ã¾å‡ºåŠ›
 	if (distance[std::make_pair(goal.x, goal.y)] == INT_MAX)
 	{
 		return result;
 	}
 
-	// Å’ZŒo˜H‚ğ\’z
+	// æœ€çŸ­çµŒè·¯ã‚’æ§‹ç¯‰
 	sf::Vector2i current{ goal.x, goal.y };
 
 	while (current != pCoordinate)
@@ -1267,10 +1270,10 @@ void MySolution::MoveOnPath(
 {
 	for (const auto& nextPos : route)
 	{
-		// Ÿ‚Ìƒ^ƒCƒ‹‚É‰½‚à‚È‚©‚Á‚½ê‡
+		// æ¬¡ã®ã‚¿ã‚¤ãƒ«ã«ä½•ã‚‚ãªã‹ã£ãŸå ´åˆ
 		if (board[nextPos.y][nextPos.x] == ' ')
 		{
-			// Œo˜H‚Ì‹L˜^
+			// çµŒè·¯ã®è¨˜éŒ²
 			if (isSave)
 			{
 				mSolutionPos.emplace_back(nextPos);
@@ -1292,20 +1295,20 @@ void MySolution::MoveOnPath(
 				}
 			}
 
-			// ƒvƒŒƒCƒ„[‚ÌˆÚ“®
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•
 			board[pPos.y][pPos.x] = ' ';
 			board[nextPos.y][nextPos.x] = '@';
 			pPassCount[nextPos.y][nextPos.x]++;
 			pPos = nextPos;
 		}
-		// Ÿ‚Ìƒ^ƒCƒ‹‚É‰×•¨‚ª‚ ‚Á‚½ê‡
+		// æ¬¡ã®ã‚¿ã‚¤ãƒ«ã«è·ç‰©ãŒã‚ã£ãŸå ´åˆ
 		else if (board[nextPos.y][nextPos.x] == '$')
 		{
-			// ‰×•¨‚ÌˆÚ“®æ‚ÌÀ•W
+			// è·ç‰©ã®ç§»å‹•å…ˆã®åº§æ¨™
 			sf::Vector2i nextNextPos(nextPos.x + (nextPos.x - pPos.x), nextPos.y + (nextPos.y - pPos.y));
 			if (board[nextNextPos.y][nextNextPos.x] == ' ')
 			{
-				// Œo˜H‚Ì‹L˜^
+				// çµŒè·¯ã®è¨˜éŒ²
 				if (isSave)
 				{
 					mSolutionPos.emplace_back(nextPos);
@@ -1327,7 +1330,7 @@ void MySolution::MoveOnPath(
 					}
 				}
 
-				// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÚ“®
+				// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ç§»å‹•
 				board[pPos.y][pPos.x] = ' ';
 				board[nextPos.y][nextPos.x] = '@';
 				board[nextNextPos.y][nextNextPos.x] = '$';
@@ -1361,32 +1364,32 @@ std::pair<int, Route> MySolution::GetBestRoute(
 	const CandidateItems& movableBaggages)
 {
 	std::pair<int, Route> result;
-	// ‰×•¨‚²‚Æ‚É‰×•¨‚ª‚Â‘SŒo˜H‚ÌƒŒ[ƒg‚Ì˜A‘z”z—ñ‚ğì‚é
+	// è·ç‰©ã”ã¨ã«è·ç‰©ãŒæŒã¤å…¨çµŒè·¯ã®ãƒ¬ãƒ¼ãƒˆã®é€£æƒ³é…åˆ—ã‚’ä½œã‚‹
 	std::unordered_map<int, std::unordered_map<int, Rating>> mRates;
-	// Å‚àƒŒ[ƒg‚Ì­‚È‚¢Œo˜H‚ğŠi”[‚·‚é
-	// ‰×•¨‚ÌƒCƒ“ƒfƒbƒNƒX‚ÆAŒo˜H‚ÌƒCƒ“ƒfƒbƒNƒX‚ÆA‚»‚ÌƒŒ[ƒg‚ğŠi”[
+	// æœ€ã‚‚ãƒ¬ãƒ¼ãƒˆã®å°‘ãªã„çµŒè·¯ã‚’æ ¼ç´ã™ã‚‹
+	// è·ç‰©ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã¨ã€çµŒè·¯ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã¨ã€ãã®ãƒ¬ãƒ¼ãƒˆã‚’æ ¼ç´
 	std::pair<int, std::pair<int, double>> minRate(-1, { -1, DBL_MAX });
 
-	// cerRoute‚Í‰×•¨‚ÌID‚ğƒL[AŒo˜H‚ÌƒŠƒXƒg‚ğ’l‚Æ‚µ‚Ä‚ÂƒyƒA
+	// cerRouteã¯è·ç‰©ã®IDã‚’ã‚­ãƒ¼ã€çµŒè·¯ã®ãƒªã‚¹ãƒˆã‚’å€¤ã¨ã—ã¦æŒã¤ãƒšã‚¢
 	for (const auto& cerRoute : routes)
 	{
-		// Œ»İ‚Ì‰×•¨‚Ì—v‘f‚ğ’Ç‰Á
+		// ç¾åœ¨ã®è·ç‰©ã®è¦ç´ ã‚’è¿½åŠ 
 		mRates[cerRoute.first] = std::unordered_map<int, Rating>{};
-		// ƒŒ[ƒg‚Í‚»‚Ì‰×•¨‚ÌŒo˜H‚Ì”‚¾‚¯‹L˜^
+		// ãƒ¬ãƒ¼ãƒˆã¯ãã®è·ç‰©ã®çµŒè·¯ã®æ•°ã ã‘è¨˜éŒ²
 		auto bSize = cerRoute.second.size();
 		for (int i = 0; i < bSize; i++)
 		{
-			// ”Õ–Ê‚ÌƒRƒs[‚ğì‚èAƒvƒŒƒCƒ„[‚ªŒo˜H’Ê‚è‚ÉˆÚ“®‚µ‚½Œã‚Ì”Õ–Ê‚ğì‚é
+			// ç›¤é¢ã®ã‚³ãƒ”ãƒ¼ã‚’ä½œã‚Šã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒçµŒè·¯é€šã‚Šã«ç§»å‹•ã—ãŸå¾Œã®ç›¤é¢ã‚’ä½œã‚‹
 			Board cpBoard = board;
 			sf::Vector2i cpPos = pPos;
 			sf::Vector2i cbPos = bPositions[cerRoute.first];
 			std::vector<std::vector<unsigned int>> cpPassCount = pPassCount;
 			std::vector<std::vector<unsigned int>> cbPassCount = bPassCount;
 
-			// ƒvƒŒƒCƒ„[‚ÌˆÚ“®
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ç§»å‹•
 			MoveOnPath(cerRoute.second[i], cpBoard, cpPos, cbPos, cpPassCount, cbPassCount, false);
 			
-			// 2x2ƒXƒy[ƒX‚Ì”‚ÌƒJƒEƒ“ƒg
+			// 2x2ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°ã®ã‚«ã‚¦ãƒ³ãƒˆ
 			int count2x2Areas = 0;
 			for (int x = 1; x < mSize.x - 2; x++)
 			{
@@ -1412,7 +1415,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 				}
 			}
 
-			// 2x3ƒXƒy[ƒX‚Ì”‚ÌƒJƒEƒ“ƒg
+			// 2x3ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°ã®ã‚«ã‚¦ãƒ³ãƒˆ
 			int count2x3Areas = 0;
 			int xSize = 2, ySize = 3;
 			for (int x = 1; x < mSize.x - xSize; x++)
@@ -1464,7 +1467,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 				}
 			}
 
-			// 3x3ƒXƒy[ƒX‚Ì”‚ÌƒJƒEƒ“ƒg
+			// 3x3ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°ã®ã‚«ã‚¦ãƒ³ãƒˆ
 			int count3x3Areas = 0;
 			for (int x = 1; x < mSize.x - 3; x++)
 			{
@@ -1490,10 +1493,10 @@ std::pair<int, Route> MySolution::GetBestRoute(
 				}
 			}
 
-			// s‚«~‚Ü‚è‚Ì”‚ÌƒJƒEƒ“ƒg
-			// Šp‚É‰Ÿ‚µ‚Ü‚ê‚Ä“®‚©‚¹‚È‚¢‰×•¨‚Ì”‚ÌƒJƒEƒ“ƒg
-			// ”Õ–Ê‚Ì•Óã‚É‚ ‚é‰×•¨‚Ì”‚ÌƒJƒEƒ“ƒg
-			// ”Õ–Ê‚ÌŠp‚É‚ ‚é‰×•¨‚Ì”‚ÌƒJƒEƒ“ƒg
+			// è¡Œãæ­¢ã¾ã‚Šã®æ•°ã®ã‚«ã‚¦ãƒ³ãƒˆ
+			// è§’ã«æŠ¼ã—è¾¼ã¾ã‚Œã¦å‹•ã‹ã›ãªã„è·ç‰©ã®æ•°ã®ã‚«ã‚¦ãƒ³ãƒˆ
+			// ç›¤é¢ã®è¾ºä¸Šã«ã‚ã‚‹è·ç‰©ã®æ•°ã®ã‚«ã‚¦ãƒ³ãƒˆ
+			// ç›¤é¢ã®è§’ã«ã‚ã‚‹è·ç‰©ã®æ•°ã®ã‚«ã‚¦ãƒ³ãƒˆ
 			int deadEnds = 0, cornerEnds = 0, sides = 0, corners = 0;
 			for (int x = 1; x < mSize.x - 1; x++)
 			{
@@ -1501,7 +1504,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 				{
 					if (cpBoard[y][x] == '$')
 					{
-						// ‰×•¨‚ÌüˆÍ‚Ì•Ç‚ğ’²‚×‚é
+						// è·ç‰©ã®å‘¨å›²ã®å£ã‚’èª¿ã¹ã‚‹
 						int wallCount = 0;
 						for (const auto& dir : directions)
 						{
@@ -1517,7 +1520,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 						}
 
 						int cornerCount = 0;
-						// ‰×•¨‚ªŠp‚É‰Ÿ‚µ‚Ü‚ê‚Ä‚¢‚é‚©’²‚×‚é
+						// è·ç‰©ãŒè§’ã«æŠ¼ã—è¾¼ã¾ã‚Œã¦ã„ã‚‹ã‹èª¿ã¹ã‚‹
 						for (int j = 0; j < 4; j++)
 						{
 							if (cpPassCount[y + directions[j].y][x + directions[j].x] == 0 && cbPassCount[y + directions[j].y][x + directions[j].x] == 0 &&
@@ -1532,7 +1535,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 							++cornerEnds;
 						}
 
-						// ‰×•¨‚ÌˆÊ’u‚ª•Ó‚©Šp‚©’²‚×‚é
+						// è·ç‰©ã®ä½ç½®ãŒè¾ºã‹è§’ã‹èª¿ã¹ã‚‹
 						if (x == 1 || x == mSize.x - 1 || y == 1 || y == mSize.y)
 						{
 							sides++;
@@ -1546,17 +1549,17 @@ std::pair<int, Route> MySolution::GetBestRoute(
 				}
 			}
 
-			// ƒvƒŒƒCƒ„[‚Æ‰×•¨‚ÌˆÚ“®Œã‚Ìó‘Ô‚Å‚Ì“®‚©‚¹‚é‰×•¨‚ÌŒó•â‚Ì”‚ğ‹‚ß‚é
-			// ‰Ÿ‚¹‚é‰×•¨‚Æ‰Ÿ‚µn‚ß‚ç‚ê‚éˆÊ’u‚ÌƒŠƒXƒg‚ğ‹‚ß‚é
-			// ‰×•¨‚²‚Æ‚É0‰ÓŠ‚©‚çAÅ‘å4‰ÓŠ‚Ü‚ÅƒvƒŒƒCƒ„[‚ÌŠJnˆÊ’u‚ª—^‚¦‚ç‚ê‚é
-			// Œ»İ‰Ÿ‚µ‚Ä‚¢‚é‰×•¨‚Íœ‚¢‚ÄA‰×•¨‚ÌƒCƒ“ƒfƒbƒNƒX‚ğƒL[‚Æ‚µ‚½AƒvƒŒƒCƒ„[‚ÌŠJnˆÊ’u‚ÌƒŠƒXƒg‚ğì‚é
+			// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã¨è·ç‰©ã®ç§»å‹•å¾Œã®çŠ¶æ…‹ã§ã®å‹•ã‹ã›ã‚‹è·ç‰©ã®å€™è£œã®æ•°ã‚’æ±‚ã‚ã‚‹
+			// æŠ¼ã›ã‚‹è·ç‰©ã¨æŠ¼ã—å§‹ã‚ã‚‰ã‚Œã‚‹ä½ç½®ã®ãƒªã‚¹ãƒˆã‚’æ±‚ã‚ã‚‹
+			// è·ç‰©ã”ã¨ã«0ç®‡æ‰€ã‹ã‚‰ã€æœ€å¤§4ç®‡æ‰€ã¾ã§ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®é–‹å§‹ä½ç½®ãŒä¸ãˆã‚‰ã‚Œã‚‹
+			// ç¾åœ¨æŠ¼ã—ã¦ã„ã‚‹è·ç‰©ã¯é™¤ã„ã¦ã€è·ç‰©ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ã‚­ãƒ¼ã¨ã—ãŸã€ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®é–‹å§‹ä½ç½®ã®ãƒªã‚¹ãƒˆã‚’ä½œã‚‹
 			CandidateItems startPos;
-			// ‰^”À‚µ‚½‰×•¨ˆÈŠO‚ÍˆÊ’u‚ª•Ï‚í‚Á‚Ä‚¢‚È‚¢‚Ì‚Å‚»‚Ì‚Ü‚ÜƒRƒs[
+			// é‹æ¬ã—ãŸè·ç‰©ä»¥å¤–ã¯ä½ç½®ãŒå¤‰ã‚ã£ã¦ã„ãªã„ã®ã§ãã®ã¾ã¾ã‚³ãƒ”ãƒ¼
 			std::vector<sf::Vector2i> cbPoints = bPositions;
 			cbPoints[cerRoute.first] = cbPos;
 			SetCandidates(cpPos, cbPoints, cpBoard, startPos, cerRoute.first);
 			int changedMovable = 0;
-			// “®‚©‚¹‚é‚©“®‚©‚¹‚È‚¢‚©‚ª“ü‚ê‘Ö‚í‚Á‚Ä‚¢‚é”‚ğƒJƒEƒ“ƒg
+			// å‹•ã‹ã›ã‚‹ã‹å‹•ã‹ã›ãªã„ã‹ãŒå…¥ã‚Œæ›¿ã‚ã£ã¦ã„ã‚‹æ•°ã‚’ã‚«ã‚¦ãƒ³ãƒˆ
 			for (const auto& item : startPos)
 			{
 				if (movableBaggages.count(item.first) == 0)
@@ -1586,7 +1589,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 				}
 			}
 
-			// cerRoute.first‚Í‰×•¨‚ÌƒCƒ“ƒfƒbƒNƒXAi‚ÍŒo˜H‚ÌƒCƒ“ƒfƒbƒNƒX
+			// cerRoute.firstã¯è·ç‰©ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã€iã¯çµŒè·¯ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
 			mRates[cerRoute.first][i].m2x2Spaces = count2x2Areas;
 			mRates[cerRoute.first][i].m2x3Spaces = count2x3Areas;
 			mRates[cerRoute.first][i].m3x3Spaces = count3x3Areas;
@@ -1599,10 +1602,10 @@ std::pair<int, Route> MySolution::GetBestRoute(
 			mRates[cerRoute.first][i].mCorners = corners;
 			mRates[cerRoute.first][i].mChangedCandidates = changedMovable;
 			
-			// •]‰¿’l‚ğŒvZ
+			// è©•ä¾¡å€¤ã‚’è¨ˆç®—
 			SetEvaluationValue(mRates[cerRoute.first][i], switchCount);
 
-			// ƒŒ[ƒg‚ÌÅ¬’l‚ªXV‚Å‚«‚éê‡‚ÍAXV
+			// ãƒ¬ãƒ¼ãƒˆã®æœ€å°å€¤ãŒæ›´æ–°ã§ãã‚‹å ´åˆã¯ã€æ›´æ–°
 			if (minRate.second.second > mRates[cerRoute.first][i].totalRate)
 			{
 				minRate.second.second = mRates[cerRoute.first][i].totalRate;
@@ -1610,11 +1613,11 @@ std::pair<int, Route> MySolution::GetBestRoute(
 		}
 	}
 
-	// Å‚àƒŒ[ƒg‚ª’á‚¢Œo˜H‚©‚çƒ‰ƒ“ƒ_ƒ€‚É‘I‚Ô
-	// Å‚àƒŒ[ƒg‚Ì’á‚¢‘S‚Ä‚ÌŒo˜H‚Ì‰×•¨‚ÆŒo˜H‚ÌƒCƒ“ƒfƒbƒNƒX‚ÌƒyƒA‚ğŒo˜H‚Ì’·‚³‚ğƒL[‚Æ‚µ‚½˜A‘z”z—ñ‚ÉŠi”[
+	// æœ€ã‚‚ãƒ¬ãƒ¼ãƒˆãŒä½ã„çµŒè·¯ã‹ã‚‰ãƒ©ãƒ³ãƒ€ãƒ ã«é¸ã¶
+	// æœ€ã‚‚ãƒ¬ãƒ¼ãƒˆã®ä½ã„å…¨ã¦ã®çµŒè·¯ã®è·ç‰©ã¨çµŒè·¯ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã®ãƒšã‚¢ã‚’çµŒè·¯ã®é•·ã•ã‚’ã‚­ãƒ¼ã¨ã—ãŸé€£æƒ³é…åˆ—ã«æ ¼ç´
 	std::map<int, std::vector<std::pair<int, int>>> candidate;
 
-	// Œo˜H’·ŠÖŒW‚È‚µ‚É‘I‚Î‚¹‚é
+	// çµŒè·¯é•·é–¢ä¿‚ãªã—ã«é¸ã°ã›ã‚‹
 	std::vector<std::pair<int, int>> minRateRoutes;
 	std::pair<int, int> choosedIndex;
 
@@ -1641,7 +1644,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 	std::cout << "All candidates : " << std::endl;
 	for (const auto& item : candidate)
 	{
-		// •\¦‚³‚¹‚Ä‚İ‚é
+		// è¡¨ç¤ºã•ã›ã¦ã¿ã‚‹
 		for (const auto& indexes : item.second)
 		{
 			std::cout << "baggage : " << indexes.first << ", route : " << indexes.second << " > ";
@@ -1652,7 +1655,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 			std::cout << std::endl;
 		}
 
-		// Œo˜H’·‚Ì’·‚¢Œo˜H‚©‚çƒ‰ƒ“ƒ_ƒ€‚É‘I‚Ôê‡‚Ì
+		// çµŒè·¯é•·ã®é•·ã„çµŒè·¯ã‹ã‚‰ãƒ©ãƒ³ãƒ€ãƒ ã«é¸ã¶å ´åˆã®
 		if (minKey < item.first)
 		{
 			minKey = item.first;
@@ -1661,7 +1664,7 @@ std::pair<int, Route> MySolution::GetBestRoute(
 	
 	/*
 	std::uniform_int_distribution<int> rand(0, candidate[minKey].size() - 1);
-	// —”‚ğ¶¬‚·‚é 
+	// ä¹±æ•°ã‚’ç”Ÿæˆã™ã‚‹ 
 	auto index = rand(mt);
 	minRate.first = candidate[minKey][index].first;
 	minRate.second.first = candidate[minKey][index].second;
@@ -1676,23 +1679,23 @@ std::pair<int, Route> MySolution::GetBestRoute(
 
 void MySolution::SetEvaluationValue(Rating& rates, const int& switchCount)
 {
-	// ‘I‘ğ‚³‚ê‚½•]‰¿ŠÖ”‚Ì’l‚ğ‹‚ß‚éŠÖ”
+	// é¸æŠã•ã‚ŒãŸè©•ä¾¡é–¢æ•°ã®å€¤ã‚’æ±‚ã‚ã‚‹é–¢æ•°
 
-	// ˆÈ‰ºƒƒ‚
-	// ‰×•¨‚Ì”‚ª”Õ–Ê‚ÌL‚³‚É‘Î‚µ‚Ä‘½‚¢ê‡‚Í2x2‚â2x3‚Ì”‚Í‚ ‚Ü‚èd—v‚Å‚Í‚È‚¢
-	// ‹t‚É‰×•¨‚Ì”‚ª”Õ–Ê‚ÌL‚³‚É‘Î‚µ‚Ä­‚È‚¢ê‡‚Í2x2‚â2x3‚Ì”‚Í­‚È‚¢•û‚ª‚¢‚¢
-	// 3•ûŒü‚ğ•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‰×•¨‚Í‚¢‚Â‚Å‚à‹–—e‚µ‚È‚¢•û‚ª‚¢‚¢
-	// ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”‚ª‘‚¦‚Ä‚«‚½ê‡‚ÍŠOü‚Ì•Ó‚â,Šp‚Ì’nŒ`‚É”z’u‚³‚ê‚½‰×•¨‚ğ‹–—e‚·‚é‚æ‚¤‚É‚·‚é
+	// ä»¥ä¸‹ãƒ¡ãƒ¢
+	// è·ç‰©ã®æ•°ãŒç›¤é¢ã®åºƒã•ã«å¯¾ã—ã¦å¤šã„å ´åˆã¯2x2ã‚„2x3ã®æ•°ã¯ã‚ã¾ã‚Šé‡è¦ã§ã¯ãªã„
+	// é€†ã«è·ç‰©ã®æ•°ãŒç›¤é¢ã®åºƒã•ã«å¯¾ã—ã¦å°‘ãªã„å ´åˆã¯2x2ã‚„2x3ã®æ•°ã¯å°‘ãªã„æ–¹ãŒã„ã„
+	// 3æ–¹å‘ã‚’å£ã§å›²ã¾ã‚Œã¦ã„ã‚‹è·ç‰©ã¯ã„ã¤ã§ã‚‚è¨±å®¹ã—ãªã„æ–¹ãŒã„ã„
+	// é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°ãŒå¢—ãˆã¦ããŸå ´åˆã¯å¤–å‘¨ã®è¾ºã‚„,è§’ã®åœ°å½¢ã«é…ç½®ã•ã‚ŒãŸè·ç‰©ã‚’è¨±å®¹ã™ã‚‹ã‚ˆã†ã«ã™ã‚‹
 	
 	switch (mStrategyIndex)
 	{
 	case 0:
-		// 2x2‚ÌƒXƒy[ƒX‚Ì”
-		// üˆÍ3•ûŒü‚ª•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// –¢–K–âƒ}ƒX‚ÌŠp‚Ì‰×•¨‚Ì”
-		// ŠOü‚Ì•Ç‚ÉÚ‚·‚é‰×•¨‚Ì”
-		// ŠOü‚ÌŠp‚É”z’u‚³‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// ‚±‚ê‚ç‚Ì˜a
+		// 2x2ã®ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°
+		// å‘¨å›²3æ–¹å‘ãŒå£ã§å›²ã¾ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// æœªè¨ªå•ãƒã‚¹ã®è§’ã®è·ç‰©ã®æ•°
+		// å¤–å‘¨ã®å£ã«æ¥ã™ã‚‹è·ç‰©ã®æ•°
+		// å¤–å‘¨ã®è§’ã«é…ç½®ã•ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// ã“ã‚Œã‚‰ã®å’Œ
 		rates.totalRate =
 			static_cast<double>(rates.m2x2Spaces) +
 			//static_cast<double>(rates.m2x3Spaces) +
@@ -1705,12 +1708,12 @@ void MySolution::SetEvaluationValue(Rating& rates, const int& switchCount)
 			static_cast<double>(rates.mCorners);
 		break;
 	case 1:
-		// 2x3‚ÌƒXƒy[ƒX‚Ì”
-		// üˆÍ3•ûŒü‚ª•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// –¢–K–âƒ}ƒX‚ÌŠp‚Ì‰×•¨‚Ì”
-		// ŠOü‚Ì•Ç‚ÉÚ‚·‚é‰×•¨‚Ì”
-		// ŠOü‚ÌŠp‚É”z’u‚³‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// ‚±‚ê‚ç‚Ì˜a
+		// 2x3ã®ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°
+		// å‘¨å›²3æ–¹å‘ãŒå£ã§å›²ã¾ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// æœªè¨ªå•ãƒã‚¹ã®è§’ã®è·ç‰©ã®æ•°
+		// å¤–å‘¨ã®å£ã«æ¥ã™ã‚‹è·ç‰©ã®æ•°
+		// å¤–å‘¨ã®è§’ã«é…ç½®ã•ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// ã“ã‚Œã‚‰ã®å’Œ
 		rates.totalRate =
 			//static_cast<double>(rates.m2x2Spaces) +
 			static_cast<double>(rates.m2x3Spaces) +
@@ -1723,13 +1726,13 @@ void MySolution::SetEvaluationValue(Rating& rates, const int& switchCount)
 			static_cast<double>(rates.mCorners);
 		break;
 	case 2:
-		// 2x2‚ÌƒXƒy[ƒX‚Ì”
-		// 2x3‚ÌƒXƒy[ƒX‚Ì”
-		// üˆÍ3•ûŒü‚ª•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// –¢–K–âƒ}ƒX‚ÌŠp‚Ì‰×•¨‚Ì”
-		// ŠOü‚Ì•Ç‚ÉÚ‚·‚é‰×•¨‚Ì”
-		// ŠOü‚ÌŠp‚É”z’u‚³‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// ‚±‚ê‚ç‚Ì˜a
+		// 2x2ã®ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°
+		// 2x3ã®ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°
+		// å‘¨å›²3æ–¹å‘ãŒå£ã§å›²ã¾ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// æœªè¨ªå•ãƒã‚¹ã®è§’ã®è·ç‰©ã®æ•°
+		// å¤–å‘¨ã®å£ã«æ¥ã™ã‚‹è·ç‰©ã®æ•°
+		// å¤–å‘¨ã®è§’ã«é…ç½®ã•ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// ã“ã‚Œã‚‰ã®å’Œ
 		rates.totalRate =
 			static_cast<double>(rates.m2x2Spaces) +
 			static_cast<double>(rates.m2x3Spaces) +
@@ -1742,12 +1745,12 @@ void MySolution::SetEvaluationValue(Rating& rates, const int& switchCount)
 			static_cast<double>(rates.mCorners);
 		break;
 	case 3:
-		// 2x2‚ÌƒXƒy[ƒX‚Ì”‚É ((”Õ–Ê‚Ì–ÊÏ - ‰×•¨‚Ì”) / ”Õ–Ê‚Ì–ÊÏ) ‚ğ‚©‚¯‚½’l
-		// üˆÍ3•ûŒü‚ª•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// –¢–K–âƒ}ƒX‚ÌŠp‚Ì‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ŠOü‚Ì•Ç‚ÉÚ‚·‚é‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ŠOü‚ÌŠp‚É”z’u‚³‚ê‚Ä‚¢‚é‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ‚±‚ê‚ç‚Ì˜a
+		// 2x2ã®ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°ã« ((ç›¤é¢ã®é¢ç© - è·ç‰©ã®æ•°) / ç›¤é¢ã®é¢ç©) ã‚’ã‹ã‘ãŸå€¤
+		// å‘¨å›²3æ–¹å‘ãŒå£ã§å›²ã¾ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// æœªè¨ªå•ãƒã‚¹ã®è§’ã®è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// å¤–å‘¨ã®å£ã«æ¥ã™ã‚‹è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// å¤–å‘¨ã®è§’ã«é…ç½®ã•ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// ã“ã‚Œã‚‰ã®å’Œ
 		rates.totalRate =
 			std::floor(
 			static_cast<double>(rates.m2x2Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
@@ -1762,12 +1765,12 @@ void MySolution::SetEvaluationValue(Rating& rates, const int& switchCount)
 				);
 		break;
 	case 4:
-		// 2x3‚ÌƒXƒy[ƒX‚Ì”‚É ((”Õ–Ê‚Ì–ÊÏ - ‰×•¨‚Ì”) / ”Õ–Ê‚Ì–ÊÏ) ‚ğ‚©‚¯‚½’l
-		// üˆÍ3•ûŒü‚ª•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// –¢–K–âƒ}ƒX‚ÌŠp‚Ì‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ŠOü‚Ì•Ç‚ÉÚ‚·‚é‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ŠOü‚ÌŠp‚É”z’u‚³‚ê‚Ä‚¢‚é‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ‚±‚ê‚ç‚Ì˜a
+		// 2x3ã®ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°ã« ((ç›¤é¢ã®é¢ç© - è·ç‰©ã®æ•°) / ç›¤é¢ã®é¢ç©) ã‚’ã‹ã‘ãŸå€¤
+		// å‘¨å›²3æ–¹å‘ãŒå£ã§å›²ã¾ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// æœªè¨ªå•ãƒã‚¹ã®è§’ã®è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// å¤–å‘¨ã®å£ã«æ¥ã™ã‚‹è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// å¤–å‘¨ã®è§’ã«é…ç½®ã•ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// ã“ã‚Œã‚‰ã®å’Œ
 		rates.totalRate =
 			std::floor(
 			//static_cast<double>(rates.m2x2Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
@@ -1782,13 +1785,13 @@ void MySolution::SetEvaluationValue(Rating& rates, const int& switchCount)
 				);
 		break;
 	case 5:
-		// 2x2‚ÌƒXƒy[ƒX‚Ì”‚É ((”Õ–Ê‚Ì–ÊÏ - ‰×•¨‚Ì”) / ”Õ–Ê‚Ì–ÊÏ) ‚ğ‚©‚¯‚½’l
-		// 2x3‚ÌƒXƒy[ƒX‚Ì”‚É ((”Õ–Ê‚Ì–ÊÏ - ‰×•¨‚Ì”) / ”Õ–Ê‚Ì–ÊÏ) ‚ğ‚©‚¯‚½’l
-		// üˆÍ3•ûŒü‚ª•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// –¢–K–âƒ}ƒX‚ÌŠp‚Ì‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ŠOü‚Ì•Ç‚ÉÚ‚·‚é‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ŠOü‚ÌŠp‚É”z’u‚³‚ê‚Ä‚¢‚é‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ‚±‚ê‚ç‚Ì˜a
+		// 2x2ã®ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°ã« ((ç›¤é¢ã®é¢ç© - è·ç‰©ã®æ•°) / ç›¤é¢ã®é¢ç©) ã‚’ã‹ã‘ãŸå€¤
+		// 2x3ã®ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°ã« ((ç›¤é¢ã®é¢ç© - è·ç‰©ã®æ•°) / ç›¤é¢ã®é¢ç©) ã‚’ã‹ã‘ãŸå€¤
+		// å‘¨å›²3æ–¹å‘ãŒå£ã§å›²ã¾ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// æœªè¨ªå•ãƒã‚¹ã®è§’ã®è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// å¤–å‘¨ã®å£ã«æ¥ã™ã‚‹è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// å¤–å‘¨ã®è§’ã«é…ç½®ã•ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// ã“ã‚Œã‚‰ã®å’Œ
 		rates.totalRate =
 			std::floor(
 			static_cast<double>(rates.m2x2Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +
@@ -1803,12 +1806,12 @@ void MySolution::SetEvaluationValue(Rating& rates, const int& switchCount)
 				);
 		break;
 	case 6:
-		// 2x3‚ÌƒXƒy[ƒX‚Ì”‚É ((”Õ–Ê‚Ì–ÊÏ - ‰×•¨‚Ì”) / ”Õ–Ê‚Ì–ÊÏ) ‚ğ‚©‚¯‚½’l
-		// üˆÍ3•ûŒü‚ª•Ç‚ÅˆÍ‚Ü‚ê‚Ä‚¢‚é‰×•¨‚Ì”
-		// –¢–K–âƒ}ƒX‚ÌŠp‚Ì‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ŠOü‚Ì•Ç‚ÉÚ‚·‚é‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ŠOü‚ÌŠp‚É”z’u‚³‚ê‚Ä‚¢‚é‰×•¨‚Ì”‚É (‰×•¨‚Ì” / ‰^”À‚·‚é‰×•¨‚ğØ‚è‘Ö‚¦‚½‰ñ”) ‚ğŠ|‚¯‚½‚à‚Ì
-		// ‚±‚ê‚ç‚Ì˜a‚©‚ç
+		// 2x3ã®ã‚¹ãƒšãƒ¼ã‚¹ã®æ•°ã« ((ç›¤é¢ã®é¢ç© - è·ç‰©ã®æ•°) / ç›¤é¢ã®é¢ç©) ã‚’ã‹ã‘ãŸå€¤
+		// å‘¨å›²3æ–¹å‘ãŒå£ã§å›²ã¾ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°
+		// æœªè¨ªå•ãƒã‚¹ã®è§’ã®è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// å¤–å‘¨ã®å£ã«æ¥ã™ã‚‹è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// å¤–å‘¨ã®è§’ã«é…ç½®ã•ã‚Œã¦ã„ã‚‹è·ç‰©ã®æ•°ã« (è·ç‰©ã®æ•° / é‹æ¬ã™ã‚‹è·ç‰©ã‚’åˆ‡ã‚Šæ›¿ãˆãŸå›æ•°) ã‚’æ›ã‘ãŸã‚‚ã®
+		// ã“ã‚Œã‚‰ã®å’Œã‹ã‚‰
 		rates.totalRate =
 			std::floor(
 				//static_cast<double>(rates.m2x2Spaces) * static_cast<double>(mSize.x * mSize.y - mBaggageNum) / static_cast<double>(mSize.x * mSize.y) +

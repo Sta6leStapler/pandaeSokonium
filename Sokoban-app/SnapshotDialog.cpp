@@ -6,88 +6,88 @@
 SnapshotDialog::SnapshotDialog(Game* game, sf::RenderWindow* window)
     : mGame(game),
     mState(IUIScreen::UIState::EActive),
-    mGui(std::make_unique<tgui::Gui>(*window)), // ê—p‚ÌGUI‚ğì¬
-    mTheme(std::make_unique<tgui::Theme>("Assets/themes/Black.txt")), // ƒe[ƒ}‚ğƒ[ƒh
+    mGui(std::make_unique<tgui::Gui>(*window)), // å°‚ç”¨ã®GUIã‚’ä½œæˆ
+    mTheme(std::make_unique<tgui::Theme>(game->GetTheme())), // ãƒ†ãƒ¼ãƒã‚’ãƒ­ãƒ¼ãƒ‰
     parentManager(nullptr)
 {
-    // 1. ƒQ[ƒ€‚ğˆê’â~ó‘Ô‚É‚·‚é
+    // 1. ã‚²ãƒ¼ãƒ ã‚’ä¸€æ™‚åœæ­¢çŠ¶æ…‹ã«ã™ã‚‹
     mGame->SetState(Game::GameState::EPaused);
 
-    // 2. ‚±‚ÌUIƒXƒNƒŠ[ƒ“‚ğGame‚ÌƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…
+    // 2. ã“ã®UIã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚’Gameã®ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥
     mGame->PushUI(this);
 
-    // ƒtƒHƒ“ƒg‚ğİ’è
+    // ãƒ•ã‚©ãƒ³ãƒˆã‚’è¨­å®š
     mGui->setFont(mGame->GetFontTGUI());
 
-    // 3. ƒ‚[ƒ_ƒ‹i‘¼‚Ì‘€ì‚ğƒuƒƒbƒN‚·‚éj‚ÌqƒEƒBƒ“ƒhƒE‚ğì¬
+    // 3. ãƒ¢ãƒ¼ãƒ€ãƒ«ï¼ˆä»–ã®æ“ä½œã‚’ãƒ–ãƒ­ãƒƒã‚¯ã™ã‚‹ï¼‰ã®å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
     mChildWindow = tgui::ChildWindow::create();
     mChildWindow->setRenderer(mTheme->getRenderer("ChildWindow"));
-    mChildWindow->setClientSize({ 400, 300 }); // •400, ‚‚³300
+    mChildWindow->setClientSize({ 400, 300 }); // å¹…400, é«˜ã•300
     mChildWindow->setTitle(mGame->GetLoc()->Get("TITLE_QUICK_SAVE"));
-    // ƒEƒBƒ“ƒhƒE‚ğ’†‰›‚É”z’u
+    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä¸­å¤®ã«é…ç½®
     mChildWindow->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
     mGui->add(mChildWindow);
 
-    // 4. ƒEƒBƒWƒFƒbƒg‚Ì”z’u
-    // qƒEƒBƒ“ƒhƒE‚ÌƒTƒCƒY
+    // 4. ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®é…ç½®
+    // å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚µã‚¤ã‚º
     sf::Vector2f childWindowSize{ mChildWindow->getSize().x, mChildWindow->getSize().y };
-    // –¼‘Oƒ‰ƒxƒ‹
+    // åå‰ãƒ©ãƒ™ãƒ«
     auto nameLabel = tgui::Label::create(mGame->GetLoc()->Get("QUICK_SAVE_LBL_NAME"));
     nameLabel->setRenderer(mTheme->getRenderer("Label"));
     nameLabel->setPosition(20, 20);
     nameLabel->setTextSize(16);
     mChildWindow->add(nameLabel);
 
-    // –¼‘O“ü—Íƒ{ƒbƒNƒX
+    // åå‰å…¥åŠ›ãƒœãƒƒã‚¯ã‚¹
     mNameBox = tgui::EditBox::create();
     mNameBox->setRenderer(mTheme->getRenderer("EditBox"));
-    mNameBox->setSize(childWindowSize.x - 40, 30); // ƒEƒBƒ“ƒhƒE• - 40px
+    mNameBox->setSize(childWindowSize.x - 40, 30); // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å¹… - 40px
     mNameBox->setPosition(20, 50);
     mNameBox->setTextSize(16);
-    mNameBox->setDefaultText(mGame->GetLoc()->Get("QUICK_SAVE_LBL_DEFAULT_NAME") + mGame->GetDateTime()); // ƒfƒtƒHƒ‹ƒg–¼‚ğİ’è
-    //mNameBox->setFocused(true); // ƒfƒtƒHƒ‹ƒg‚Å‚Í‚±‚ÌƒeƒLƒXƒgƒ{ƒbƒNƒX‚ÉƒtƒH[ƒJƒX (‚¤‚Ü‚­“®ì‚µ‚È‚¢H)
+    mNameBox->setDefaultText(mGame->GetLoc()->Get("QUICK_SAVE_LBL_DEFAULT_NAME") + mGame->GetDateTime()); // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆåã‚’è¨­å®š
+    //mNameBox->setFocused(true); // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã§ã¯ã“ã®ãƒ†ã‚­ã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã«ãƒ•ã‚©ãƒ¼ã‚«ã‚¹ (ã†ã¾ãå‹•ä½œã—ãªã„ï¼Ÿ)
     mChildWindow->add(mNameBox);
 
-    // ƒRƒƒ“ƒgƒ‰ƒxƒ‹
+    // ã‚³ãƒ¡ãƒ³ãƒˆãƒ©ãƒ™ãƒ«
     auto commentLabel = tgui::Label::create(mGame->GetLoc()->Get("QUICK_SAVE_LBL_COMMENT"));
     commentLabel->setRenderer(mTheme->getRenderer("Label"));
     commentLabel->setPosition(20, 90);
     commentLabel->setTextSize(16);
     mChildWindow->add(commentLabel);
 
-    // ƒRƒƒ“ƒg“ü—ÍƒGƒŠƒA
+    // ã‚³ãƒ¡ãƒ³ãƒˆå…¥åŠ›ã‚¨ãƒªã‚¢
     mCommentBox = tgui::TextArea::create();
     mCommentBox->setRenderer(mTheme->getRenderer("TextArea"));
-    mCommentBox->setSize(childWindowSize.x - 40, childWindowSize.y - 240); // c‚è‚ÌƒXƒy[ƒX‚ğ–„‚ß‚é
+    mCommentBox->setSize(childWindowSize.x - 40, childWindowSize.y - 240); // æ®‹ã‚Šã®ã‚¹ãƒšãƒ¼ã‚¹ã‚’åŸ‹ã‚ã‚‹
     mCommentBox->setPosition(20, 120);
     mCommentBox->setTextSize(16);
     mCommentBox->setDefaultText(mGame->GetLoc()->Get("QUICK_SAVE_LBL_DEFAULT_COMMENT"));
     mChildWindow->add(mCommentBox);
 
-    // •Û‘¶ƒ{ƒ^ƒ“
+    // ä¿å­˜ãƒœã‚¿ãƒ³
     auto saveButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_SAVE"));
     saveButton->setRenderer(mTheme->getRenderer("Button"));
-    saveButton->setSize("(&.width - 50) / 2", 30); // •‚ğƒEƒBƒ“ƒhƒE‚Ì–ñ”¼•ª‚É
-    saveButton->setPosition(20, "&.height - 80"); // ƒEƒBƒ“ƒhƒE‰º•”‚É”z’u
+    saveButton->setSize("(&.width - 50) / 2", 30); // å¹…ã‚’ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ç´„åŠåˆ†ã«
+    saveButton->setPosition(20, "&.height - 80"); // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ä¸‹éƒ¨ã«é…ç½®
     saveButton->setTextSize(16);
     mChildWindow->add(saveButton);
 
-    // ƒLƒƒƒ“ƒZƒ‹ƒ{ƒ^ƒ“
+    // ã‚­ãƒ£ãƒ³ã‚»ãƒ«ãƒœã‚¿ãƒ³
     auto cancelButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_CANCEL"));
     cancelButton->setRenderer(mTheme->getRenderer("Button"));
     cancelButton->setSize("(&.width - 50) / 2", 30);
-    cancelButton->setPosition("&.width - width - 20", "&.height - 80"); // ‰E‘¤‚É”z’u
+    cancelButton->setPosition("&.width - width - 20", "&.height - 80"); // å³å´ã«é…ç½®
     cancelButton->setTextSize(16);
     mChildWindow->add(cancelButton);
 
-    // --- 5. ƒVƒOƒiƒ‹iƒCƒxƒ“ƒgj‚Ìİ’è ---
+    // --- 5. ã‚·ã‚°ãƒŠãƒ«ï¼ˆã‚¤ãƒ™ãƒ³ãƒˆï¼‰ã®è¨­å®š ---
 
-    // "Save" ƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½‚Ìˆ—
+    // "Save" ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸæ™‚ã®å‡¦ç†
     saveButton->onPress([this]() {
         std::string name = mNameBox->getText().toStdString();
         std::string comment = mCommentBox->getText().toStdString();
 
-        // Snapshotscreen‚©‚çŒÄ‚Ño‚µ‚½ê‡‚Í‚»‚¿‚ç‚É‚àƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğ’Ç‰Á‚·‚é
+        // Snapshotscreenã‹ã‚‰å‘¼ã³å‡ºã—ãŸå ´åˆã¯ãã¡ã‚‰ã«ã‚‚ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’è¿½åŠ ã™ã‚‹
         if (parentManager != nullptr)
         {
             parentManager->AddSnapshot(name, comment);
@@ -95,21 +95,21 @@ SnapshotDialog::SnapshotDialog(Game* game, sf::RenderWindow* window)
         }
         else
         {
-            // GameƒNƒ‰ƒX‚ÌŠÖ”‚ğŒÄ‚Ño‚µ‚ÄƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğ•Û‘¶
+            // Gameã‚¯ãƒ©ã‚¹ã®é–¢æ•°ã‚’å‘¼ã³å‡ºã—ã¦ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’ä¿å­˜
             mGame->AddSnapshot(name, comment);
         }
 
-        // ‚±‚ÌUIƒXƒNƒŠ[ƒ“‚ğ•Â‚¶‚é
+        // ã“ã®UIã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚’é–‰ã˜ã‚‹
         this->Close();
         });
 
-    // "Cancel" ƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½‚Ìˆ—
+    // "Cancel" ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸæ™‚ã®å‡¦ç†
     cancelButton->onPress([this]() {
         if (parentManager != nullptr) parentManager->RemoveChildSnapshotDialog();
         this->Close();
         });
 
-    // ƒEƒBƒ“ƒhƒE‚Ì 'X' ƒ{ƒ^ƒ“‚Å•Â‚¶‚ç‚ê‚½‚Ìˆ—
+    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã® 'X' ãƒœã‚¿ãƒ³ã§é–‰ã˜ã‚‰ã‚ŒãŸæ™‚ã®å‡¦ç†
     mChildWindow->onClose([this]() {
         if (parentManager != nullptr) parentManager->RemoveChildSnapshotDialog();
         this->Close();
@@ -118,35 +118,35 @@ SnapshotDialog::SnapshotDialog(Game* game, sf::RenderWindow* window)
 
 SnapshotDialog::~SnapshotDialog()
 {
-    // ƒQ[ƒ€‚Ìˆê’â~‚ğ‰ğœ
+    // ã‚²ãƒ¼ãƒ ã®ä¸€æ™‚åœæ­¢ã‚’è§£é™¤
     mGame->SetState(Game::GameState::EGamePlay);
 
-    // mGui‚Íunique_ptr‚È‚Ì‚Å©“®‚Å‰ğ•ú‚³‚ê‚é
+    // mGuiã¯unique_ptrãªã®ã§è‡ªå‹•ã§è§£æ”¾ã•ã‚Œã‚‹
 }
 
 void SnapshotDialog::Update(float deltaTime)
 {
-    // ‚±‚ÌUI‚ÍÃ“I‚È‚Ì‚ÅAUpdate‚Å‚Ìˆ—‚Í•s—v
+    // ã“ã®UIã¯é™çš„ãªã®ã§ã€Updateã§ã®å‡¦ç†ã¯ä¸è¦
 }
 
 void SnapshotDialog::Draw(sf::RenderWindow* window)
 {
-    // ‚±‚ÌUI‚ª‚ÂGUI‚ğ•`‰æ
+    // ã“ã®UIãŒæŒã¤GUIã‚’æç”»
     mGui->draw();
 }
 
 void SnapshotDialog::ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos)
 {
-    // ‚±‚ÌUI‚ª‚ÂGUI‚ÉƒCƒxƒ“ƒg‚ğ“n‚·
+    // ã“ã®UIãŒæŒã¤GUIã«ã‚¤ãƒ™ãƒ³ãƒˆã‚’æ¸¡ã™
     mGui->handleEvent(*event);
 }
 
 void SnapshotDialog::Close()
 {
-    // ó‘Ô‚ğClosing‚Éİ’è
-    // Game::UpdateGame() ‚Ìƒ‹[ƒv‚ª‚±‚ÌUI‚ğˆÀ‘S‚Éíœ‚·‚é
+    // çŠ¶æ…‹ã‚’Closingã«è¨­å®š
+    // Game::UpdateGame() ã®ãƒ«ãƒ¼ãƒ—ãŒã“ã®UIã‚’å®‰å…¨ã«å‰Šé™¤ã™ã‚‹
     mState = IUIScreen::UIState::EClosing;
 
-    // ƒEƒBƒWƒFƒbƒg‚ğGUI‚©‚çíœ
+    // ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’GUIã‹ã‚‰å‰Šé™¤
     mGui->remove(mChildWindow);
 }

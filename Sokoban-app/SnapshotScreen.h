@@ -16,7 +16,7 @@ public:
     SnapshotScreen(Game* game, sf::RenderWindow* window);
     virtual ~SnapshotScreen();
 
-    // --- IUIScreenƒCƒ“ƒ^[ƒtƒF[ƒX‚ÌƒI[ƒo[ƒ‰ƒCƒh ---
+    // --- IUIScreenã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ã®ã‚ªãƒ¼ãƒãƒ¼ãƒ©ã‚¤ãƒ‰ ---
     void Update(float deltaTime) override;
     void Draw(sf::RenderWindow* window) override;
     void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) override;
@@ -25,29 +25,29 @@ public:
 
     void Close();
 
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğ’Ç‰Á‚·‚éƒƒ“ƒoŠÖ”
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’è¿½åŠ ã™ã‚‹ãƒ¡ãƒ³ãƒé–¢æ•°
     void AddSnapshot(const std::string& name, const std::string& comment);
 
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒgƒ_ƒCƒAƒƒO‚Ìƒ|ƒCƒ“ƒ^‚ğ‰Šú‰»‚·‚é
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã®ãƒã‚¤ãƒ³ã‚¿ã‚’åˆæœŸåŒ–ã™ã‚‹
     void RemoveChildSnapshotDialog() { mChildSnapshotDialog = nullptr; }
 
 private:
-    // ‚±‚ÌƒNƒ‰ƒXê—p‚Ìƒwƒ‹ƒp[ŠÖ”
+    // ã“ã®ã‚¯ãƒ©ã‚¹å°‚ç”¨ã®ãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°
     // 
     void ReleasePreview();
 
-    // ƒƒ“ƒo•Ï”
+    // ãƒ¡ãƒ³ãƒå¤‰æ•°
     Game* mGame;
     sf::RenderWindow* mWindow;
     std::unique_ptr<tgui::Gui> mGui;
     std::unique_ptr<tgui::Theme> mTheme;
     UIState mState;
 
-    // ƒTƒ€ƒlƒCƒ‹ƒeƒNƒXƒ`ƒƒ‚ÌŠÇ—
-    // “®“I‚É¶¬‚³‚ê‚½ƒTƒ€ƒlƒCƒ‹ƒeƒNƒXƒ`ƒƒ‚Ìƒ|ƒCƒ“ƒ^‚ğ•Û‚µAƒfƒXƒgƒ‰ƒNƒ^‚Å‰ğ•ú‚·‚é
+    // ã‚µãƒ ãƒã‚¤ãƒ«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã®ç®¡ç†
+    // å‹•çš„ã«ç”Ÿæˆã•ã‚ŒãŸã‚µãƒ ãƒã‚¤ãƒ«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã®ãƒã‚¤ãƒ³ã‚¿ã‚’ä¿æŒã—ã€ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿ã§è§£æ”¾ã™ã‚‹
     std::vector<sf::Texture*> mThumbnailTextures;
 
-    // TGUIƒEƒBƒWƒFƒbƒg
+    // TGUIã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆ
     tgui::ChildWindow::Ptr mChildWindow;
     tgui::PanelListBox::Ptr mThumbnailListBox;
     tgui::Panel::Ptr mRightPanel;
@@ -60,18 +60,18 @@ private:
     tgui::Label::Ptr mInfoGoaledLabel;
     tgui::Label::Ptr mInfoTimeLabel;
 
-    // Œ»İ‘I‘ğ‚³‚ê‚Ä‚¢‚éƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒCƒ“ƒfƒbƒNƒX
+    // ç¾åœ¨é¸æŠã•ã‚Œã¦ã„ã‚‹ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
     int mSelectedIndex;
 
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒCƒ“ƒfƒbƒNƒX‚Æ”Õ–Êó‹µ‚Ì‰æ‘œ‚Ìƒ}ƒbƒv
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã¨ç›¤é¢çŠ¶æ³ã®ç”»åƒã®ãƒãƒƒãƒ—
     std::map<int, tgui::Picture::Ptr> mBoardPictureMap;
 
-    // ƒRƒƒ“ƒg‚ÌƒeƒLƒXƒgXV‚Ì‚½‚ß‚ÉƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒRƒƒ“ƒg‚ÌƒeƒLƒXƒgƒIƒuƒWƒFƒNƒg‚Æƒ^ƒCƒgƒ‹‚Ì‘Î‰•t‚¯‚ğ‚µ‚Ä‚¨‚­
+    // ã‚³ãƒ¡ãƒ³ãƒˆã®ãƒ†ã‚­ã‚¹ãƒˆæ›´æ–°ã®ãŸã‚ã«ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚³ãƒ¡ãƒ³ãƒˆã®ãƒ†ã‚­ã‚¹ãƒˆã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã¨ã‚¿ã‚¤ãƒˆãƒ«ã®å¯¾å¿œä»˜ã‘ã‚’ã—ã¦ãŠã
     std::map<tgui::TextArea::Ptr, std::string> mCommentTextAreaMap;
 
-    // ‚±‚ÌƒNƒ‰ƒX‚©‚çƒXƒiƒbƒvƒVƒ‡ƒbƒgƒ_ƒCƒAƒƒO‚ğ’Ç‰Á‚µ‚½ê‡‚É•Û‚·‚éƒ|ƒCƒ“ƒ^
+    // ã“ã®ã‚¯ãƒ©ã‚¹ã‹ã‚‰ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¿½åŠ ã—ãŸå ´åˆã«ä¿æŒã™ã‚‹ãƒã‚¤ãƒ³ã‚¿
     class SnapshotDialog* mChildSnapshotDialog;
 
-    // Œ»İ‚Ì”Õ–Ê‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğƒZ[ƒu’†‚©
+    // ç¾åœ¨ã®ç›¤é¢ã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’ã‚»ãƒ¼ãƒ–ä¸­ã‹
     bool mIsSavingCurrentSnapshot;
 };

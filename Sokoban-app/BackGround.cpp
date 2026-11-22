@@ -3,6 +3,8 @@
 #include "Game.h"
 #include "SpriteComponent.h"
 
+#include <algorithm>
+
 BackGround::BackGround(Game* game)
 	: mState(IActor::ActorState::EActive)
 	, mPosition(0.0, 0.0)
@@ -15,9 +17,9 @@ BackGround::BackGround(Game* game)
 {
 	mGame->AddActor(this);
 
-	// SpriteComponent‚ğì¬‚·‚é
-	// °‚Æ•Ç‚Ìƒ^ƒCƒ‹‚ğ—pˆÓ
-	// TODO “Ç‚İ‚ñ‚¾”Õ–Êƒf[ƒ^‚É‰‚¶‚½ƒXƒe[ƒW‚ÌƒeƒNƒXƒ`ƒƒ‚ğì¬‚·‚é
+	// SpriteComponentã‚’ä½œæˆã™ã‚‹
+	// åºŠã¨å£ã®ã‚¿ã‚¤ãƒ«ã‚’ç”¨æ„
+	// TODO èª­ã¿è¾¼ã‚“ã ç›¤é¢ãƒ‡ãƒ¼ã‚¿ã«å¿œã˜ãŸã‚¹ãƒ†ãƒ¼ã‚¸ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ä½œæˆã™ã‚‹
 	std::string fileName = "Assets/BackGround.png";
 	sf::Texture* backGround = game->LoadTexture(fileName);
 	mSpriteComponent = new SpriteComponent(this, 100, 0);
@@ -28,7 +30,7 @@ BackGround::BackGround(Game* game)
 BackGround::~BackGround()
 {
 	mGame->RemoveActor(this);
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğíœ‚·‚é
+	// ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’å‰Šé™¤ã™ã‚‹
 	while (!mComponents.empty())
 	{
 		delete mComponents.back();
@@ -41,7 +43,7 @@ void BackGround::Update(float deltaTime)
 	{
 		UpdateComponents(deltaTime);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌXVˆ—‚ª‚ ‚ê‚Î‘‚­
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æ›´æ–°å‡¦ç†ãŒã‚ã‚Œã°æ›¸ã
 	}
 }
 
@@ -57,11 +59,11 @@ void BackGround::ProcessInput(const sf::Event* event, const std::map<sf::Keyboar
 {
 	if (mState == IActor::ActorState::EActive)
 	{
-		// ƒAƒNƒ^[‚ª‚Â‘S‚Ä‚ÌComponent‚Ì“ü—Íˆ—‚ğs‚¤
-		// ‚Ç‚ÌComponent‚à“Á‚É“Æ©‚Ìˆ—‚ğÀ‘•‚µ‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+		// ã‚¢ã‚¯ã‚¿ãƒ¼ãŒæŒã¤å…¨ã¦ã®Componentã®å…¥åŠ›å‡¦ç†ã‚’è¡Œã†
+		// ã©ã®Componentã‚‚ç‰¹ã«ç‹¬è‡ªã®å‡¦ç†ã‚’å®Ÿè£…ã—ã¦ã„ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 		ProcessInputComponents(event, key_held_duration, auto_repeat_timer);
 
-		// ‚±‚ÌƒAƒNƒ^[“Á—L‚ÌU‚é•‘‚¢‚ª‚ ‚ê‚Î‘‚­
+		// ã“ã®ã‚¢ã‚¯ã‚¿ãƒ¼ç‰¹æœ‰ã®æŒ¯ã‚‹èˆã„ãŒã‚ã‚Œã°æ›¸ã
 
 	}
 

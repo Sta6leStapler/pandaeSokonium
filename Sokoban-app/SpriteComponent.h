@@ -7,25 +7,25 @@
 class SpriteComponent : public IComponent
 {
 public:
-	// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
-	// drawOrder‚ª’á‚¯‚ê‚Î,æ‚É•`‰æ‚³‚ê‚é(‰æ–Ê‚ÌŒã•û‚É—ˆ‚é)
+	// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+	// drawOrderãŒä½ã‘ã‚Œã°,å…ˆã«æç”»ã•ã‚Œã‚‹(ç”»é¢ã®å¾Œæ–¹ã«æ¥ã‚‹)
 	SpriteComponent(class IActor* owner, int updateOrder = 100, int drawOrder = 100);
-	// ƒfƒXƒgƒ‰ƒNƒ^
+	// ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 	~SpriteComponent();
 
-	// ƒfƒ‹ƒ^ƒ^ƒCƒ€‚Å‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ğXV‚·‚é
+	// ãƒ‡ãƒ«ã‚¿ã‚¿ã‚¤ãƒ ã§ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚’æ›´æ–°ã™ã‚‹
 	void Update(float deltaTime) override;
 
-	// ‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg“Á—L‚Ì“ü—Íˆ—(SpriteComponent‚Å‚Í‰½‚à‚µ‚È‚¢)
+	// ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆç‰¹æœ‰ã®å…¥åŠ›å‡¦ç†(SpriteComponentã§ã¯ä½•ã‚‚ã—ãªã„)
 	void ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::Key, float>& key_held_duration, const std::map<sf::Keyboard::Key, float>& auto_repeat_timer) override {}
 
-	// •`‰æŠÖ”
+	// æç”»é–¢æ•°
 	void Draw(sf::RenderWindow* mWindow);
 
-	// ƒeƒNƒXƒ`ƒƒ‚Ìİ’è
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£ã®è¨­å®š
 	void SetTexture(sf::Texture* texture);
 
-	// ƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 	int GetUpdateOrder() override { return mUpdateOrder; }
 
 	int GetDrawOrder() const { return mDrawOrder; }
@@ -37,16 +37,16 @@ public:
 	sf::Texture* GetTexture() const { return mTexture; }
 
 private:
-	// ©g‚ğ•Û‚µ‚Ä‚¢‚éƒAƒNƒ^[
+	// è‡ªèº«ã‚’ä¿æŒã—ã¦ã„ã‚‹ã‚¢ã‚¯ã‚¿ãƒ¼
 	class IActor* mOwner;
 
-	// ‚±‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ÌUpdate order
+	// ã“ã®ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã®Update order
 	int mUpdateOrder;
 
-	// ƒeƒNƒXƒ`ƒƒŠÖ˜A‚Ìƒƒ“ƒo•Ï”
-	// SpriteComponent‚Í’Pˆê‚ÌƒeƒNƒXƒ`ƒƒ‚Ì‚İ‚ğ‚¿A
-	// ƒAƒNƒ^[‚©‚ç‚ÌŒÄ‚Ño‚µ‚É‚æ‚Á‚ÄƒeƒNƒXƒ`ƒƒ‚ğ“K‹X•ÏX‚·‚é
-	// ‚Â‚Ü‚èAƒQ[ƒ€“à‚É•`‰æ‚·‚éƒXƒvƒ‰ƒCƒg‚Ì”‚¾‚¯SpriteComponent‚ÍéŒ¾‚³‚ê‚é
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£é–¢é€£ã®ãƒ¡ãƒ³ãƒå¤‰æ•°
+	// SpriteComponentã¯å˜ä¸€ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ã®ã¿ã‚’æŒã¡ã€
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã‹ã‚‰ã®å‘¼ã³å‡ºã—ã«ã‚ˆã£ã¦ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’é©å®œå¤‰æ›´ã™ã‚‹
+	// ã¤ã¾ã‚Šã€ã‚²ãƒ¼ãƒ å†…ã«æç”»ã™ã‚‹ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®æ•°ã ã‘SpriteComponentã¯å®£è¨€ã•ã‚Œã‚‹
 	sf::Texture* mTexture;
 	int mDrawOrder;
 	sf::Vector2u mBoundingBox;

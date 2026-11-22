@@ -12,19 +12,19 @@ void BoardParamManual::display(Game* game, tgui::Gui& gui)
     window->setSize(800, 600);
     window->setPosition("center", "center");
 
-    // ƒeƒLƒXƒg•\Ž¦—p‚ÌƒeƒLƒXƒgƒ{ƒbƒNƒXiƒXƒNƒ[ƒ‹‰Â”\E•ÒW•s‰Âj
+    // ãƒ†ã‚­ã‚¹ãƒˆè¡¨ç¤ºç”¨ã®ãƒ†ã‚­ã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ï¼ˆã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«å¯èƒ½ãƒ»ç·¨é›†ä¸å¯ï¼‰
     auto textArea = tgui::TextArea::create();
     textArea->setRenderer(theme.getRenderer("TextArea"));
     textArea->setSize("100%", "100% - 60");
     textArea->setTextSize(18);
     textArea->setReadOnly(true);
 
-    // ƒtƒ@ƒCƒ‹‚©‚çƒeƒLƒXƒg‚ð“Ç‚Ýž‚ñ‚ÅƒZƒbƒg
-    std::string content = loadManualText(game->GetLoc()->Get("BORAD_PARAM_MANUAL_PATH"));
+    // ãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰ãƒ†ã‚­ã‚¹ãƒˆã‚’èª­ã¿è¾¼ã‚“ã§ã‚»ãƒƒãƒˆ
+    std::string content = loadManualText(game->GetPaths().Asset(game->GetLoc()->Get("BORAD_PARAM_MANUAL_PATH")).u8string());
     textArea->setText(content);
     window->add(textArea);
 
-    // •Â‚¶‚éƒ{ƒ^ƒ“
+    // é–‰ã˜ã‚‹ãƒœã‚¿ãƒ³
     auto closeBtn = tgui::Button::create(game->GetLoc()->Get("BTN_CLOSE"));
     closeBtn->setRenderer(game->GetTheme().getRenderer("Button"));
     closeBtn->setSize(100, 30);
@@ -37,7 +37,7 @@ void BoardParamManual::display(Game* game, tgui::Gui& gui)
 
 std::string BoardParamManual::loadManualText(const std::string& filename)
 {
-    std::ifstream file(filename);
+    std::ifstream file(std::filesystem::u8path(filename));
     if (!file.is_open()) return "Error: Could not open manual file.";
 
     std::stringstream ss;

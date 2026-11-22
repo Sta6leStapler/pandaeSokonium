@@ -29,7 +29,10 @@
 - キーボード入力によるプレイヤーの操作
 - マウス入力によるプレイヤーの操作
 - Undo / Redo 機能
-- テキストファイルによる盤面の読み込み
+- `.sok` / `.xsb` / `.txt` 形式の盤面読み込み（複数レベルコレクション対応）と書き出し
+- `rludRLUD`（LURD）形式の解手順出力（コピー・保存）および読み込み（アニメーション再生・一括適用）
+- 倉庫番ソルバー **Festival 3.1**（Yaron Shoham 氏、MIT License）のゲーム内統合（現在状態／初期状態から非同期解析・中断・1手ヒント・自動再生）
+- 効果音（SE）の再生とポーズメニューからの音量調整・ミュート切替
 - 自動生成された問題のセーブ機能
 - プレイヤーの操作ログの出力機能
 - 簡易的な詰み検出
@@ -53,19 +56,67 @@
 
 ## 開発環境と依存関係
 
-- **言語**: Visual C++
+- **言語**: C++17
 - **ライブラリ**:
-  - [SFML](https://www.sfml-dev.org/) (Simple and Fast Multimedia Library)
-  - [TGUI](https://tgui.eu/) (SFML 用 GUI ライブラリ)
-- **開発環境**: Visual Studio 2022
+  - [SFML](https://www.sfml-dev.org/) 2.6.2 (Simple and Fast Multimedia Library)
+  - [TGUI](https://tgui.eu/) 1.6.1 (SFML 用 GUI ライブラリ)
+- **フォント**: BIZ UDPGothic (`BIZUDPGothic-Regular.ttf`, SIL Open Font License 1.1)
+- **同梱ソルバー**: [Festival 3.1](https://festival-solver.site/) by Yaron Shoham（MIT License、`third_party/festival/`）
+- **ライセンス**: サードパーティライブラリ・フォント・Festival ソルバーのライセンス全文は `THIRD_PARTY_LICENSES.txt`（およびゲーム内ポーズメニュー / ソルバー画面の「ライセンス情報」）を参照してください。
+- **ビルド環境**: Visual Studio 2022（`.sln` / `.vcxproj`）または CMake 3.20+（Windows / Linux / macOS）
 
 ---
 
-## ビルド手順（Visual Studio）
+## ビルド手順（CMake：Windows / Linux / macOS 共通）
 
-1. SFMLとTGUIをダウンロードし、プロジェクトルートの../include/と../lib/に配置
+CMake はデフォルトで `FetchContent` を用いて SFML 2.6.2 と TGUI 1.6.1 を自動取得します（システム導入済みの SFML 2.6 / TGUI 1.6 を使う場合は `-DPANDAE_USE_SYSTEM_DEPS=ON` を指定してください）。
+
+### Windows (MSVC)
+```powershell
+cmake --preset windows-msvc
+cmake --build --preset windows-msvc-release --parallel
+ctest --preset windows-msvc-release
+```
+既存のローカル `include/`・`lib/` を使う場合は `windows-msvc-local` プリセットを使用できます。
+
+### Linux (Ubuntu 例)
+```bash
+sudo apt-get install -y \
+  libx11-dev libxrandr-dev libxcursor-dev libxi-dev \
+  libudev-dev libgl1-mesa-dev libfreetype-dev \
+  libopenal-dev libflac-dev libvorbis-dev
+cmake --preset linux-release
+cmake --build --preset linux-release --parallel
+ctest --preset linux-release
+```
+
+### macOS
+```bash
+cmake --preset macos-release
+cmake --build --preset macos-release --parallel
+ctest --preset macos-release
+```
+
+### ポータブル配布パッケージの生成（Windows / Linux / macOS）
+ビルド後、以下のスクリプトで `UserData/` やデバッグシンボルを除いた配布アーカイブを作成できます（GitHub Actions CI でも 3 OS 分を自動生成・アップロードします）。
+
+```bash
+# Windows 例
+python scripts/package_release.py --platform windows --build-dir build/windows-msvc/Release --out-dir dist
+# Linux 例
+python3 scripts/package_release.py --platform linux --build-dir build/linux-release --out-dir dist
+# macOS 例
+python3 scripts/package_release.py --platform macos --build-dir build/macos-release --out-dir dist
+```
+
+- 保存（`Ctrl+S`）・リスタート（`Ctrl+R`）は、macOS では `Cmd+S` / `Cmd+R` でも操作できます。
+- 画面解像度が `1600x900` 未満の環境では、アスペクト比を維持して初期ウィンドウサイズを自動縮小し、描画・クリック座標をスケーリングします。
+
+## ビルド手順（Visual Studio 2022）
+
+1. SFML 2.6.2 と TGUI 1.6.1 をダウンロードし、プロジェクトルートの `include/` と `lib/` に配置
 2. `Sokoban-app.sln` を Visual Studio で開く
-3. ビルド構成を選択(Debug/Release、Win32/x64) 
+3. ビルド構成を選択 (Debug/Release、x64)
 4. ビルド＆実行（`Ctrl+F5`）
 
 ## 必要なライブラリファイル
@@ -83,6 +134,45 @@ tgui.lib
 - アニメーションのイージング（加減速）バリエーションの追加
 - サウンド
 - プレイログの可視化ビューワーの実装（UI 枠組みは実装済み）
+
+## リソースと保存先（ポータブル方式）
+
+- リソースは実行ファイルと同じディレクトリの `Assets` から読み込みます。
+  起動時の作業ディレクトリには依存しません。
+- Visual Studioのビルド後に、リソースと実行時DLLを出力ディレクトリへコピーします。
+  配布する場合は実行ファイル・DLL・`Assets` を一緒に配置してください。
+- 新しい盤面の保存ダイアログは `UserData/Boards`、ログは `UserData/Logs` を
+  初期保存先にします。`UserData` は実行ファイルと同じディレクトリに自動作成します。
+  ダイアログで別の場所を選ぶこともできます。
+- 盤面一覧には `Assets/Boards` の `[同梱]` と `UserData/Boards` の `[保存]` を
+  両方表示します。同名でも別の盤面として選択できます。別の場所に保存した盤面を
+  一覧に出す場合は `UserData/Boards` へコピーしてください。
+- 既存の盤面・ログをユーザーデータ領域へ移動・自動コピーしたり、削除したりしません。既存の `Save` や
+  `Assets/Logs` のデータもそのまま残ります。現在のスナップショットは従来どおり
+  メモリ上の保持で、今回ファイル保存機能は追加していません。
+- 実行ファイル付近に書き込み権限が必要です。読み取り専用の場所から実行する場合は、
+  アプリ一式を書き込めるフォルダーへ移してください。保存先の作成やリソースの
+  初期読み込みに失敗すると、原因をコンソールに出力して起動を中止します。
+  実行中の保存失敗は画面に通知し、エディターの変更を保存済み扱いにしません。
+- 自動出力ログは、同じ秒のログが既にあれば番号を付け、既存ログを上書きしません。
+- macOSの `.app` 配置では `Contents/Resources/Assets` を読み、
+  `.app` と同じディレクトリの `UserData` に保存する構成です。
+  Mac/Linuxのビルド・パッケージ設定と実機検証は別途必要です。
+
+### パス管理のテスト
+
+Visual Studioの「x64 Native Tools Command Prompt」でプロジェクトルートから実行します。
+テスト実行ファイルは任意の作業用ディレクトリに作成してください。
+
+```bat
+cl /nologo /std:c++17 /EHsc /utf-8 Sokoban-app\AppPaths.cpp Sokoban-app\tests\AppPathsTests.cpp /Fe:AppPathsTests.exe
+AppPathsTests.exe
+```
+
+作業ディレクトリ非依存、日本語パス、同名盤面の識別、ログ名の衝突、
+既存盤面の保持、読み書き失敗、`.app` の配置を検証します。
+全 C++ ソースファイルは BOM なし UTF-8（LF）に統一しており、Visual Studio / CMake 双方で `/utf-8` 相当の設定を用いてビルドします。
+`.vcxproj` と `CMakeLists.txt` のソース一覧の整合性は `python scripts/check_source_sync.py` で検証できます。
 
 [1]:https://deepwiki.com/Sta6leStapler/pandaeSokonium/1-overview
 

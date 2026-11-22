@@ -2,7 +2,7 @@
 class State
 {
 public:
-	// ƒAƒNƒ^[‚Ìó‘Ô‚ğ•\Œ»‚·‚é—ñ‹“Œ^
+	// ã‚¢ã‚¯ã‚¿ãƒ¼ã®çŠ¶æ…‹ã‚’è¡¨ç¾ã™ã‚‹åˆ—æŒ™å‹
 	enum EState
 	{
 		EActive,
@@ -13,7 +13,7 @@ public:
 	State();
 	State(EState state);
 
-	// ƒQƒbƒ^[‚ÆƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã¨ã‚»ãƒƒã‚¿ãƒ¼
 	EState GetEState() const { return mState; }
 	void SetEState(const EState state) { mState = state; }
 

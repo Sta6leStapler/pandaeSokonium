@@ -11,34 +11,34 @@
 
 class Game;
 
-// ”Õ–Ê¶¬ƒpƒ‰ƒ[ƒ^İ’è—pƒ_ƒCƒAƒƒOƒNƒ‰ƒX
+// ç›¤é¢ç”Ÿæˆãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿è¨­å®šç”¨ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚¯ãƒ©ã‚¹
 class BoardConfigDialog
 {
 public:
-    // ÀsŒ‹‰Ê‚ÌƒXƒe[ƒ^ƒX
+    // å®Ÿè¡Œçµæœã®ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹
     enum class Result { Apply, Cancel };
 
     /*
-     * @param gui ƒƒCƒ“ƒEƒBƒ“ƒhƒE‚ÌGUIƒIƒuƒWƒFƒNƒg‚Ö‚ÌQÆ
-     * @param theme UI‚ÌƒXƒLƒ“iBlack.txt“™j
-     * @param currentParams Œ»İ‚ÌGameƒNƒ‰ƒX‚ª•Û‚µ‚Ä‚¢‚éƒpƒ‰ƒ[ƒ^
+     * @param gui ãƒ¡ã‚¤ãƒ³ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®GUIã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã¸ã®å‚ç…§
+     * @param theme UIã®ã‚¹ã‚­ãƒ³ï¼ˆBlack.txtç­‰ï¼‰
+     * @param currentParams ç¾åœ¨ã®Gameã‚¯ãƒ©ã‚¹ãŒä¿æŒã—ã¦ã„ã‚‹ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
      */
     BoardConfigDialog(class Game* game, tgui::Gui& gui, tgui::Theme& theme, const GenerationParameters& currentParams);
 
     /*
-     * @brief ƒ_ƒCƒAƒƒO‚ğ•\¦‚µAƒ†[ƒU[‚ªŒˆ’è‚Ü‚½‚ÍƒLƒƒƒ“ƒZƒ‹‚·‚é‚Ü‚Å‘Ò‹@‚·‚é
-     * @return ÀsŒ‹‰Ê(Result)‚ÆAİ’è‚³‚ê‚½ƒpƒ‰ƒ[ƒ^‚ÌƒyƒA
-     * ƒ_ƒCƒAƒƒO‚ªŠJ‚¢‚Ä‚¢‚éŠÔ‚ÍGame‘¤‚ÌXV‚ğ~‚ß‚é
+     * @brief ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤ºã—ã€ãƒ¦ãƒ¼ã‚¶ãƒ¼ãŒæ±ºå®šã¾ãŸã¯ã‚­ãƒ£ãƒ³ã‚»ãƒ«ã™ã‚‹ã¾ã§å¾…æ©Ÿã™ã‚‹
+     * @return å®Ÿè¡Œçµæœ(Result)ã¨ã€è¨­å®šã•ã‚ŒãŸãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®ãƒšã‚¢
+     * ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ãŒé–‹ã„ã¦ã„ã‚‹é–“ã¯Gameå´ã®æ›´æ–°ã‚’æ­¢ã‚ã‚‹
      */
     std::pair<Result, GenerationParameters> run(sf::RenderWindow& window, sf::Clock& clock);
 
 private:
-    // UIƒp[ƒc‚Ì‰Šú\’z
+    // UIãƒ‘ãƒ¼ãƒ„ã®åˆæœŸæ§‹ç¯‰
     void setupUI();
-    // •¡G“xƒXƒRƒA‚©‚çu—\‘zŠÔvƒ‰ƒxƒ‹‚ğXV
+    // è¤‡é›‘åº¦ã‚¹ã‚³ã‚¢ã‹ã‚‰ã€Œäºˆæƒ³æ™‚é–“ã€ãƒ©ãƒ™ãƒ«ã‚’æ›´æ–°
     void updateComplexityEstimation();
 
-    // ƒXƒ‰ƒCƒ_[‚ÆƒGƒfƒBƒbƒgƒ{ƒbƒNƒX‚Ì’l‚ğ“¯Šú‚³‚¹‚é
+    // ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹ã®å€¤ã‚’åŒæœŸã•ã›ã‚‹
     void syncValues(const std::string& key, float value, bool fromSlider);
 
     class Game* mGame;
@@ -50,7 +50,7 @@ private:
     GenerationParameters mParams;
     std::vector<ParameterMeta> mMeta;
 
-    // UI—v‘f‚ğ“®“I‚ÉQÆ‚·‚é‚½‚ß‚Ìƒ}ƒbƒv
+    // UIè¦ç´ ã‚’å‹•çš„ã«å‚ç…§ã™ã‚‹ãŸã‚ã®ãƒãƒƒãƒ—
     struct UIElementGroup {
         tgui::Slider::Ptr slider;
         tgui::EditBox::Ptr editBox;

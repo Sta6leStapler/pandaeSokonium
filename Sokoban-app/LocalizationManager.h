@@ -1,18 +1,19 @@
 #pragma once
 #include <string>
 #include <map>
+#include <filesystem>
 
 class LocalizationManager {
 public:
-    // w’è‚µ‚½Œ¾Œêƒtƒ@ƒCƒ‹‚ğƒ[ƒh‚·‚é (—á: "Assets/Languages/jp.txt")
-    bool LoadLanguage(const std::string& filename);
+    // æŒ‡å®šã—ãŸè¨€èªãƒ•ã‚¡ã‚¤ãƒ«ã‚’ãƒ­ãƒ¼ãƒ‰ã™ã‚‹ (ä¾‹: "Assets/Languages/jp.txt")
+    bool LoadLanguage(const std::filesystem::path& filename);
 
-    // ƒL[‚É‘Î‰‚·‚é•¶š—ñ‚ğ•Ô‚·BŒ©‚Â‚©‚ç‚È‚¯‚ê‚ÎƒL[‚»‚Ì‚à‚Ì‚ğ•Ô‚·
+    // ã‚­ãƒ¼ã«å¯¾å¿œã™ã‚‹æ–‡å­—åˆ—ã‚’è¿”ã™ã€‚è¦‹ã¤ã‹ã‚‰ãªã‘ã‚Œã°ã‚­ãƒ¼ãã®ã‚‚ã®ã‚’è¿”ã™
     std::string Get(const std::string& key) const;
 
 private:
     std::map<std::string, std::string> mDictionary;
 
-    // •¶š—ñ‚Ì‘OŒã‚©‚ç‹ó”’‚ğæ‚èœ‚­ƒwƒ‹ƒp[ŠÖ”
+    // æ–‡å­—åˆ—ã®å‰å¾Œã‹ã‚‰ç©ºç™½ã‚’å–ã‚Šé™¤ããƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°
     std::string trim(const std::string& str);
 };

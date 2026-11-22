@@ -2,29 +2,29 @@
 
 #include "SFML/Window.hpp"
 
-// UI‰æ–Ê‹¤’Ê‚ÌƒCƒ“ƒ^[ƒtƒF[ƒXƒNƒ‰ƒX
+// UIç”»é¢å…±é€šã®ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ã‚¯ãƒ©ã‚¹
 class IUIScreen {
 public:
     virtual ~IUIScreen() = default;
 
-    // UI‰æ–Ê‚ÌXVˆ—iŠÔŒo‰ß‚É‰‚¶‚½“®ìj
+    // UIç”»é¢ã®æ›´æ–°å‡¦ç†ï¼ˆæ™‚é–“çµŒéã«å¿œã˜ãŸå‹•ä½œï¼‰
     virtual void Update(float deltaTime) = 0;
 
-    // UI‰æ–Ê‚Ì•`‰æˆ—
+    // UIç”»é¢ã®æç”»å‡¦ç†
     virtual void Draw(sf::RenderWindow* mWindow) = 0;
 
-    // ƒ†[ƒU[“ü—Í‚Ìˆ—
+    // ãƒ¦ãƒ¼ã‚¶ãƒ¼å…¥åŠ›ã®å‡¦ç†
     virtual void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) = 0;
 
-    // ó‘Ô‚ªƒAƒNƒeƒBƒu‚©ƒNƒ[ƒWƒ“ƒO‚©‘Ò‹@’†‚©ŠÇ—
+    // çŠ¶æ…‹ãŒã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã‹ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ³ã‚°ã‹å¾…æ©Ÿä¸­ã‹ç®¡ç†
     enum UIState { EActive, EClosing, EPending };
 
-    // ó‘Ô‚ğƒNƒ[ƒWƒ“ƒO‚É‚·‚é
+    // çŠ¶æ…‹ã‚’ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ³ã‚°ã«ã™ã‚‹
     virtual void Close() = 0;
 
-    // ó‘Ô‚ğæ“¾
+    // çŠ¶æ…‹ã‚’å–å¾—
     virtual UIState GetState() = 0;
 
-    // Œ¾Œê‚Ì•ÏX‚Ì’Ê’m
+    // è¨€èªã®å¤‰æ›´ã®é€šçŸ¥
     virtual void OnLanguageChanged() = 0;
 };

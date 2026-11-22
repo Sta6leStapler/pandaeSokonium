@@ -3,6 +3,7 @@
 
 #include "SnapshotDialog.h"
 
+#include <algorithm>
 #include <iostream>
 
 SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
@@ -10,7 +11,7 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
     mWindow(window),
     mState(IUIScreen::UIState::EActive),
     mGui(std::make_unique<tgui::Gui>(*window)),
-    mTheme(std::make_unique<tgui::Theme>("Assets/themes/Black.txt")),
+    mTheme(std::make_unique<tgui::Theme>(game->GetTheme())),
     mSelectedIndex(-1),
     mChildSnapshotDialog(nullptr),
     mIsSavingCurrentSnapshot(false)
@@ -18,53 +19,53 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
     mGame->SetState(Game::GameState::EPaused);
     mGame->PushUI(this);
 
-    // ƒtƒHƒ“ƒg‚ğİ’è
+    // ãƒ•ã‚©ãƒ³ãƒˆã‚’è¨­å®š
     mGui->setFont(mGame->GetFontTGUI());
 
-    // ƒEƒBƒ“ƒhƒE‘S‘Ì‚ğ•¢‚¤ƒ‚[ƒ_ƒ‹ƒEƒBƒ“ƒhƒE‚ğì¬
+    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å…¨ä½“ã‚’è¦†ã†ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆ
     mChildWindow = tgui::ChildWindow::create();
     mChildWindow->setRenderer(mTheme->getRenderer("ChildWindow"));
-    // ‰æ–Ê‚Ì90%‚ğg‚¢A’†‰›‚É”z’u
+    // ç”»é¢ã®90%ã‚’ä½¿ã„ã€ä¸­å¤®ã«é…ç½®
     mChildWindow->setSize("90%", "90%");
     mChildWindow->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
     mChildWindow->setTitle(mGame->GetLoc()->Get("TITLE_QUICK_LOAD"));
     mGui->add(mChildWindow);
 
-    // UIƒŒƒCƒAƒEƒg
-    // qƒEƒBƒ“ƒhƒE‚ÌƒTƒCƒY
+    // UIãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆ
+    // å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚µã‚¤ã‚º
     sf::Vector2f childWindowSize{ mChildWindow->getSize().x, mChildWindow->getSize().y };
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒŠƒXƒg‚ğƒTƒ€ƒlƒCƒ‹Œ`®‚Å‘S‚Ä•\¦
-    //@ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğƒQ[ƒ€ƒNƒ‰ƒX‚©‚çæ“¾
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ãƒªã‚¹ãƒˆã‚’ã‚µãƒ ãƒã‚¤ãƒ«å½¢å¼ã§å…¨ã¦è¡¨ç¤º
+    //ã€€ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’ã‚²ãƒ¼ãƒ ã‚¯ãƒ©ã‚¹ã‹ã‚‰å–å¾—
     auto snapshots = mGame->GetSnapshots();
 
-    // ƒTƒ€ƒlƒCƒ‹‚ÌƒŠƒXƒg‚ÌƒEƒBƒWƒFƒbƒg‚Ìİ’è
+    // ã‚µãƒ ãƒã‚¤ãƒ«ã®ãƒªã‚¹ãƒˆã®ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®è¨­å®š
     mThumbnailListBox = tgui::PanelListBox::create();
     mThumbnailListBox->setRenderer(mTheme->getRenderer("PanelListBox"));
     mThumbnailListBox->setSize(childWindowSize.x * 0.4f, childWindowSize.y * 0.85f);
     mThumbnailListBox->setPosition(0, 0);
     mThumbnailListBox->setItemsHeight(mThumbnailListBox->getSize().y * 0.3f);
 
-    // ”Õ–Ê‚ÌƒTƒ€ƒlƒCƒ‹‚Ì•`‰æ”ÍˆÍ
+    // ç›¤é¢ã®ã‚µãƒ ãƒã‚¤ãƒ«ã®æç”»ç¯„å›²
     std::pair<sf::Vector2f, sf::Vector2f> imageBoundingBox{ sf::Vector2f{ 0.0f, 0.0f }, sf::Vector2f{ mThumbnailListBox->getItemsHeight().getValue(), mThumbnailListBox->getItemsHeight().getValue() } };
-    // ƒeƒLƒXƒgƒTƒCƒY
+    // ãƒ†ã‚­ã‚¹ãƒˆã‚µã‚¤ã‚º
     int textSize(16);
 
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ª1‚ÂˆÈã‚ ‚é‚È‚ç‚ÎAƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒCƒ“ƒfƒbƒNƒX‚ğ‚à‚Á‚Æ‚àã‚Ì‚à‚Ì‚Éİ’è‚µ‚Ä‚¨‚­
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆãŒ1ã¤ä»¥ä¸Šã‚ã‚‹ãªã‚‰ã°ã€ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ã‚‚ã£ã¨ã‚‚ä¸Šã®ã‚‚ã®ã«è¨­å®šã—ã¦ãŠã
     if (!snapshots.empty())
     {
-        // ƒCƒ“ƒfƒbƒNƒX‚Í0‚©‚çn‚Ü‚é
+        // ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã¯0ã‹ã‚‰å§‹ã¾ã‚‹
         mSelectedIndex = 0;
 
-        // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚Ìƒ^ƒCƒgƒ‹‚ÆƒRƒƒ“ƒg‚Ì•`‰æ—Ìˆæ‚ÌƒTƒCƒY
+        // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚¿ã‚¤ãƒˆãƒ«ã¨ã‚³ãƒ¡ãƒ³ãƒˆã®æç”»é ˜åŸŸã®ã‚µã‚¤ã‚º
         sf::Vector2f thumbnailTitleSize{ (mThumbnailListBox->getItemsWidth().getValue() - (imageBoundingBox.second.x - imageBoundingBox.first.x)) * 0.95f, static_cast<float>(textSize) * 1.25f };
         sf::Vector2f thumbnailCommentSize{ thumbnailTitleSize.x, (imageBoundingBox.second.y - imageBoundingBox.first.y) * 0.95f - thumbnailTitleSize.y };
 
-        // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚Ìƒ^ƒCƒgƒ‹‚ÆƒRƒƒ“ƒg‚Ì‰ŠúˆÊ’u
+        // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚¿ã‚¤ãƒˆãƒ«ã¨ã‚³ãƒ¡ãƒ³ãƒˆã®åˆæœŸä½ç½®
         sf::Vector2f thumbnailTitleOffset{ imageBoundingBox.second.x + (mThumbnailListBox->getItemsWidth().getValue() - imageBoundingBox.second.x - thumbnailTitleSize.x) / 2.0f, imageBoundingBox.first.y + (mThumbnailListBox->getItemsHeight().getValue() - thumbnailTitleSize.y - thumbnailCommentSize.y) / 2.0f };
         sf::Vector2f thumbnailCommentOffset{ thumbnailTitleOffset.x, thumbnailTitleOffset.y + thumbnailTitleSize.y };
 
-        // ‚à‚µƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒŠƒXƒg‚ªPanelListBox‚Ì•`‰æ—Ìˆæ‚Éû‚Ü‚ç‚È‚¢
-        // (ƒXƒNƒ[ƒ‹ƒo[‚ª•\¦‚³‚ê‚é) ê‡Aƒ^ƒCƒgƒ‹‚ÆƒRƒƒ“ƒg‚Ì•`‰æ—Ìˆæ‚ÌƒTƒCƒY‚ğ’²®
+        // ã‚‚ã—ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ãƒªã‚¹ãƒˆãŒPanelListBoxã®æç”»é ˜åŸŸã«åã¾ã‚‰ãªã„
+        // (ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ãŒè¡¨ç¤ºã•ã‚Œã‚‹) å ´åˆã€ã‚¿ã‚¤ãƒˆãƒ«ã¨ã‚³ãƒ¡ãƒ³ãƒˆã®æç”»é ˜åŸŸã®ã‚µã‚¤ã‚ºã‚’èª¿æ•´
         if ((imageBoundingBox.second.y - imageBoundingBox.first.y) * snapshots.size() > mThumbnailListBox->getSize().y)
         {
             float scrollbarWidth(mThumbnailListBox->getHorizontalScrollbar()->getWidth());
@@ -76,7 +77,7 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
 
         for (int i = 0, size = static_cast<int>(snapshots.size()); i < size; ++i)
         {
-            // sf::Texture‚©‚çtgui::texture‚Ö‚Ì•ÏŠ·
+            // sf::Textureã‹ã‚‰tgui::textureã¸ã®å¤‰æ›
             sf::Texture* currentBoardTex = mGame->GenerateThumbnail(snapshots[i]);
             mThumbnailTextures.emplace_back(currentBoardTex);
             sf::Image tmpImage = currentBoardTex->copyToImage();
@@ -84,32 +85,32 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
             tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
             tgui::Picture::Ptr templatePic = tgui::Picture::create(tmpTGuiTex);
             mBoardPictureMap.emplace(i, templatePic);
-            // ‰æ‘œ‚ÌƒXƒP[ƒŠƒ“ƒO‚ÆƒIƒtƒZƒbƒg‚Ìİ’è
+            // ç”»åƒã®ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ã‚ªãƒ•ã‚»ãƒƒãƒˆã®è¨­å®š
             float scaleFactor(0.0f);
             if ((imageBoundingBox.second.x - imageBoundingBox.first.x) / static_cast<float>(tmpImage.getSize().x) < (imageBoundingBox.second.y - imageBoundingBox.first.y) / static_cast<float>(tmpImage.getSize().y))
             {
-                // ”Õ–Ê‚ª‰¡’·‚Ìê‡
+                // ç›¤é¢ãŒæ¨ªé•·ã®å ´åˆ
                 scaleFactor = (imageBoundingBox.second.x - imageBoundingBox.first.x) / static_cast<float>(tmpImage.getSize().x);
                 templatePic->setSize(tgui::Layout2d{ static_cast<float>(tmpImage.getSize().x) * scaleFactor, static_cast<float>(tmpImage.getSize().y) * scaleFactor });
                 templatePic->setPosition(0.0f, imageBoundingBox.first.y + ((imageBoundingBox.second.y - imageBoundingBox.first.y) - templatePic->getSize().y) / 2.0f);
             }
             else
             {
-                // ”Õ–Ê‚ªc’·‚Ìê‡
+                // ç›¤é¢ãŒç¸¦é•·ã®å ´åˆ
                 scaleFactor = (imageBoundingBox.second.y - imageBoundingBox.first.y) / static_cast<float>(tmpImage.getSize().y);
                 templatePic->setSize(tgui::Layout2d{ static_cast<float>(tmpImage.getSize().x) * scaleFactor, static_cast<float>(tmpImage.getSize().y) * scaleFactor });
                 templatePic->setPosition(imageBoundingBox.first.x + ((imageBoundingBox.second.x - imageBoundingBox.first.x) - templatePic->getSize().x) / 2.0f, 0.0f);
             }
 
-            // ƒeƒLƒXƒg‚ğ•\¦
-            // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚Ì–¼‘O
+            // ãƒ†ã‚­ã‚¹ãƒˆã‚’è¡¨ç¤º
+            // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®åå‰
             auto nameLabel = tgui::Label::create(mGame->GetLoc()->Get("SNAPSHOT_LBL_NAME") + snapshots[i].snapshotName);
             nameLabel->setRenderer(mTheme->getRenderer("Label"));
             nameLabel->setSize(thumbnailTitleSize.x, thumbnailTitleSize.y);
             nameLabel->setPosition(thumbnailTitleOffset.x, thumbnailTitleOffset.y);
             nameLabel->setTextSize(textSize);
             nameLabel->getScrollbar()->setPolicy(tgui::Scrollbar::Policy::Never);
-            // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒRƒƒ“ƒg
+            // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚³ãƒ¡ãƒ³ãƒˆ
             auto commentBox = tgui::TextArea::create();
             mCommentTextAreaMap.emplace(commentBox, snapshots[i].snapshotName);
             commentBox->setRenderer(mTheme->getRenderer("TextArea"));
@@ -118,12 +119,12 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
             commentBox->setTextSize(textSize);
             commentBox->setDefaultText(mGame->GetLoc()->Get("SNAPSHOT_LBL_COMMENT_BOX"));
             commentBox->setText(snapshots[i].snapshotComment);
-            // ƒeƒLƒXƒg•ÏX‚ÉŠO•”•Ï”‚ğXV
+            // ãƒ†ã‚­ã‚¹ãƒˆå¤‰æ›´æ™‚ã«å¤–éƒ¨å¤‰æ•°ã‚’æ›´æ–°
             commentBox->onTextChange([this, commentBox]() {
                 mGame->SetSnapshotComment(mCommentTextAreaMap[commentBox], commentBox->getText().toStdString());
                 });
 
-            // ƒTƒ€ƒlƒCƒ‹ƒŠƒXƒg‚É’Ç‰Á
+            // ã‚µãƒ ãƒã‚¤ãƒ«ãƒªã‚¹ãƒˆã«è¿½åŠ 
             auto templatePanel = mThumbnailListBox->addItem(snapshots[i].snapshotName, i);
             templatePanel->add(templatePic, snapshots[i].snapshotName);
             std::cout << "SnapshotScreen: Add name label -> " << nameLabel->getText() << std::endl;
@@ -134,51 +135,51 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
     }
     mChildWindow->add(mThumbnailListBox);
 
-    // TODO ‘I‘ğ‚³‚ê‚½ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚Ì”Õ–Êî•ñ‚ğqƒEƒBƒ“ƒhƒE‰E‘¤‚É•\¦‚·‚é
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚Ìî•ñ‘S‘Ì‚ğ•\¦‚·‚éƒpƒlƒ‹‚Ìİ’è
+    // TODO é¸æŠã•ã‚ŒãŸã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ç›¤é¢æƒ…å ±ã‚’å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å³å´ã«è¡¨ç¤ºã™ã‚‹
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®æƒ…å ±å…¨ä½“ã‚’è¡¨ç¤ºã™ã‚‹ãƒ‘ãƒãƒ«ã®è¨­å®š
     mRightPanel = tgui::Panel::create();
     mRightPanel->setRenderer(mTheme->getRenderer("Panel"));
     mRightPanel->setSize(mChildWindow->getSize().x - mThumbnailListBox->getSize().x, mThumbnailListBox->getSize().y);
     mRightPanel->setPosition(mThumbnailListBox->getPosition().x + mThumbnailListBox->getSize().x, mThumbnailListBox->getPosition().y);
     mChildWindow->add(mRightPanel);
 
-    // ”Õ–Ê‚ğ•\¦‚·‚éƒsƒNƒ`ƒƒƒEƒBƒWƒFƒbƒg
+    // ç›¤é¢ã‚’è¡¨ç¤ºã™ã‚‹ãƒ”ã‚¯ãƒãƒ£ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆ
     mSelectedPreview = tgui::Picture::create();
     mSelectedPreview->setRenderer(mTheme->getRenderer("Picture"));
-    // ‰æ‘œ‚ÌƒXƒP[ƒŠƒ“ƒO‚ÆƒIƒtƒZƒbƒg‚Ìİ’è
+    // ç”»åƒã®ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ã‚ªãƒ•ã‚»ãƒƒãƒˆã®è¨­å®š
     float scaleFactor(0.0f);
     sf::Vector2f rightPanelPictureBoundSize{ mRightPanel->getSize().x, mRightPanel->getSize().y * 0.8f };
     auto thumbnailTextureSize(mGame->GetThumbnailSize());
     if (rightPanelPictureBoundSize.x / static_cast<float>(thumbnailTextureSize.x) < rightPanelPictureBoundSize.y / static_cast<float>(thumbnailTextureSize.y))
     {
-        // ”Õ–Ê‚ª‰¡’·‚Ìê‡
+        // ç›¤é¢ãŒæ¨ªé•·ã®å ´åˆ
         scaleFactor = rightPanelPictureBoundSize.x / static_cast<float>(thumbnailTextureSize.x);
         mSelectedPreview->setSize(tgui::Layout2d{ static_cast<float>(thumbnailTextureSize.x) * scaleFactor, static_cast<float>(thumbnailTextureSize.y) * scaleFactor });
         mSelectedPreview->setPosition(0.0f, (rightPanelPictureBoundSize.y - mSelectedPreview->getSize().y) / 2.0f);
     }
     else
     {
-        // ”Õ–Ê‚ªc’·‚Ìê‡
+        // ç›¤é¢ãŒç¸¦é•·ã®å ´åˆ
         scaleFactor = rightPanelPictureBoundSize.y / static_cast<float>(thumbnailTextureSize.y);
         mSelectedPreview->setSize(tgui::Layout2d{ static_cast<float>(thumbnailTextureSize.x) * scaleFactor, static_cast<float>(thumbnailTextureSize.y) * scaleFactor });
         mSelectedPreview->setPosition((rightPanelPictureBoundSize.x - mSelectedPreview->getSize().x) / 2.0f, 0.0f);
     }
     mRightPanel->add(mSelectedPreview);
 
-    // î•ñ•\¦—pƒpƒlƒ‹ (”Õ–ÊƒvƒŒƒrƒ…[‚Ì‰º‚É•\¦)
+    // æƒ…å ±è¡¨ç¤ºç”¨ãƒ‘ãƒãƒ« (ç›¤é¢ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã®ä¸‹ã«è¡¨ç¤º)
     mInfoPanel = tgui::Panel::create();
     mInfoPanel->setRenderer(mTheme->getRenderer("Panel"));
     mInfoPanel->setPosition(0.0f, mSelectedPreview->getSize().y);
     mInfoPanel->setSize(mRightPanel->getSize().x, mRightPanel->getSize().y - mSelectedPreview->getSize().y);
     mRightPanel->add(mInfoPanel);
 
-    // mInfoPanel“à•”‚ÌƒEƒBƒWƒFƒbƒg‚ğì¬
+    // mInfoPanelå†…éƒ¨ã®ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’ä½œæˆ
     float infoPanelHeight = mInfoPanel->getSize().y;
-    float labelHeight = infoPanelHeight / 3.0f; // ƒpƒlƒ‹‚Ì‚‚³‚ğ3•ªŠ„
+    float labelHeight = infoPanelHeight / 3.0f; // ãƒ‘ãƒãƒ«ã®é«˜ã•ã‚’3åˆ†å‰²
 
     mInfoStepsLabel = tgui::Label::create(mGame->GetLoc()->Get("LBL_MOVES"));
     mInfoStepsLabel->setRenderer(mTheme->getRenderer("Label"));
-    mInfoStepsLabel->setPosition(mInfoPanel->getSize().x * 0.025f, 0); // 1s–Ú
+    mInfoStepsLabel->setPosition(mInfoPanel->getSize().x * 0.025f, 0); // 1è¡Œç›®
     mInfoStepsLabel->setSize(mInfoPanel->getSize().x * 0.95, labelHeight);
     mInfoStepsLabel->setTextSize(textSize);
     mInfoStepsLabel->setVerticalAlignment(tgui::VerticalAlignment::Center);
@@ -186,7 +187,7 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
 
     mInfoGoaledLabel = tgui::Label::create(mGame->GetLoc()->Get("LBL_GOALED_BAGGAGES"));
     mInfoGoaledLabel->setRenderer(mTheme->getRenderer("Label"));
-    mInfoGoaledLabel->setPosition(mInfoPanel->getSize().x * 0.025f, labelHeight); // 2s–Ú
+    mInfoGoaledLabel->setPosition(mInfoPanel->getSize().x * 0.025f, labelHeight); // 2è¡Œç›®
     mInfoGoaledLabel->setSize(mInfoPanel->getSize().x * 0.95f, labelHeight);
     mInfoGoaledLabel->setTextSize(textSize);
     mInfoGoaledLabel->setVerticalAlignment(tgui::VerticalAlignment::Center);
@@ -194,59 +195,59 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
 
     mInfoTimeLabel = tgui::Label::create(mGame->GetLoc()->Get("SNAPSHOT_LBL_SAVE_TIME"));
     mInfoTimeLabel->setRenderer(mTheme->getRenderer("Label"));
-    mInfoTimeLabel->setPosition(mInfoPanel->getSize().x * 0.025f, labelHeight * 2); // 3s–Ú
+    mInfoTimeLabel->setPosition(mInfoPanel->getSize().x * 0.025f, labelHeight * 2); // 3è¡Œç›®
     mInfoTimeLabel->setSize(mInfoPanel->getSize().x * 0.95f, labelHeight);
     mInfoTimeLabel->setTextSize(textSize);
     mInfoTimeLabel->setVerticalAlignment(tgui::VerticalAlignment::Center);
     mInfoPanel->add(mInfoTimeLabel);
 
-    // Šeíƒ{ƒ^ƒ“‚Ì’Ç‰Á
-    // ƒEƒBƒ“ƒhƒE‚ğ•Â‚¶‚éƒ{ƒ^ƒ“
+    // å„ç¨®ãƒœã‚¿ãƒ³ã®è¿½åŠ 
+    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’é–‰ã˜ã‚‹ãƒœã‚¿ãƒ³
     mCloseButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_CLOSE"));
     mCloseButton->setRenderer(mTheme->getRenderer("Button"));
     mCloseButton->setSize(120, 30);
     mCloseButton->setPosition(childWindowSize.x - mCloseButton->getSize().x - 20, childWindowSize.y * 0.85f + (childWindowSize.y * 0.15f - mCloseButton->getSize().y) / 2.0f);
     mChildWindow->add(mCloseButton);
 
-    // ‘I‘ğ‚³‚ê‚½ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğíœ‚·‚éƒ{ƒ^ƒ“
+    // é¸æŠã•ã‚ŒãŸã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’å‰Šé™¤ã™ã‚‹ãƒœã‚¿ãƒ³
     mRemoveButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_REMOVE"));
     mRemoveButton->setRenderer(mTheme->getRenderer("Button"));
     mRemoveButton->setSize(120, 30);
     mRemoveButton->setPosition(mCloseButton->getPosition().x - mRemoveButton->getSize().x - 20, mCloseButton->getPosition().y);
     mChildWindow->add(mRemoveButton);
 
-    // ‘I‘ğ‚³‚ê‚½ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğ“K—p‚·‚éƒ{ƒ^ƒ“
+    // é¸æŠã•ã‚ŒãŸã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’é©ç”¨ã™ã‚‹ãƒœã‚¿ãƒ³
     mApplyButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_APPLY"));
     mApplyButton->setRenderer(mTheme->getRenderer("Button"));
     mApplyButton->setSize(120, 30);
     mApplyButton->setPosition(mRemoveButton->getPosition().x - mApplyButton->getSize().x - 20, mCloseButton->getPosition().y);
     mChildWindow->add(mApplyButton);
 
-    // --- 8. ƒVƒOƒiƒ‹iƒCƒxƒ“ƒgj‚Ìİ’è ---
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒŠƒXƒg‚©‚ç‚Ç‚ê‚©1‚Â‚ª‘I‘ğ‚³‚ê‚½ê‡‚ÍƒCƒ“ƒfƒbƒNƒX‚ğØ‚è‘Ö‚¦A‰E‘¤‚ÌƒvƒŒƒrƒ…[‚ğXV
+    // --- 8. ã‚·ã‚°ãƒŠãƒ«ï¼ˆã‚¤ãƒ™ãƒ³ãƒˆï¼‰ã®è¨­å®š ---
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ãƒªã‚¹ãƒˆã‹ã‚‰ã©ã‚Œã‹1ã¤ãŒé¸æŠã•ã‚ŒãŸå ´åˆã¯ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’åˆ‡ã‚Šæ›¿ãˆã€å³å´ã®ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’æ›´æ–°
     mThumbnailListBox->onItemSelect([this]() {
         mSelectedIndex = mThumbnailListBox->getSelectedItemIndex();
 
         if (mSelectedIndex != -1)
         {
-            // 1. ƒvƒŒƒrƒ…[‰æ‘œ‚ğXV (Šù‘¶‚ÌƒR[ƒh)
+            // 1. ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ç”»åƒã‚’æ›´æ–° (æ—¢å­˜ã®ã‚³ãƒ¼ãƒ‰)
             auto originalTexture = mBoardPictureMap.at(mSelectedIndex)->getRenderer()->getTexture();
             mSelectedPreview->getRenderer()->setTexture(originalTexture);
             std::cout << "SnapshotScreen: Apply index[" << mSelectedIndex << "] RightPanel preview!" << std::endl;
 
-            // 2. ŠY“–‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒgƒf[ƒ^‚ğæ“¾
+            // 2. è©²å½“ã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
             const auto& snapshot = mGame->GetSnapshots()[mSelectedIndex];
 
-            // 3. Šeƒ‰ƒxƒ‹‚ÌƒeƒLƒXƒg‚ğİ’è
+            // 3. å„ãƒ©ãƒ™ãƒ«ã®ãƒ†ã‚­ã‚¹ãƒˆã‚’è¨­å®š
             mInfoStepsLabel->setText(mGame->GetLoc()->Get("LBL_MOVES") + std::to_string(snapshot.stepCount));
             mInfoTimeLabel->setText(mGame->GetLoc()->Get("SNAPSHOT_LBL_SAVE_TIME") + snapshot.timestamp);
 
-            // 4. ƒS[ƒ‹’B¬”‚ğŒvZ
+            // 4. ã‚´ãƒ¼ãƒ«é”æˆæ•°ã‚’è¨ˆç®—
             int goaledCount = 0;
             const auto& goalPos = mGame->GetGoalPos();
             for (const auto& bPos : snapshot.baggagePositions)
             {
-                // ƒS[ƒ‹À•WƒŠƒXƒg‚É‰×•¨‚ÌÀ•W‚ªŠÜ‚Ü‚ê‚Ä‚¢‚é‚©ƒ`ƒFƒbƒN
+                // ã‚´ãƒ¼ãƒ«åº§æ¨™ãƒªã‚¹ãƒˆã«è·ç‰©ã®åº§æ¨™ãŒå«ã¾ã‚Œã¦ã„ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
                 if (std::find(goalPos.begin(), goalPos.end(), bPos) != goalPos.end())
                 {
                     goaledCount++;
@@ -256,23 +257,23 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
         }
         else
         {
-            // ‘I‘ğ‚ªŠO‚ê‚½‚çƒeƒNƒXƒ`ƒƒ‚ÆƒeƒLƒXƒg‚ğƒŠƒZƒbƒg
+            // é¸æŠãŒå¤–ã‚ŒãŸã‚‰ãƒ†ã‚¯ã‚¹ãƒãƒ£ã¨ãƒ†ã‚­ã‚¹ãƒˆã‚’ãƒªã‚»ãƒƒãƒˆ
             ReleasePreview();
             std::cout << "SnapshotScreen: Apply empty RightPanel preview!" << std::endl;
         }
 
         });
 
-    // qƒEƒBƒ“ƒhƒE‚ğ•Â‚¶‚éƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚é‚©AqƒEƒBƒ“ƒhƒE‚ªÁ‚³‚ê‚½ê‡‚Í–{ƒCƒ“ƒXƒ^ƒ“ƒX‚ğ”jŠü
+    // å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’é–‰ã˜ã‚‹ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚Œã‚‹ã‹ã€å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒæ¶ˆã•ã‚ŒãŸå ´åˆã¯æœ¬ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã‚’ç ´æ£„
     mCloseButton->onPress([this]() { this->Close(); });
     mChildWindow->onClose([this]() { this->Close(); });
 
-    // ‘I‘ğ‚³‚ê‚½ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğíœ‚·‚éƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½ê‡Aƒ_ƒCƒAƒƒO‚ÅƒvƒŒƒCƒ„[‚ÉŠm”F‚ğs‚Á‚Ä‚©‚çƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğíœ‚·‚é
+    // é¸æŠã•ã‚ŒãŸã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’å‰Šé™¤ã™ã‚‹ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸå ´åˆã€ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã§ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã«ç¢ºèªã‚’è¡Œã£ã¦ã‹ã‚‰ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’å‰Šé™¤ã™ã‚‹
     mRemoveButton->onPress([this]() {
         int mSelectedIndex(mThumbnailListBox->getSelectedItemIndex());
-        if (mSelectedIndex == -1) return; // ‰½‚à‘I‘ğ‚³‚ê‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+        if (mSelectedIndex == -1) return; // ä½•ã‚‚é¸æŠã•ã‚Œã¦ã„ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 
-        // --- 1. Šm”Fƒ_ƒCƒAƒƒO‚ğì¬ ---
+        // --- 1. ç¢ºèªãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’ä½œæˆ ---
         auto messageBox = tgui::MessageBox::create();
         messageBox->setRenderer(mTheme->getRenderer("MessageBox"));
         messageBox->setTitle(mGame->GetLoc()->Get("SNAPSHOT_DIALOG_DELETE_TITLE"));
@@ -281,15 +282,15 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
         messageBox->addButton(mGame->GetLoc()->Get("BTN_NO"));
         messageBox->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
 
-        // ƒ_ƒCƒAƒƒOˆÈŠO‚ÌƒEƒBƒWƒFƒbƒg‚ğ–³Œø‰»‚·‚é
+        // ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ä»¥å¤–ã®ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’ç„¡åŠ¹åŒ–ã™ã‚‹
         mThumbnailListBox->setEnabled(false);
         mCloseButton->setEnabled(false);
         mRemoveButton->setEnabled(false);
         mApplyButton->setEnabled(false);
 
-        // --- 2. ƒ_ƒCƒAƒƒO‚Ìƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½‚Ìˆ— ---
+        // --- 2. ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã®ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸæ™‚ã®å‡¦ç† ---
         messageBox->onButtonPress([this, mSelectedIndex, messageBox](const tgui::String& button) {
-            // ƒEƒBƒWƒFƒbƒg‚Ì–³Œø‰»‚ğ‰ğœ
+            // ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®ç„¡åŠ¹åŒ–ã‚’è§£é™¤
             mThumbnailListBox->setEnabled(true);
             mCloseButton->setEnabled(true);
             mRemoveButton->setEnabled(true);
@@ -297,37 +298,37 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
 
             if (button == mGame->GetLoc()->Get("BTN_YES"))
             {
-                // --- 3. íœˆ—‚ÌÀs ---
-                // a. Game–{‘Ì‚©‚çƒXƒiƒbƒvƒVƒ‡ƒbƒgƒf[ƒ^‚ğíœ
+                // --- 3. å‰Šé™¤å‡¦ç†ã®å®Ÿè¡Œ ---
+                // a. Gameæœ¬ä½“ã‹ã‚‰ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆãƒ‡ãƒ¼ã‚¿ã‚’å‰Šé™¤
                 mGame->RemoveSnapshot(mSelectedIndex);
                 std::cout << "SnapshotScreen: Removed snapshot in Game class!" << std::endl;
 
-                // b. ƒTƒ€ƒlƒCƒ‹ƒeƒNƒXƒ`ƒƒ‚ğ‰ğ•ú (ƒƒ‚ƒŠƒŠ[ƒN–h~)
+                // b. ã‚µãƒ ãƒã‚¤ãƒ«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’è§£æ”¾ (ãƒ¡ãƒ¢ãƒªãƒªãƒ¼ã‚¯é˜²æ­¢)
                 auto tmpTexture = mThumbnailTextures[mSelectedIndex];
                 mThumbnailTextures.erase(mThumbnailTextures.begin() + mSelectedIndex);
                 delete tmpTexture;
                 std::cout << "SnapshotScreen: Removed snapshot texture!" << std::endl;
 
-                // c. TGUI‚ÌƒŠƒXƒg‚©‚ç€–Ú‚ğíœ
+                // c. TGUIã®ãƒªã‚¹ãƒˆã‹ã‚‰é …ç›®ã‚’å‰Šé™¤
                 mThumbnailListBox->removeItemByIndex(mSelectedIndex);
 
-                // --- íœ‚³‚ê‚½€–Ú‚æ‚èŒã‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒCƒ“ƒfƒbƒNƒX‚ğ‹l‚ß‚é ---
+                // --- å‰Šé™¤ã•ã‚ŒãŸé …ç›®ã‚ˆã‚Šå¾Œã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’è©°ã‚ã‚‹ ---
                 std::map<int, tgui::Picture::Ptr> newBoardPictureMap;
                 for (auto& [idx, pic] : mBoardPictureMap)
                 {
                     if (idx < mSelectedIndex)
                     {
-                        newBoardPictureMap[idx] = pic; // ‚»‚Ì‚Ü‚Ü
+                        newBoardPictureMap[idx] = pic; // ãã®ã¾ã¾
                     }
                     else if (idx > mSelectedIndex)
                     {
-                        newBoardPictureMap[idx - 1] = pic; // 1‚Â‘O‚É‹l‚ß‚é
+                        newBoardPictureMap[idx - 1] = pic; // 1ã¤å‰ã«è©°ã‚ã‚‹
                     }
                 }
                 mBoardPictureMap.swap(newBoardPictureMap);
                 std::cout << "SnapshotScreen: Swaped board picture map!" << std::endl;
 
-                // ƒRƒƒ“ƒgƒ}ƒbƒv‚È‚ÇAindex‚Æ‘Î‰‚·‚é‘¼‚Ì\‘¢‘Ì‚à“¯—l‚ÉXV
+                // ã‚³ãƒ¡ãƒ³ãƒˆãƒãƒƒãƒ—ãªã©ã€indexã¨å¯¾å¿œã™ã‚‹ä»–ã®æ§‹é€ ä½“ã‚‚åŒæ§˜ã«æ›´æ–°
                 std::map<tgui::TextArea::Ptr, std::string> newCommentTextAreaMap;
                 int newIndex = 0;
                 for (int i = 0; i < mThumbnailListBox->getItemCount(); ++i)
@@ -346,26 +347,26 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
                 mCommentTextAreaMap.swap(newCommentTextAreaMap);
                 std::cout << "SnapshotScreen: Swaped comment text area map!" << std::endl;
 
-                // --- ‘I‘ğó‘Ô‚ğƒŠƒZƒbƒg ---
+                // --- é¸æŠçŠ¶æ…‹ã‚’ãƒªã‚»ãƒƒãƒˆ ---
                 this->mSelectedIndex = -1;
                 mThumbnailListBox->setSelectedItemByIndex(-1);
                 std::cout << "SnapshotScreen: Removed snapshot in SnapshotScreen class!" << std::endl;
             }
 
-            // Yesƒ{ƒ^ƒ“‚Å‚àNoƒ{ƒ^ƒ“‚Å‚àƒ_ƒCƒAƒƒO‚ğÁ‹
+            // Yesãƒœã‚¿ãƒ³ã§ã‚‚Noãƒœã‚¿ãƒ³ã§ã‚‚ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’æ¶ˆå»
             mGui->remove(messageBox);
             });
 
-        // --- 4. ƒ_ƒCƒAƒƒO‚ğ•\¦ ---
-        // mChildWindow‚É’Ç‰Á‚·‚é‚Ì‚Å‚Í‚È‚­AmGui‚ÌƒgƒbƒvƒŒƒxƒ‹‚É’Ç‰Á
+        // --- 4. ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤º ---
+        // mChildWindowã«è¿½åŠ ã™ã‚‹ã®ã§ã¯ãªãã€mGuiã®ãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã«è¿½åŠ 
         mGui->add(messageBox);
         });
 
-    // ‘I‘ğ‚³‚ê‚½ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğ“K—p‚·‚éƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½ê‡Aƒ_ƒCƒAƒƒO‚ÅƒvƒŒƒCƒ„[‚ÉŒ»İ‚Ì”Õ–Ê‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğ•Û‘¶‚·‚é‚©Šm”F‚ğs‚Á‚Ä‚©‚ç“K—pˆ—‚ğs‚¤
+    // é¸æŠã•ã‚ŒãŸã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’é©ç”¨ã™ã‚‹ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸå ´åˆã€ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã§ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã«ç¾åœ¨ã®ç›¤é¢ã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’ä¿å­˜ã™ã‚‹ã‹ç¢ºèªã‚’è¡Œã£ã¦ã‹ã‚‰é©ç”¨å‡¦ç†ã‚’è¡Œã†
     mApplyButton->onPress([this]() {
-        if (mSelectedIndex == -1) return; // ‰½‚à‘I‘ğ‚³‚ê‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+        if (mSelectedIndex == -1) return; // ä½•ã‚‚é¸æŠã•ã‚Œã¦ã„ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 
-        // --- 1. Šm”Fƒ_ƒCƒAƒƒO‚ğì¬ ---
+        // --- 1. ç¢ºèªãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’ä½œæˆ ---
         auto messageBox = tgui::MessageBox::create();
         messageBox->setRenderer(mTheme->getRenderer("MessageBox"));
         messageBox->setTitle(mGame->GetLoc()->Get("SNAPSHOT_DIALOG_APPLY_TITLE"));
@@ -375,40 +376,40 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
         messageBox->addButton(mGame->GetLoc()->Get("BTN_CANCEL"));
         messageBox->setPosition("(&.width - width) / 2", "(&.height - height) / 2");
 
-        // ƒ_ƒCƒAƒƒOˆÈŠO‚ÌƒEƒBƒWƒFƒbƒg‚ğ–³Œø‰»‚·‚é
+        // ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ä»¥å¤–ã®ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’ç„¡åŠ¹åŒ–ã™ã‚‹
         mThumbnailListBox->setEnabled(false);
         mCloseButton->setEnabled(false);
         mRemoveButton->setEnabled(false);
         mApplyButton->setEnabled(false);
 
-        // --- 2. ƒ_ƒCƒAƒƒO‚Ìƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½‚Ìˆ— ---
+        // --- 2. ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã®ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸæ™‚ã®å‡¦ç† ---
         messageBox->onButtonPress([this, messageBox](const tgui::String& button) {
             if (button == mGame->GetLoc()->Get("SNAPSHOT_DIALOG_APPLY_BTN_SAVE_RESTORE"))
             {
-                // --- 3. Œ»İ‚Ì”Õ–Ê‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğ’Ç‰Á‚·‚éˆ—‚ÌÀs ---
-                // a. Game–{‘Ì‚©‚çƒXƒiƒbƒvƒVƒ‡ƒbƒg’Ç‰Á‚Ìƒ_ƒCƒAƒƒO‚ğŠJ‚­
+                // --- 3. ç¾åœ¨ã®ç›¤é¢ã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’è¿½åŠ ã™ã‚‹å‡¦ç†ã®å®Ÿè¡Œ ---
+                // a. Gameæœ¬ä½“ã‹ã‚‰ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆè¿½åŠ ã®ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’é–‹ã
                 mChildSnapshotDialog = new SnapshotDialog(mGame, mWindow);
                 mChildSnapshotDialog->SetParentManager(this);
 
-                // b. Œ»İ‚Ì”Õ–Ê‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğ•Û‘¶’†‚Ìó‘Ô‚É‘JˆÚ
+                // b. ç¾åœ¨ã®ç›¤é¢ã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’ä¿å­˜ä¸­ã®çŠ¶æ…‹ã«é·ç§»
                 mIsSavingCurrentSnapshot = true;
             }
             else if (button == mGame->GetLoc()->Get("SNAPSHOT_DIALOG_APPLY_BTN_RESTORE_ONLY"))
             {
-                // u“K—p‚Ì‚İv
-                // 1. Game‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg•œŒ³‹@”\‚ğŒÄ‚Ño‚·
+                // ã€Œé©ç”¨ã®ã¿ã€
+                // 1. Gameã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆå¾©å…ƒæ©Ÿèƒ½ã‚’å‘¼ã³å‡ºã™
                 mGame->RestoreSnapshot(mSelectedIndex);
 
-                // 2. SnapshotScreen‚ğ•Â‚¶‚é
+                // 2. SnapshotScreenã‚’é–‰ã˜ã‚‹
                 this->Close();
             }
             else if (button == mGame->GetLoc()->Get("BTN_CANCEL"))
             {
-                // ƒ_ƒCƒAƒƒO‚ğÁ‹
+                // ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’æ¶ˆå»
                 mGui->remove(messageBox);
                 messageBox->close();
 
-                // ƒEƒBƒWƒFƒbƒg‚Ì–³Œø‰»‚ğ‰ğœ
+                // ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®ç„¡åŠ¹åŒ–ã‚’è§£é™¤
                 mThumbnailListBox->setEnabled(true);
                 mCloseButton->setEnabled(true);
                 mRemoveButton->setEnabled(true);
@@ -416,20 +417,20 @@ SnapshotScreen::SnapshotScreen(Game* game, sf::RenderWindow* window)
             }
             });
 
-        // --- 4. ƒ_ƒCƒAƒƒO‚ğ•\¦ ---
-        // mChildWindow‚É’Ç‰Á‚·‚é‚Ì‚Å‚Í‚È‚­AmGui‚ÌƒgƒbƒvƒŒƒxƒ‹‚É’Ç‰Á
+        // --- 4. ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤º ---
+        // mChildWindowã«è¿½åŠ ã™ã‚‹ã®ã§ã¯ãªãã€mGuiã®ãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã«è¿½åŠ 
         mGui->add(messageBox);
         });
 }
 
 SnapshotScreen::~SnapshotScreen()
 {
-    // ƒQ[ƒ€‚ÌUIƒXƒ^ƒbƒN‚©‚ç©•ª‚ğíœ‚·‚éˆ—‚ÍGame::UpdateGame()‚Ås‚í‚ê‚é
+    // ã‚²ãƒ¼ãƒ ã®UIã‚¹ã‚¿ãƒƒã‚¯ã‹ã‚‰è‡ªåˆ†ã‚’å‰Šé™¤ã™ã‚‹å‡¦ç†ã¯Game::UpdateGame()ã§è¡Œã‚ã‚Œã‚‹
 
-    // ƒQ[ƒ€‚Ìó‘Ô‚ğƒvƒŒƒC’†‚É–ß‚·
+    // ã‚²ãƒ¼ãƒ ã®çŠ¶æ…‹ã‚’ãƒ—ãƒ¬ã‚¤ä¸­ã«æˆ»ã™
     mGame->SetState(Game::GameState::EGamePlay);
 
-    // •Û‚µ‚Ä‚¢‚½ƒTƒ€ƒlƒCƒ‹ƒeƒNƒXƒ`ƒƒ‚ğ‚·‚×‚Ä‰ğ•ú
+    // ä¿æŒã—ã¦ã„ãŸã‚µãƒ ãƒã‚¤ãƒ«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ã™ã¹ã¦è§£æ”¾
     for (sf::Texture* tex : mThumbnailTextures)
     {
         delete tex;
@@ -441,16 +442,16 @@ SnapshotScreen::~SnapshotScreen()
 
 void SnapshotScreen::Update(float deltaTime)
 {
-    // Œ»İ‚Ì”Õ–Ê‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ğ•Û‘¶’†‚ÅAƒXƒiƒbƒvƒVƒ‡ƒbƒgƒ_ƒCƒAƒƒO‚ªnullptr‚É‚È‚Á‚½‚çA
-    // •Û‘¶‚ğI—¹‚µ‚½‚Æ”»’f‚µ‚ÄƒNƒ[ƒY‚·‚é
+    // ç¾åœ¨ã®ç›¤é¢ã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã‚’ä¿å­˜ä¸­ã§ã€ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆãƒ€ã‚¤ã‚¢ãƒ­ã‚°ãŒnullptrã«ãªã£ãŸã‚‰ã€
+    // ä¿å­˜ã‚’çµ‚äº†ã—ãŸã¨åˆ¤æ–­ã—ã¦ã‚¯ãƒ­ãƒ¼ã‚ºã™ã‚‹
     if (mIsSavingCurrentSnapshot && mChildSnapshotDialog == nullptr)
     {
-        // Game‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg•œŒ³‹@”\‚ğŒÄ‚Ño‚·
+        // Gameã®ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆå¾©å…ƒæ©Ÿèƒ½ã‚’å‘¼ã³å‡ºã™
         mGame->RestoreSnapshot(mSelectedIndex);
         Close();
     }
 
-    // ƒTƒ€ƒlƒCƒ‹‚ª‘I‘ğ‚³‚ê‚Ä‚¢‚È‚¢ê‡‚ÍƒvƒŒƒrƒ…[‰æ–Ê‚ğÁ‚µ‚Ä‚¨‚­
+    // ã‚µãƒ ãƒã‚¤ãƒ«ãŒé¸æŠã•ã‚Œã¦ã„ãªã„å ´åˆã¯ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ç”»é¢ã‚’æ¶ˆã—ã¦ãŠã
     if (mThumbnailListBox->getSelectedItemIndex() == -1)
     {
         mSelectedIndex = -1;
@@ -460,12 +461,12 @@ void SnapshotScreen::Update(float deltaTime)
 
 void SnapshotScreen::Draw(sf::RenderWindow* window)
 {
-    mGui->draw(); // ‚±‚ÌUI‚ª‚ÂGUI‚ğ•`‰æ
+    mGui->draw(); // ã“ã®UIãŒæŒã¤GUIã‚’æç”»
 }
 
 void SnapshotScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos)
 {
-    mGui->handleEvent(*event); // ‚±‚ÌUI‚ª‚ÂGUI‚ÉƒCƒxƒ“ƒg‚ğ“n‚·
+    mGui->handleEvent(*event); // ã“ã®UIãŒæŒã¤GUIã«ã‚¤ãƒ™ãƒ³ãƒˆã‚’æ¸¡ã™
 }
 
 void SnapshotScreen::Close()
@@ -479,25 +480,25 @@ void SnapshotScreen::AddSnapshot(const std::string& name, const std::string& com
     mGame->AddSnapshot(name, comment);
     auto snapshot = mGame->GetSnapshots().back();
 
-    // ”Õ–Ê‚ÌƒTƒ€ƒlƒCƒ‹‚Ì•`‰æ”ÍˆÍ
+    // ç›¤é¢ã®ã‚µãƒ ãƒã‚¤ãƒ«ã®æç”»ç¯„å›²
     std::pair<sf::Vector2f, sf::Vector2f> imageBoundingBox{ sf::Vector2f{ 0.0f, 0.0f }, sf::Vector2f{ mThumbnailListBox->getItemsHeight().getValue(), mThumbnailListBox->getItemsHeight().getValue() } };
-    // ƒeƒLƒXƒgƒTƒCƒY
+    // ãƒ†ã‚­ã‚¹ãƒˆã‚µã‚¤ã‚º
     int textSize(16);
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚Ìƒ^ƒCƒgƒ‹‚ÆƒRƒƒ“ƒg‚Ì•`‰æ—Ìˆæ‚ÌƒTƒCƒY
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚¿ã‚¤ãƒˆãƒ«ã¨ã‚³ãƒ¡ãƒ³ãƒˆã®æç”»é ˜åŸŸã®ã‚µã‚¤ã‚º
     sf::Vector2f thumbnailTitleSize{ (mThumbnailListBox->getItemsWidth().getValue() - (imageBoundingBox.second.x - imageBoundingBox.first.x)) * 0.95f, static_cast<float>(textSize) * 1.25f };
     sf::Vector2f thumbnailCommentSize{ thumbnailTitleSize.x, (imageBoundingBox.second.y - imageBoundingBox.first.y) * 0.95f - thumbnailTitleSize.y };
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚Ìƒ^ƒCƒgƒ‹‚ÆƒRƒƒ“ƒg‚Ì‰ŠúˆÊ’u
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚¿ã‚¤ãƒˆãƒ«ã¨ã‚³ãƒ¡ãƒ³ãƒˆã®åˆæœŸä½ç½®
     sf::Vector2f thumbnailTitleOffset{ imageBoundingBox.second.x + (mThumbnailListBox->getItemsWidth().getValue() - imageBoundingBox.second.x - thumbnailTitleSize.x) / 2.0f, imageBoundingBox.first.y + (mThumbnailListBox->getItemsHeight().getValue() - thumbnailTitleSize.y - thumbnailCommentSize.y) / 2.0f };
     sf::Vector2f thumbnailCommentOffset{ thumbnailTitleOffset.x, thumbnailTitleOffset.y + thumbnailTitleSize.y };
 
-    // sf::Texture‚©‚çtgui::texture‚Ö‚Ì•ÏŠ·
+    // sf::Textureã‹ã‚‰tgui::textureã¸ã®å¤‰æ›
     sf::Texture* currentBoardTex = mGame->GenerateThumbnail(snapshot);
     mThumbnailTextures.emplace_back(currentBoardTex);
     sf::Image tmpImage = currentBoardTex->copyToImage();
     tgui::Texture tmpTGuiTex{};
     tmpTGuiTex.loadFromPixelData(tmpImage.getSize(), tmpImage.getPixelsPtr());
     tgui::Picture::Ptr templatePic = tgui::Picture::create(tmpTGuiTex);
-    // ‰æ‘œ‚ÌƒXƒP[ƒŠƒ“ƒO‚ÆƒIƒtƒZƒbƒg‚Ìİ’è
+    // ç”»åƒã®ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ã¨ã‚ªãƒ•ã‚»ãƒƒãƒˆã®è¨­å®š
     float scaleFactor(0.0f);
     if ((imageBoundingBox.second.x - imageBoundingBox.first.x) / static_cast<float>(tmpImage.getSize().x) < (imageBoundingBox.second.y - imageBoundingBox.first.y) / static_cast<float>(tmpImage.getSize().y))
     {
@@ -512,15 +513,15 @@ void SnapshotScreen::AddSnapshot(const std::string& name, const std::string& com
         templatePic->setPosition(imageBoundingBox.first.x + ((imageBoundingBox.second.x - imageBoundingBox.first.x) - templatePic->getSize().x) / 2.0f, 0.0f);
     }
 
-    // ƒeƒLƒXƒg‚ğ•\¦
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚Ì–¼‘O
+    // ãƒ†ã‚­ã‚¹ãƒˆã‚’è¡¨ç¤º
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®åå‰
     auto nameLabel = tgui::Label::create("Name: " + snapshot.snapshotName);
     nameLabel->setRenderer(mTheme->getRenderer("Label"));
     nameLabel->setSize(thumbnailTitleSize.x, thumbnailTitleSize.y);
     nameLabel->setPosition(thumbnailTitleOffset.x, thumbnailTitleOffset.y);
     nameLabel->setTextSize(textSize);
     nameLabel->getScrollbar()->setPolicy(tgui::Scrollbar::Policy::Never);
-    // ƒXƒiƒbƒvƒVƒ‡ƒbƒg‚ÌƒRƒƒ“ƒg
+    // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆã®ã‚³ãƒ¡ãƒ³ãƒˆ
     auto commentBox = tgui::TextArea::create();
     mCommentTextAreaMap.emplace(commentBox, snapshot.snapshotName);
     commentBox->setRenderer(mTheme->getRenderer("TextArea"));
@@ -529,12 +530,12 @@ void SnapshotScreen::AddSnapshot(const std::string& name, const std::string& com
     commentBox->setTextSize(textSize);
     commentBox->setDefaultText("Enter a comment for this snapshot.");
     commentBox->setText(snapshot.snapshotComment);
-    // ƒeƒLƒXƒg•ÏX‚ÉŠO•”•Ï”‚ğXV
+    // ãƒ†ã‚­ã‚¹ãƒˆå¤‰æ›´æ™‚ã«å¤–éƒ¨å¤‰æ•°ã‚’æ›´æ–°
     commentBox->onTextChange([this, commentBox]() {
         mGame->SetSnapshotComment(mCommentTextAreaMap[commentBox], commentBox->getText().toStdString());
         });
 
-    // ƒTƒ€ƒlƒCƒ‹ƒŠƒXƒg‚É’Ç‰Á
+    // ã‚µãƒ ãƒã‚¤ãƒ«ãƒªã‚¹ãƒˆã«è¿½åŠ 
     auto templatePanel = mThumbnailListBox->addItem(snapshot.snapshotName, static_cast<int>(mThumbnailListBox->getItemCount()));
     templatePanel->add(templatePic, snapshot.snapshotName);
     std::cout << "SnapshotScreen: Add name label -> " << nameLabel->getText() << std::endl;
@@ -545,10 +546,10 @@ void SnapshotScreen::AddSnapshot(const std::string& name, const std::string& com
 
 void SnapshotScreen::ReleasePreview()
 {
-    // ƒeƒNƒXƒ`ƒƒ‚ğ‰ğœ
+    // ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’è§£é™¤
     mSelectedPreview->getRenderer()->setTexture({});
 
-    // ƒ‰ƒxƒ‹‚àƒNƒŠƒA
+    // ãƒ©ãƒ™ãƒ«ã‚‚ã‚¯ãƒªã‚¢
     mInfoStepsLabel->setText(mGame->GetLoc()->Get("LBL_MOVES"));
     mInfoGoaledLabel->setText(mGame->GetLoc()->Get("LBL_GOALED_BAGGAGES"));
     mInfoTimeLabel->setText(mGame->GetLoc()->Get("SNAPSHOT_LBL_SAVE_TIME"));

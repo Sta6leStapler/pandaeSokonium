@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include "SFML/Graphics.hpp"
@@ -10,21 +11,21 @@ public:
 	Font();
 	~Font();
 
-	// ƒtƒ@ƒCƒ‹‚Ìƒ[ƒh/ƒAƒ“ƒ[ƒh
+	// ãƒ•ã‚¡ã‚¤ãƒ«ã®ãƒ­ãƒ¼ãƒ‰/ã‚¢ãƒ³ãƒ­ãƒ¼ãƒ‰
 	bool Load(const std::string& fileName);
 	void Unload();
 
-	// •¶š—ñ‚ğƒeƒNƒXƒ`ƒƒ‚É•`‰æ
+	// æ–‡å­—åˆ—ã‚’ãƒ†ã‚¯ã‚¹ãƒãƒ£ã«æç”»
 	class sf::Texture* RenderText(const std::string& text, const sf::Color& color = sf::Color::White, int pointSize = 30);
 	class sf::Texture* RenderTextOnCenter(const std::string& text, const sf::Vector2f& boundingBox, const sf::Color& color = sf::Color::White, int pointSize = 30);
 
-	// ƒQƒbƒ^[ƒZƒbƒ^[
+	// ã‚²ãƒƒã‚¿ãƒ¼ã‚»ãƒƒã‚¿ãƒ¼
 	sf::Font* GetFont() const { return mFont.get(); }
 
 private:
-	// ƒtƒHƒ“ƒgƒf[ƒ^
+	// ãƒ•ã‚©ãƒ³ãƒˆãƒ‡ãƒ¼ã‚¿
 	std::unique_ptr<sf::Font> mFont;
-	// ƒ|ƒCƒ“ƒgƒTƒCƒY
+	// ãƒã‚¤ãƒ³ãƒˆã‚µã‚¤ã‚º
 	std::unordered_set<int> mFontSize;
 };
 

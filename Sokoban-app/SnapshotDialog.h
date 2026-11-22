@@ -12,37 +12,37 @@ class Game;
 class SnapshotDialog : public IUIScreen
 {
 public:
-    // @brief ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+    // @brief ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
     SnapshotDialog(Game* game, sf::RenderWindow* window);
 
-    // ƒfƒXƒgƒ‰ƒNƒ^
-    // ƒQ[ƒ€‚Ìˆê’â~‚ğ‰ğœ‚·‚é
+    // ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+    // ã‚²ãƒ¼ãƒ ã®ä¸€æ™‚åœæ­¢ã‚’è§£é™¤ã™ã‚‹
     virtual ~SnapshotDialog();
 
-    // IUIScreenƒCƒ“ƒ^[ƒtƒF[ƒX‚ÌƒI[ƒo[ƒ‰ƒCƒh
+    // IUIScreenã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ã®ã‚ªãƒ¼ãƒãƒ¼ãƒ©ã‚¤ãƒ‰
     void Update(float deltaTime) override;
     void Draw(sf::RenderWindow* window) override;
     void ProcessInput(const sf::Event* event, const sf::Vector2i& mousePos) override;
     UIState GetState() override { return mState; }
     void OnLanguageChanged() override {}
 
-    // ‚±‚ÌUIƒXƒNƒŠ[ƒ“‚ğ•Â‚¶‚é
+    // ã“ã®UIã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚’é–‰ã˜ã‚‹
     void Close();
 
-    // SnapshotScreen‚Ìƒ|ƒCƒ“ƒ^‚ğƒZƒbƒg
+    // SnapshotScreenã®ãƒã‚¤ãƒ³ã‚¿ã‚’ã‚»ãƒƒãƒˆ
     void SetParentManager(class SnapshotScreen* parent) { parentManager = parent; }
 
 private:
     Game* mGame;
-    std::unique_ptr<tgui::Gui> mGui;     // ‚±‚Ìƒ_ƒCƒAƒƒOê—p‚ÌGUIƒCƒ“ƒXƒ^ƒ“ƒX
-    std::unique_ptr<tgui::Theme> mTheme; // Black.txtƒe[ƒ}
-    UIState mState;                      // UI‚Ìó‘Ô (Active, Closing)
+    std::unique_ptr<tgui::Gui> mGui;     // ã“ã®ãƒ€ã‚¤ã‚¢ãƒ­ã‚°å°‚ç”¨ã®GUIã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹
+    std::unique_ptr<tgui::Theme> mTheme; // Black.txtãƒ†ãƒ¼ãƒ
+    UIState mState;                      // UIã®çŠ¶æ…‹ (Active, Closing)
 
-    // TGUIƒEƒBƒWƒFƒbƒg
-    tgui::ChildWindow::Ptr mChildWindow; // ‚·‚×‚Ä‚ÌƒEƒBƒWƒFƒbƒg‚ğŠi”[‚·‚éqƒEƒBƒ“ƒhƒE
-    tgui::EditBox::Ptr mNameBox;         // ƒXƒiƒbƒvƒVƒ‡ƒbƒg–¼‚ğ“ü—Í‚·‚éƒ{ƒbƒNƒX
-    tgui::TextArea::Ptr mCommentBox;      // ƒRƒƒ“ƒg‚ğ“ü—Í‚·‚éƒGƒŠƒA
+    // TGUIã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆ
+    tgui::ChildWindow::Ptr mChildWindow; // ã™ã¹ã¦ã®ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’æ ¼ç´ã™ã‚‹å­ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦
+    tgui::EditBox::Ptr mNameBox;         // ã‚¹ãƒŠãƒƒãƒ—ã‚·ãƒ§ãƒƒãƒˆåã‚’å…¥åŠ›ã™ã‚‹ãƒœãƒƒã‚¯ã‚¹
+    tgui::TextArea::Ptr mCommentBox;      // ã‚³ãƒ¡ãƒ³ãƒˆã‚’å…¥åŠ›ã™ã‚‹ã‚¨ãƒªã‚¢
 
-    // SnapshotScreen‚©‚çŒÄ‚Ño‚µ‚½ê‡Aƒ|ƒCƒ“ƒ^‚ğ•Û‚µ‚Ä‚¨‚­
+    // SnapshotScreenã‹ã‚‰å‘¼ã³å‡ºã—ãŸå ´åˆã€ãƒã‚¤ãƒ³ã‚¿ã‚’ä¿æŒã—ã¦ãŠã
     class SnapshotScreen* parentManager;
 };
