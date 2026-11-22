@@ -21,8 +21,11 @@ void RequireFailure(Action action, const char* message)
 
 int main()
 {
-	const auto root = fs::temp_directory_path() / ("pandae-path-tests-"
+	const auto rawRoot = fs::temp_directory_path() / ("pandae-path-tests-"
 		+ std::to_string(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+	fs::create_directories(rawRoot);
+	// macOS等では /var -> /private/var のシンボリックリンクがあるため、正規化済みパスを基準にする
+	const auto root = fs::canonical(rawRoot);
 	const auto previousDirectory = fs::current_path();
 	try
 	{

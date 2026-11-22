@@ -9,8 +9,6 @@
     {
       "name": "windows-msvc",
       "displayName": "Windows MSVC (FetchContent SFML 2.6.2 + TGUI 1.6.1)",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64",
       "binaryDir": "${sourceDir}/build/windows-msvc",
       "cacheVariables": {
         "PANDAE_BUILD_TESTS": "ON"
@@ -19,8 +17,6 @@
     {
       "name": "windows-msvc-local",
       "displayName": "Windows MSVC (Local include/ & lib/)",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64",
       "binaryDir": "${sourceDir}/build/windows-msvc-local",
       "cacheVariables": {
         "PANDAE_USE_LOCAL_VENDORED_WIN_DEPS": "ON",
