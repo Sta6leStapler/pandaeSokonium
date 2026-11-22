@@ -162,6 +162,8 @@
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="SnapshotScreen.cpp" />
     <ClCompile Include="SolutionCodec.cpp" />
+    <ClCompile Include="SolverRunner.cpp" />
+    <ClCompile Include="SoundManager.cpp" />
     <ClCompile Include="SpriteComponent.cpp" />
     <ClCompile Include="State.cpp" />
     <ClCompile Include="THUD.cpp" />
@@ -179,6 +181,8 @@
     <ClInclude Include="PlatformTime.h" />
     <ClInclude Include="SnapshotDialog.h" />
     <ClInclude Include="SolutionCodec.h" />
+    <ClInclude Include="SolverRunner.h" />
+    <ClInclude Include="SoundManager.h" />
     <ClInclude Include="BackGround.h" />
     <ClInclude Include="Baggage.h" />
     <ClInclude Include="Button.h" />

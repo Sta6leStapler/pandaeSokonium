@@ -53,6 +53,8 @@ Game::Game()
 	, mIsPlayingSolution(false)
 	, mSolutionPlaybackTimer(0.0f)
 	, mLoc(nullptr)
+	, mWasDeadlocked(false)
+	, mWasComplete(false)
 {
 	// 盤面をロードする度に更新するのは以下のメンバ変数
 	// mGenParams.boardSize
@@ -134,6 +136,10 @@ void Game::LoadData()
 	mLoc = new LocalizationManager();
 	if (!mLoc->LoadLanguage(mPaths.Asset("Assets/Languages/jp.txt")))
 		throw std::runtime_error("Failed to load default language"); // デフォルト言語は日本語
+
+	// 効果音を読み込み（音声デバイス非対応環境でも起動は継続）
+	mSoundManager = std::make_unique<SoundManager>();
+	mSoundManager->Initialize(mPaths);
 
 	// ウィンドウのタイトルを設定
 	mWindow->setTitle(mLoc->Get("GAME_TITLE"));
@@ -538,6 +544,12 @@ void Game::UpdateGame()
 
 	// 盤面の更新を行ったので、HUDHelperの内容も更新
 	mHUDHelper->Update();
+	const bool isDeadlockedNow = !mHUDHelper->GetDeadlockedBaggages().empty();
+	if (isDeadlockedNow && !mWasDeadlocked)
+	{
+		PlaySound(SoundManager::SoundEffect::Deadlock);
+	}
+	mWasDeadlocked = isDeadlockedNow;
 
 	mUpdatingActors = false;
 	// アクターの更新はここまで
@@ -629,6 +641,7 @@ sf::Texture* Game::LoadTexture(const std::string& fileName)
 void Game::Shutdown()
 {
 	UnloadData();
+	mSoundManager.reset();
 	mFontTGUI.reset();
 	mTheme.reset();
 	mGui.reset();
@@ -910,6 +923,7 @@ void Game::CallUndo()
 		ClearPushHighlights();
 		ClearPushDirections();
 		mStep--;
+		PlaySound(SoundManager::SoundEffect::Undo);
 		
 	}
 }
@@ -948,6 +962,7 @@ void Game::CallRedo()
 		ClearPushHighlights();
 		ClearPushDirections();
 		mStep++;
+		PlaySound(SoundManager::SoundEffect::Redo);
 	}
 }
 
@@ -1575,6 +1590,12 @@ void Game::ExecuteSolutionStep(const SolutionCodec::SolutionStep& step, bool ani
 		RemoveRedo();
 		AddStep();
 		AddLog(pFrom, pTo, bFrom, bTo, prevDir, nextDir);
+		if (animate)
+		{
+			PlaySound(mBoardState[bTo.y][bTo.x] == '.'
+				? SoundManager::SoundEffect::GoalIn
+				: SoundManager::SoundEffect::Push);
+		}
 	}
 	else
 	{
@@ -1591,6 +1612,10 @@ void Game::ExecuteSolutionStep(const SolutionCodec::SolutionStep& step, bool ani
 		RemoveRedo();
 		AddStep();
 		AddLog(pFrom, pTo, prevDir, nextDir);
+		if (animate)
+		{
+			PlaySound(SoundManager::SoundEffect::Move);
+		}
 	}
 
 	ClearMoveHighlights();
@@ -1977,6 +2002,517 @@ void Game::OpenSolutionDialog(const std::string& initialLurd)
 	}
 }
 
+// =========================================================================
+// 効果音・ライセンス表示・Festival ソルバー関連の実装
+// =========================================================================
+
+void Game::PlaySound(SoundManager::SoundEffect effect)
+{
+	if (mSoundManager)
+	{
+		mSoundManager->Play(effect);
+	}
+}
+
+void Game::DisplayLicenseWindow()
+{
+	CancelAllUIHolds();
+
+	std::string licenseText;
+	try
+	{
+		const auto path = mPaths.Asset("Assets/licenses/THIRD_PARTY_LICENSES.txt");
+		const auto bytes = AppPaths::ReadFile(path);
+		licenseText.assign(bytes.begin(), bytes.end());
+	}
+	catch (const std::exception& error)
+	{
+		licenseText = std::string("Unable to load license file: ") + error.what();
+	}
+
+	bool isOpen = true;
+	auto child = tgui::ChildWindow::create();
+	child->setRenderer(mTheme->getRenderer("ChildWindow"));
+	child->setClientSize({ 820, 560 });
+	child->setPosition((mWindowSize.x - 820) / 2.0f, (mWindowSize.y - 560) / 2.0f);
+	child->setTitle(mLoc->Get("LICENSE_DIALOG_TITLE"));
+	child->onClose([&]() { isOpen = false; });
+	mGui->add(child);
+
+	auto textArea = tgui::TextArea::create();
+	textArea->setRenderer(mTheme->getRenderer("TextArea"));
+	textArea->setPosition(14, 14);
+	textArea->setSize(792, 490);
+	textArea->setTextSize(14);
+	textArea->setReadOnly(true);
+	textArea->setText(licenseText);
+	child->add(textArea);
+
+	auto closeBtn = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
+	closeBtn->setRenderer(mTheme->getRenderer("Button"));
+	closeBtn->setSize(120, 32);
+	closeBtn->setPosition(686, 514);
+	closeBtn->onPress([&]() { isOpen = false; });
+	child->add(closeBtn);
+
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+	while (isOpen)
+	{
+		WaitForNextFrame(ticksCount);
+		ticksCount = mClock.getElapsedTime();
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				isOpen = false;
+				mGameState = GameState::EQuit;
+			}
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+			{
+				isOpen = false;
+			}
+			mGui->handleEvent(event);
+		}
+
+		mWindow->clear();
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
+		mWindow->display();
+	}
+
+	mGui->remove(child);
+	mWindow->setActive(true);
+}
+
+void Game::OpenSolverDialog()
+{
+	CancelAllUIHolds();
+	StopSolutionPlayback();
+
+	SolverRunner runner;
+	bool isDialogOpen = true;
+	bool hasSolvedResult = false;
+	bool solvedFromInitial = false;
+	std::string solvedLurd;
+
+	bool shouldApplyAfterClose = false;
+	bool applyAnimate = true;
+	bool applyHintOnly = false;
+
+	auto child = tgui::ChildWindow::create();
+	child->setRenderer(mTheme->getRenderer("ChildWindow"));
+	child->setClientSize({ 780, 540 });
+	child->setPosition((mWindowSize.x - 780) / 2.0f, (mWindowSize.y - 540) / 2.0f);
+	child->setTitle(mLoc->Get("SOLVER_DIALOG_TITLE"));
+	child->onClose([&]() {
+		runner.Cancel();
+		isDialogOpen = false;
+		});
+	mGui->add(child);
+
+	// 開始状態の選択（現在状態 or 初期状態）
+	auto radioGroup = tgui::RadioButtonGroup::create();
+	auto radioCurrent = tgui::RadioButton::create();
+	radioCurrent->setRenderer(mTheme->getRenderer("RadioButton"));
+	radioCurrent->setText(mLoc->Get("SOLVER_RADIO_CURRENT"));
+	radioCurrent->setPosition(18, 18);
+	radioCurrent->setChecked(true);
+	radioGroup->add(radioCurrent);
+
+	auto radioInitial = tgui::RadioButton::create();
+	radioInitial->setRenderer(mTheme->getRenderer("RadioButton"));
+	radioInitial->setText(mLoc->Get("SOLVER_RADIO_INITIAL"));
+	radioInitial->setPosition(300, 18);
+	radioGroup->add(radioInitial);
+	child->add(radioGroup);
+
+	// 制限時間選択
+	auto timeLabel = tgui::Label::create(mLoc->Get("SOLVER_LBL_TIME_LIMIT"));
+	timeLabel->setRenderer(mTheme->getRenderer("Label"));
+	timeLabel->setPosition(18, 56);
+	timeLabel->setTextSize(15);
+	child->add(timeLabel);
+
+	auto timeCombo = tgui::ComboBox::create();
+	timeCombo->setRenderer(mTheme->getRenderer("ComboBox"));
+	timeCombo->setPosition(170, 52);
+	timeCombo->setSize(120, 28);
+	timeCombo->addItem("10", "10");
+	timeCombo->addItem("30", "30");
+	timeCombo->addItem("60", "60");
+	timeCombo->addItem("180", "180");
+	timeCombo->addItem("300", "300");
+	timeCombo->setSelectedItemById("30");
+	child->add(timeCombo);
+
+	// Festival実行ファイルパス表示 & 選択ボタン
+	auto exeLabel = tgui::Label::create(mLoc->Get("SOLVER_LBL_EXECUTABLE"));
+	exeLabel->setRenderer(mTheme->getRenderer("Label"));
+	exeLabel->setPosition(18, 96);
+	exeLabel->setTextSize(15);
+	child->add(exeLabel);
+
+	auto exeBox = tgui::EditBox::create();
+	exeBox->setRenderer(mTheme->getRenderer("EditBox"));
+	exeBox->setPosition(170, 92);
+	exeBox->setSize(470, 28);
+	exeBox->setReadOnly(true);
+	child->add(exeBox);
+
+	auto statusLabel = tgui::Label::create("");
+	statusLabel->setRenderer(mTheme->getRenderer("Label"));
+	statusLabel->setPosition(18, 174);
+	statusLabel->setSize(744, 30);
+	statusLabel->setTextSize(15);
+	child->add(statusLabel);
+
+	auto resultArea = tgui::TextArea::create();
+	resultArea->setRenderer(mTheme->getRenderer("TextArea"));
+	resultArea->setPosition(18, 210);
+	resultArea->setSize(744, 185);
+	resultArea->setTextSize(15);
+	resultArea->setReadOnly(true);
+	child->add(resultArea);
+
+	auto startStopBtn = tgui::Button::create(mLoc->Get("SOLVER_BTN_START"));
+	startStopBtn->setRenderer(mTheme->getRenderer("Button"));
+	startStopBtn->setPosition(18, 132);
+	startStopBtn->setSize(160, 34);
+	child->add(startStopBtn);
+
+	auto playBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_PLAY"));
+	playBtn->setRenderer(mTheme->getRenderer("Button"));
+	playBtn->setPosition(18, 408);
+	playBtn->setSize(120, 32);
+	playBtn->setEnabled(false);
+	child->add(playBtn);
+
+	auto hintBtn = tgui::Button::create(mLoc->Get("SOLVER_BTN_HINT"));
+	hintBtn->setRenderer(mTheme->getRenderer("Button"));
+	hintBtn->setPosition(148, 408);
+	hintBtn->setSize(130, 32);
+	hintBtn->setEnabled(false);
+	child->add(hintBtn);
+
+	auto applyAllBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_APPLY_ALL"));
+	applyAllBtn->setRenderer(mTheme->getRenderer("Button"));
+	applyAllBtn->setPosition(288, 408);
+	applyAllBtn->setSize(130, 32);
+	applyAllBtn->setEnabled(false);
+	child->add(applyAllBtn);
+
+	auto copyBtn = tgui::Button::create(mLoc->Get("SOLUTION_BTN_COPY"));
+	copyBtn->setRenderer(mTheme->getRenderer("Button"));
+	copyBtn->setPosition(428, 408);
+	copyBtn->setSize(110, 32);
+	copyBtn->setEnabled(false);
+	child->add(copyBtn);
+
+	auto closeBtn = tgui::Button::create(mLoc->Get("BTN_CLOSE"));
+	closeBtn->setRenderer(mTheme->getRenderer("Button"));
+	closeBtn->setPosition(642, 408);
+	closeBtn->setSize(120, 32);
+	closeBtn->onPress([&]() {
+		runner.Cancel();
+		isDialogOpen = false;
+		});
+	child->add(closeBtn);
+
+	// Festival ライセンス・クレジット表記（必須表示）
+	auto creditLabel = tgui::Label::create(mLoc->Get("SOLVER_CREDIT"));
+	creditLabel->setRenderer(mTheme->getRenderer("Label"));
+	creditLabel->setPosition(18, 494);
+	creditLabel->setSize(560, 28);
+	creditLabel->setTextSize(14);
+	child->add(creditLabel);
+
+	auto licenseBtn = tgui::Button::create(mLoc->Get("BTN_LICENSES"));
+	licenseBtn->setRenderer(mTheme->getRenderer("Button"));
+	licenseBtn->setPosition(612, 488);
+	licenseBtn->setSize(150, 32);
+	licenseBtn->onPress([&]() {
+		PlaySound(SoundManager::SoundEffect::ButtonClick);
+		child->setVisible(false);
+		DisplayLicenseWindow();
+		child->setVisible(true);
+		});
+	child->add(licenseBtn);
+
+	std::filesystem::path resolvedExe;
+	auto refreshExecutableStatus = [&]() {
+		resolvedExe = mPaths.FindFestivalExecutable(mCustomFestivalPath);
+		if (!resolvedExe.empty())
+		{
+			exeBox->setText(resolvedExe.u8string());
+			statusLabel->setText(mLoc->Get("SOLVER_STATUS_READY"));
+			startStopBtn->setEnabled(true);
+		}
+		else
+		{
+			exeBox->setText("");
+			statusLabel->setText(mLoc->Get("SOLVER_STATUS_NOT_FOUND"));
+			startStopBtn->setEnabled(false);
+		}
+	};
+	refreshExecutableStatus();
+
+	// 任意のFestival実行ファイルを選択するボタン
+	auto browseBtn = tgui::Button::create(mLoc->Get("SOLVER_BTN_BROWSE"));
+	browseBtn->setRenderer(mTheme->getRenderer("Button"));
+	browseBtn->setPosition(650, 92);
+	browseBtn->setSize(112, 28);
+	browseBtn->onPress([&]() {
+		if (runner.GetState() == SolverRunner::SolverState::Running)
+		{
+			return;
+		}
+		bool fdOpen = true;
+		auto fd = tgui::FileDialog::create();
+		fd->setRenderer(mTheme->getRenderer("FileDialog"));
+		fd->setTitle(mLoc->Get("SOLVER_BROWSE_TITLE"));
+		fd->setFileMustExist(true);
+		fd->setConfirmButtonText(mLoc->Get("BTN_OK"));
+		fd->setCancelButtonText(mLoc->Get("BTN_CANCEL"));
+		fd->onFileSelect([&](const tgui::String& selectedPath) {
+			mCustomFestivalPath = std::filesystem::u8path(selectedPath.toStdString());
+			fdOpen = false;
+			});
+		fd->onCancel([&]() { fdOpen = false; });
+		fd->onClose([&]() { fdOpen = false; });
+		fd->setSize(620, 420);
+		fd->setPosition((mWindowSize.x - 620) / 2.0f, (mWindowSize.y - 420) / 2.0f);
+
+		child->setVisible(false);
+		mGui->add(fd);
+		sf::Time fdTicks = mClock.getElapsedTime();
+		while (fdOpen)
+		{
+			WaitForNextFrame(fdTicks);
+			fdTicks = mClock.getElapsedTime();
+			sf::Event ev;
+			while (mWindow->pollEvent(ev))
+			{
+				if (ev.type == sf::Event::Closed)
+				{
+					fdOpen = false;
+					isDialogOpen = false;
+					mGameState = GameState::EQuit;
+				}
+				mGui->handleEvent(ev);
+			}
+			mWindow->clear();
+			DrawSprites();
+			DrawUI();
+			mGui->draw();
+			mWindow->display();
+		}
+		mGui->remove(fd);
+		child->setVisible(true);
+		refreshExecutableStatus();
+		});
+	child->add(browseBtn);
+
+	auto setActionButtonsEnabled = [&](bool enabled) {
+		playBtn->setEnabled(enabled);
+		hintBtn->setEnabled(enabled);
+		applyAllBtn->setEnabled(enabled);
+		copyBtn->setEnabled(enabled);
+	};
+
+	playBtn->onPress([&]() {
+		if (!hasSolvedResult || solvedLurd.empty()) return;
+		shouldApplyAfterClose = true;
+		applyAnimate = true;
+		applyHintOnly = false;
+		isDialogOpen = false;
+		});
+	hintBtn->onPress([&]() {
+		if (!hasSolvedResult || solvedLurd.empty()) return;
+		shouldApplyAfterClose = true;
+		applyAnimate = true;
+		applyHintOnly = true;
+		isDialogOpen = false;
+		});
+	applyAllBtn->onPress([&]() {
+		if (!hasSolvedResult || solvedLurd.empty()) return;
+		shouldApplyAfterClose = true;
+		applyAnimate = false;
+		applyHintOnly = false;
+		isDialogOpen = false;
+		});
+	copyBtn->onPress([&]() {
+		if (!hasSolvedResult || solvedLurd.empty()) return;
+		sf::Clipboard::setString(solvedLurd);
+		statusLabel->setText(mLoc->Get("SOLUTION_MSG_COPIED"));
+		});
+
+	bool wasRunning = false;
+	startStopBtn->onPress([&]() {
+		if (runner.GetState() == SolverRunner::SolverState::Running)
+		{
+			runner.Cancel();
+			return;
+		}
+		if (resolvedExe.empty())
+		{
+			refreshExecutableStatus();
+			return;
+		}
+
+		const bool useInitial = radioInitial->isChecked();
+		const std::vector<std::string> boardToSolve = useInitial
+			? mInitBoardData.at(mCurrentKey)
+			: GetBoardStateWithObjects();
+
+		// 既に全荷物がゴール上にあるか事前確認
+		bool alreadyComplete = true;
+		for (const auto& row : boardToSolve)
+		{
+			if (row.find('$') != std::string::npos)
+			{
+				alreadyComplete = false;
+				break;
+			}
+		}
+		if (alreadyComplete)
+		{
+			statusLabel->setText(mLoc->Get("SOLVER_STATUS_ALREADY_COMPLETE"));
+			return;
+		}
+
+		int timeLimitSec = 30;
+		try
+		{
+			const std::string idStr = timeCombo->getSelectedItemId().toStdString();
+			if (!idStr.empty())
+			{
+				timeLimitSec = std::stoi(idStr);
+			}
+		}
+		catch (const std::exception&)
+		{
+			timeLimitSec = 30;
+		}
+
+		hasSolvedResult = false;
+		solvedLurd.clear();
+		solvedFromInitial = useInitial;
+		resultArea->setText("");
+		setActionButtonsEnabled(false);
+
+		SolverRunner::SolverRequest req{};
+		req.mExecutablePath = resolvedExe;
+		req.mStartBoard = boardToSolve;
+		req.mTimeLimitSeconds = timeLimitSec;
+		req.mCores = 1;
+
+		if (runner.Start(req))
+		{
+			wasRunning = true;
+			startStopBtn->setText(mLoc->Get("SOLVER_BTN_STOP"));
+			radioCurrent->setEnabled(false);
+			radioInitial->setEnabled(false);
+			timeCombo->setEnabled(false);
+			browseBtn->setEnabled(false);
+		}
+		});
+
+	mWindow->setActive(false);
+	sf::Time ticksCount = mClock.getElapsedTime();
+	while (isDialogOpen)
+	{
+		WaitForNextFrame(ticksCount);
+		ticksCount = mClock.getElapsedTime();
+
+		const auto state = runner.GetState();
+		if (state == SolverRunner::SolverState::Running)
+		{
+			std::ostringstream oss;
+			oss << mLoc->Get("SOLVER_STATUS_RUNNING")
+				<< std::fixed << std::setprecision(1) << runner.GetElapsedSeconds() << "s";
+			statusLabel->setText(oss.str());
+		}
+		else if (wasRunning)
+		{
+			wasRunning = false;
+			startStopBtn->setText(mLoc->Get("SOLVER_BTN_START"));
+			radioCurrent->setEnabled(true);
+			radioInitial->setEnabled(true);
+			timeCombo->setEnabled(true);
+			browseBtn->setEnabled(true);
+
+			const auto res = runner.GetResult();
+			if (res.mState == SolverRunner::SolverState::Succeeded)
+			{
+				hasSolvedResult = true;
+				solvedLurd = res.mNormalizedLurd;
+				std::ostringstream summary;
+				summary << mLoc->Get("SOLVER_STATUS_SOLVED") << "  "
+					<< mLoc->Get("SOLVER_LBL_RESULT_MOVES") << res.mMoveCount << "  "
+					<< mLoc->Get("SOLVER_LBL_RESULT_PUSHES") << res.mPushCount << "  "
+					<< mLoc->Get("SOLVER_LBL_RESULT_TIME") << std::fixed << std::setprecision(2) << res.mElapsedSeconds << "s";
+				statusLabel->setText(summary.str());
+				resultArea->setText(solvedLurd);
+				setActionButtonsEnabled(true);
+				PlaySound(SoundManager::SoundEffect::GoalIn);
+			}
+			else if (res.mState == SolverRunner::SolverState::TimedOut)
+			{
+				statusLabel->setText(mLoc->Get("SOLVER_STATUS_TIMEOUT"));
+			}
+			else if (res.mState == SolverRunner::SolverState::Cancelled)
+			{
+				statusLabel->setText(mLoc->Get("SOLVER_STATUS_CANCELLED"));
+			}
+			else
+			{
+				statusLabel->setText(mLoc->Get("SOLVER_STATUS_FAILED") + res.mErrorMessage);
+			}
+		}
+
+		sf::Event event;
+		while (mWindow->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				runner.Cancel();
+				isDialogOpen = false;
+				mGameState = GameState::EQuit;
+			}
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+			{
+				runner.Cancel();
+				isDialogOpen = false;
+			}
+			mGui->handleEvent(event);
+		}
+
+		mWindow->clear();
+		DrawSprites();
+		DrawUI();
+		mGui->draw();
+		mWindow->display();
+	}
+
+	runner.Cancel();
+	mGui->remove(child);
+	mWindow->setActive(true);
+
+	if (shouldApplyAfterClose && !solvedLurd.empty())
+	{
+		const std::string toApply = applyHintOnly ? solvedLurd.substr(0, 1) : solvedLurd;
+		std::string err;
+		if (!ApplyLurdSolution(toApply, solvedFromInitial, applyAnimate, err))
+		{
+			ShowFileError(err);
+		}
+	}
+}
+
 void Game::AddSnapshot(const std::string& name, const std::string& comment)
 {
 	GameSnapshot snapshot;
@@ -2343,6 +2879,12 @@ void Game::HasComplete()
 			break;
 		}
 	}
+
+	if (mIsComplete && !mWasComplete)
+	{
+		PlaySound(SoundManager::SoundEffect::Clear);
+	}
+	mWasComplete = mIsComplete;
 }
 
 void Game::DisplayResult()
@@ -3189,6 +3731,8 @@ void Game::SelectBoards()
 void Game::ChangeBoard()
 {
 	StopSolutionPlayback();
+	mWasDeadlocked = false;
+	mWasComplete = false;
 	// ログをファイル出力してから全て消す
 	// TODO 盤面が変わった後のものになってしまっている
 	OutputLogs();

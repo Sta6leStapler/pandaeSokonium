@@ -175,6 +175,7 @@ void Player::Update(float deltaTime)
 					mGame->RemoveRedo();
 					mGame->AddStep();
 					mGame->AddLog(currentPos, nextPos, prevDirection, mDirection);
+					mGame->PlaySound(SoundManager::SoundEffect::Move);
 				}
 				else // ケースB: 移動先に荷物がある
 				{
@@ -214,7 +215,18 @@ void Player::Update(float deltaTime)
 							mGame->RemoveRedo();
 							mGame->AddStep();
 							mGame->AddLog(currentPos, nextPos, baggageLastPos, baggageDest, prevDirection, mDirection);
+							mGame->PlaySound(boardState[baggageDest.y][baggageDest.x] == '.'
+								? SoundManager::SoundEffect::GoalIn
+								: SoundManager::SoundEffect::Push);
 						}
+						else
+						{
+							mGame->PlaySound(SoundManager::SoundEffect::Blocked);
+						}
+					}
+					else
+					{
+						mGame->PlaySound(SoundManager::SoundEffect::Blocked);
 					}
 				}
 				// --- 荷物ロジックここまで ---
@@ -294,6 +306,7 @@ void Player::Update(float deltaTime)
 					mGame->RemoveRedo();
 					mGame->AddStep();
 					mGame->AddLog(lastPos, destination, prevDirection, mDirection);
+					mGame->PlaySound(SoundManager::SoundEffect::Move);
 					prevDirection = mDirection;
 				}
 				else
@@ -342,9 +355,20 @@ void Player::Update(float deltaTime)
 						mGame->RemoveRedo();
 						mGame->AddStep();
 						mGame->AddLog(lastPos, destination, baggageLastPos, baggageDestination, prevDirection, mDirection);
+						mGame->PlaySound(boardState[baggageDestination.y][baggageDestination.x] == '.'
+							? SoundManager::SoundEffect::GoalIn
+							: SoundManager::SoundEffect::Push);
 						prevDirection = mDirection;
 					}
+					else
+					{
+						mGame->PlaySound(SoundManager::SoundEffect::Blocked);
+					}
 				}
+			}
+			else
+			{
+				mGame->PlaySound(SoundManager::SoundEffect::Blocked);
 			}
 		}
 	}

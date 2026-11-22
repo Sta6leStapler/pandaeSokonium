@@ -80,6 +80,17 @@ int main()
 			"App bundle resources");
 		Require(bundlePaths.GetBoardsDirectory() == mac / "UserData" / "Boards", "Save outside app bundle");
 
+		// Festival実行ファイル探索テスト
+#if defined(_WIN32)
+		const std::string festivalName = "festival.exe";
+#else
+		const std::string festivalName = "festival";
+#endif
+		Require(paths.FindFestivalExecutable().empty(), "Missing festival executable returns empty path");
+		fs::create_directories(portable / "Tools");
+		AppPaths::WriteFile(portable / "Tools" / festivalName, "dummy");
+		Require(paths.FindFestivalExecutable() == portable / "Tools" / festivalName, "Find bundled festival in Tools/");
+
 		const auto blocked = root / "blocked";
 		fs::create_directories(blocked / "Assets");
 		AppPaths::WriteFile(blocked / "game", "");

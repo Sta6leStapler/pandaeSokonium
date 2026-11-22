@@ -64,11 +64,14 @@ void AppPaths::Initialize(const std::filesystem::path& executable)
 {
 	const auto directory = std::filesystem::canonical(executable).parent_path();
 	auto portableDirectory = directory;
+	mExecutableDirectory = directory;
 	mAssetDirectory = directory / "Assets";
+	mToolsDirectory = directory / "Tools";
 	if (directory.filename() == "MacOS" && directory.parent_path().filename() == "Contents"
 		&& directory.parent_path().parent_path().extension() == ".app")
 	{
 		mAssetDirectory = directory.parent_path() / "Resources" / "Assets";
+		mToolsDirectory = directory.parent_path() / "Resources" / "Tools";
 		portableDirectory = directory.parent_path().parent_path().parent_path();
 	}
 
@@ -77,8 +80,37 @@ void AppPaths::Initialize(const std::filesystem::path& executable)
 
 	mBoardsDirectory = portableDirectory / "UserData" / "Boards";
 	mLogsDirectory = portableDirectory / "UserData" / "Logs";
+	mUserToolsDirectory = portableDirectory / "UserData" / "Tools";
 	std::filesystem::create_directories(mBoardsDirectory);
 	std::filesystem::create_directories(mLogsDirectory);
+}
+
+std::filesystem::path AppPaths::FindFestivalExecutable(const std::filesystem::path& customPath) const
+{
+#if defined(_WIN32)
+	const std::string exeName = "festival.exe";
+#else
+	const std::string exeName = "festival";
+#endif
+	if (!customPath.empty() && std::filesystem::is_regular_file(customPath))
+	{
+		return customPath;
+	}
+
+	const std::vector<std::filesystem::path> candidates = {
+		mToolsDirectory / exeName,
+		mExecutableDirectory / exeName,
+		mUserToolsDirectory / exeName
+	};
+	for (const auto& candidate : candidates)
+	{
+		std::error_code ec;
+		if (std::filesystem::is_regular_file(candidate, ec))
+		{
+			return candidate;
+		}
+	}
+	return {};
 }
 
 std::filesystem::path AppPaths::Asset(const std::string& name) const

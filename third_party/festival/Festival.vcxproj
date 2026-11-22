@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{8A71D9F4-3B2E-4C11-9D6A-5E4F8C2B1A09}</ProjectGuid>
+    <RootNamespace>Festival</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <TargetName>festival</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\Tools\</OutDir>
+    <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;FESTIVAL_NONINTERACTIVE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS;FESTIVAL_NONINTERACTIVE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;FESTIVAL_NONINTERACTIVE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;FESTIVAL_NONINTERACTIVE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="advanced_deadlock.cpp" />
+    <ClCompile Include="advisors.cpp" />
+    <ClCompile Include="bfs.cpp" />
+    <ClCompile Include="biconnect.cpp" />
+    <ClCompile Include="board.cpp" />
+    <ClCompile Include="corral.cpp" />
+    <ClCompile Include="corral_deadlock.cpp" />
+    <ClCompile Include="cycle_deadlock.cpp" />
+    <ClCompile Include="deadlock.cpp" />
+    <ClCompile Include="deadlock_cache.cpp" />
+    <ClCompile Include="deadlock_utils.cpp" />
+    <ClCompile Include="debug.cpp" />
+    <ClCompile Include="diags.cpp" />
+    <ClCompile Include="distance.cpp" />
+    <ClCompile Include="dragonfly.cpp" />
+    <ClCompile Include="dragonfly_queue.cpp" />
+    <ClCompile Include="engine.cpp" />
+    <ClCompile Include="envelope.cpp" />
+    <ClCompile Include="fixed_boxes.cpp" />
+    <ClCompile Include="girl.cpp" />
+    <ClCompile Include="global.cpp" />
+    <ClCompile Include="graph.cpp" />
+    <ClCompile Include="greedy.cpp" />
+    <ClCompile Include="helper.cpp" />
+    <ClCompile Include="heuristics.cpp" />
+    <ClCompile Include="hf_search.cpp" />
+    <ClCompile Include="holes.cpp" />
+    <ClCompile Include="hotspot.cpp" />
+    <ClCompile Include="hungarian.cpp" />
+    <ClCompile Include="imagine.cpp" />
+    <ClCompile Include="io.cpp" />
+    <ClCompile Include="k_dist_deadlock.cpp" />
+    <ClCompile Include="lurd.cpp" />
+    <ClCompile Include="match_distance.cpp" />
+    <ClCompile Include="max_dist.cpp" />
+    <ClCompile Include="mini_search.cpp" />
+    <ClCompile Include="moves.cpp" />
+    <ClCompile Include="mpdb2.cpp" />
+    <ClCompile Include="naive.cpp" />
+    <ClCompile Include="oop.cpp" />
+    <ClCompile Include="opener.cpp" />
+    <ClCompile Include="order.cpp" />
+    <ClCompile Include="overlap.cpp" />
+    <ClCompile Include="packing_search.cpp" />
+    <ClCompile Include="park_order.cpp" />
+    <ClCompile Include="perimeter.cpp" />
+    <ClCompile Include="positions.cpp" />
+    <ClCompile Include="preprocess.cpp" />
+    <ClCompile Include="queue.cpp" />
+    <ClCompile Include="request.cpp" />
+    <ClCompile Include="rooms.cpp" />
+    <ClCompile Include="rooms_deadlock.cpp" />
+    <ClCompile Include="score.cpp" />
+    <ClCompile Include="snail.cpp" />
+    <ClCompile Include="sokoban_solver.cpp" />
+    <ClCompile Include="sol.cpp" />
+    <ClCompile Include="stuck.cpp" />
+    <ClCompile Include="textfile.cpp" />
+    <ClCompile Include="tree.cpp" />
+    <ClCompile Include="util.cpp" />
+    <ClCompile Include="wobblers.cpp" />
+    <ClCompile Include="xy_deadlock.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="advanced_deadlock.h" />
+    <ClInclude Include="advisors.h" />
+    <ClInclude Include="bfs.h" />
+    <ClInclude Include="biconnect.h" />
+    <ClInclude Include="board.h" />
+    <ClInclude Include="corral.h" />
+    <ClInclude Include="corral_deadlock.h" />
+    <ClInclude Include="cycle_deadlock.h" />
+    <ClInclude Include="deadlock.h" />
+    <ClInclude Include="deadlock_cache.h" />
+    <ClInclude Include="deadlock_utils.h" />
+    <ClInclude Include="debug.h" />
+    <ClInclude Include="diags.h" />
+    <ClInclude Include="distance.h" />
+    <ClInclude Include="dragonfly.h" />
+    <ClInclude Include="dragonfly_queue.h" />
+    <ClInclude Include="engine.h" />
+    <ClInclude Include="envelope.h" />
+    <ClInclude Include="fixed_boxes.h" />
+    <ClInclude Include="girl.h" />
+    <ClInclude Include="global.h" />
+    <ClInclude Include="graph.h" />
+    <ClInclude Include="greedy.h" />
+    <ClInclude Include="helper.h" />
+    <ClInclude Include="heuristics.h" />
+    <ClInclude Include="hf_search.h" />
+    <ClInclude Include="holes.h" />
+    <ClInclude Include="hotspot.h" />
+    <ClInclude Include="hungarian.h" />
+    <ClInclude Include="imagine.h" />
+    <ClInclude Include="interseting.h" />
+    <ClInclude Include="io.h" />
+    <ClInclude Include="k_dist_deadlock.h" />
+    <ClInclude Include="match_distance.h" />
+    <ClInclude Include="max_dist.h" />
+    <ClInclude Include="mini_search.h" />
+    <ClInclude Include="moves.h" />
+    <ClInclude Include="mpdb2.h" />
+    <ClInclude Include="naive.h" />
+    <ClInclude Include="oop.h" />
+    <ClInclude Include="opener.h" />
+    <ClInclude Include="order.h" />
+    <ClInclude Include="overlap.h" />
+    <ClInclude Include="packing_search.h" />
+    <ClInclude Include="park_order.h" />
+    <ClInclude Include="perimeter.h" />
+    <ClInclude Include="positions.h" />
+    <ClInclude Include="preprocess.h" />
+    <ClInclude Include="queue.h" />
+    <ClInclude Include="request.h" />
+    <ClInclude Include="rooms.h" />
+    <ClInclude Include="rooms_deadlock.h" />
+    <ClInclude Include="score.h" />
+    <ClInclude Include="snail.h" />
+    <ClInclude Include="sol.h" />
+    <ClInclude Include="stuck.h" />
+    <ClInclude Include="textfile.h" />
+    <ClInclude Include="tree.h" />
+    <ClInclude Include="util.h" />
+    <ClInclude Include="wobblers.h" />
+    <ClInclude Include="xy_deadlock.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

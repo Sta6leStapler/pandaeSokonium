@@ -29,7 +29,10 @@
 - キーボード入力によるプレイヤーの操作
 - マウス入力によるプレイヤーの操作
 - Undo / Redo 機能
-- テキストファイルによる盤面の読み込み
+- `.sok` / `.xsb` / `.txt` 形式の盤面読み込み（複数レベルコレクション対応）と書き出し
+- `rludRLUD`（LURD）形式の解手順出力（コピー・保存）および読み込み（アニメーション再生・一括適用）
+- 倉庫番ソルバー **Festival 3.1**（Yaron Shoham 氏、MIT License）のゲーム内統合（現在状態／初期状態から非同期解析・中断・1手ヒント・自動再生）
+- 効果音（SE）の再生とポーズメニューからの音量調整・ミュート切替
 - 自動生成された問題のセーブ機能
 - プレイヤーの操作ログの出力機能
 - 簡易的な詰み検出
@@ -58,7 +61,8 @@
   - [SFML](https://www.sfml-dev.org/) 2.6.2 (Simple and Fast Multimedia Library)
   - [TGUI](https://tgui.eu/) 1.6.1 (SFML 用 GUI ライブラリ)
 - **フォント**: BIZ UDPGothic (`BIZUDPGothic-Regular.ttf`, SIL Open Font License 1.1)
-- **ライセンス**: サードパーティライブラリ・フォントのライセンス全文は `THIRD_PARTY_LICENSES.txt` を参照してください。
+- **同梱ソルバー**: [Festival 3.1](https://festival-solver.site/) by Yaron Shoham（MIT License、`third_party/festival/`）
+- **ライセンス**: サードパーティライブラリ・フォント・Festival ソルバーのライセンス全文は `THIRD_PARTY_LICENSES.txt`（およびゲーム内ポーズメニュー / ソルバー画面の「ライセンス情報」）を参照してください。
 - **ビルド環境**: Visual Studio 2022（`.sln` / `.vcxproj`）または CMake 3.20+（Windows / Linux / macOS）
 
 ---

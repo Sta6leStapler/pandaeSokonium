@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(PANDAE_USE_SYSTEM_DEPS "Use pre-installed SFML 2.6 and TGUI 1.6 via find_package" OFF)
 option(PANDAE_USE_LOCAL_VENDORED_WIN_DEPS "Use local include/ and lib/ directories on Windows MSVC" OFF)
 option(PANDAE_BUILD_TESTS "Build unit tests" ON)
+option(PANDAE_BUILD_FESTIVAL "Build bundled Festival 3.1 Sokoban solver (MIT License)" ON)
 option(PANDAE_MACOS_BUNDLE "Build macOS .app bundle" OFF)
 
 # Visual Studio (.vcxproj) と同期管理するソース一覧
@@ -36,6 +37,8 @@ set(PANDAE_SOURCES
     Sokoban-app/SnapshotDialog.cpp
     Sokoban-app/SnapshotScreen.cpp
     Sokoban-app/SolutionCodec.cpp
+    Sokoban-app/SolverRunner.cpp
+    Sokoban-app/SoundManager.cpp
     Sokoban-app/SpriteComponent.cpp
     Sokoban-app/State.cpp
     Sokoban-app/THUD.cpp
@@ -130,8 +133,10 @@ endif()
 # ポータブル配置用にビルド後へAssetsをコピー
 if(APPLE AND PANDAE_MACOS_BUNDLE)
     set(PANDAE_ASSET_DST "$<TARGET_BUNDLE_CONTENT_DIR:Sokoban-app>/Resources/Assets")
+    set(PANDAE_TOOLS_DST "$<TARGET_BUNDLE_CONTENT_DIR:Sokoban-app>/Resources/Tools")
 else()
     set(PANDAE_ASSET_DST "$<TARGET_FILE_DIR:Sokoban-app>/Assets")
+    set(PANDAE_TOOLS_DST "$<TARGET_FILE_DIR:Sokoban-app>/Tools")
 endif()
 
 add_custom_command(TARGET Sokoban-app POST_BUILD
@@ -141,6 +146,18 @@ add_custom_command(TARGET Sokoban-app POST_BUILD
         -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CopyAssets.cmake
     COMMENT "Copying portable Assets to output directory"
 )
+
+if(PANDAE_BUILD_FESTIVAL)
+    add_subdirectory(third_party/festival)
+    add_dependencies(Sokoban-app festival)
+    add_custom_command(TARGET Sokoban-app POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${PANDAE_TOOLS_DST}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:festival>"
+            "${PANDAE_TOOLS_DST}/$<TARGET_FILE_NAME:festival>"
+        COMMENT "Copying bundled Festival solver to Tools directory"
+    )
+endif()
 
 # Windows 実行時DLLコピー（OpenALおよびローカルDLL利用時）
 if(WIN32)
@@ -208,4 +225,25 @@ if(PANDAE_BUILD_TESTS)
         target_compile_options(SolutionCodecTests PRIVATE -Wall -Wextra)
     endif()
     add_test(NAME SolutionCodecTests COMMAND SolutionCodecTests)
+
+    add_executable(SolverRunnerTests
+        Sokoban-app/AppPaths.cpp
+        Sokoban-app/SolutionCodec.cpp
+        Sokoban-app/SolverRunner.cpp
+        Sokoban-app/tests/SolverRunnerTests.cpp
+    )
+    target_include_directories(SolverRunnerTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Sokoban-app")
+    if(MSVC)
+        target_compile_options(SolverRunnerTests PRIVATE /utf-8 /W3 /permissive-)
+    else()
+        find_package(Threads REQUIRED)
+        target_compile_options(SolverRunnerTests PRIVATE -Wall -Wextra)
+        target_link_libraries(SolverRunnerTests PRIVATE Threads::Threads)
+    endif()
+    if(PANDAE_BUILD_FESTIVAL)
+        add_dependencies(SolverRunnerTests festival)
+        add_test(NAME SolverRunnerTests COMMAND SolverRunnerTests "$<TARGET_FILE:festival>")
+    else()
+        add_test(NAME SolverRunnerTests COMMAND SolverRunnerTests)
+    endif()
 endif()

@@ -277,9 +277,24 @@ THUD::THUD(Game* game, sf::RenderWindow* window)
 	mSolutionButton->onPress([=]() {
 		std::cout << "Solution dialog action triggered!" << std::endl;
 		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
+		mGame->PlaySound(SoundManager::SoundEffect::ButtonClick);
 		mGame->OpenSolutionDialog();
 		});
 	mGui->add(mSolutionButton);
+
+	// Solver (Festival) ボタン
+	mSolverButton = tgui::Button::create(mGame->GetLoc()->Get("BTN_SOLVER"));
+	mSolverButton->setPosition(listBoxMargin.x + (mGameSystemButtonSize.x + mButtonMergin.x) * 3, mButtonInitialPos.y + (mGameSystemButtonSize.y + mButtonMergin.y));
+	mSolverButton->setSize(mGameSystemButtonSize.x, mGameSystemButtonSize.y);
+	mSolverButton->setRenderer(mGame->GetTheme().getRenderer("Button"));
+	mSolverButton->setTextSize(16);
+	mSolverButton->onPress([=]() {
+		std::cout << "Solver dialog action triggered!" << std::endl;
+		if (mGame->IsAnyMovementAnimating()) return; // アニメーション中は無視
+		mGame->PlaySound(SoundManager::SoundEffect::ButtonClick);
+		mGame->OpenSolverDialog();
+		});
+	mGui->add(mSolverButton);
 
 	// ゲームシステム関連のボタンの配置ここまで
 	
@@ -429,6 +444,7 @@ void THUD::OnLanguageChanged()
 	mEditModeButton->setText(mGame->GetLoc()->Get("TITLE_EDITOR"));
 	mHelpButton->setText(mGame->GetLoc()->Get("BTN_HELP"));
 	mSolutionButton->setText(mGame->GetLoc()->Get("BTN_SOLUTION"));
+	mSolverButton->setText(mGame->GetLoc()->Get("BTN_SOLVER"));
 
 	// ListBox内の静的なラベル（Movesなど）の更新
 	// Update()内で毎フレーム changeItemById されているため、

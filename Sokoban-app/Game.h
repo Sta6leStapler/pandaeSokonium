@@ -13,6 +13,8 @@
 #include "LocalizationManager.h"
 #include "AppPaths.h"
 #include "SolutionCodec.h"
+#include "SoundManager.h"
+#include "SolverRunner.h"
 
 #include "TGUI/TGUI.hpp"
 #include "TGUI/Backend/SFML-Graphics.hpp"
@@ -151,6 +153,16 @@ public:
 	// 現在の盤面に同梱されていた解手順一覧を取得する
 	const std::vector<std::string>& GetCurrentLevelSolutions() const { return mCurrentLevelSolutions; }
 	// 解手順 (rludRLUD) 関連の関数ここまで
+
+	// ソルバー・効果音・ライセンス表示関連の関数
+	// 効果音を再生する
+	void PlaySound(SoundManager::SoundEffect effect);
+	SoundManager* GetSoundManager() const { return mSoundManager.get(); }
+	// 倉庫番ソルバー (Festival) ダイアログを表示する
+	void OpenSolverDialog();
+	// サードパーティライセンス情報ダイアログを表示する
+	void DisplayLicenseWindow();
+	// ソルバー・効果音・ライセンス表示関連の関数ここまで
 
 	// スナップショット関連の関数
 	// 現在のゲーム状態をスナップショットとして保存
@@ -424,4 +436,8 @@ private:
 	// UIの文字列を管理
 	class LocalizationManager* mLoc;
 	AppPaths mPaths;
+	std::unique_ptr<SoundManager> mSoundManager;
+	std::filesystem::path mCustomFestivalPath;
+	bool mWasDeadlocked;
+	bool mWasComplete;
 };
