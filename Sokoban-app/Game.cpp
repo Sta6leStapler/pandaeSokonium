@@ -20,6 +20,7 @@
 #include "BoardConfigDialog.h"
 #include "LevelFormat.h"
 #include "LocalizationManager.h"
+#include "PlatformInput.h"
 #include "PlatformTime.h"
 
 #include "SFML/Window/Clipboard.hpp"
@@ -93,8 +94,11 @@ bool Game::Initialize()
 	try
 	{
 		mPaths.Initialize();
-		mWindow = new sf::RenderWindow(sf::VideoMode(static_cast<unsigned int>(mWindowSize.x),
-			static_cast<unsigned int>(mWindowSize.y)), "SFML Window", sf::Style::Titlebar | sf::Style::Close);
+		const sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+		const sf::Vector2u initialSize = PlatformInput::ComputeInitialWindowSize(mWindowSize, desktop.width, desktop.height);
+		mWindow = new sf::RenderWindow(sf::VideoMode(initialSize.x, initialSize.y),
+			"SFML Window", sf::Style::Titlebar | sf::Style::Close);
+		mWindow->setView(sf::View(sf::FloatRect(0.0f, 0.0f, mWindowSize.x, mWindowSize.y)));
 		LoadData();
 		mClock.restart();
 		mTicksCount = mClock.getElapsedTime();
@@ -129,8 +133,8 @@ void Game::LoadData()
 		throw std::runtime_error("Failed to load font: " + font_name);
 	}
 	mInfoTxt.setFont(mFontSFML);
-	mInfoTxt.setCharacterSize(mWindow->getSize().y);
-	mInfoTxt.setScale(20.0f / static_cast<float>(mWindow->getSize().y), 20.0f / static_cast<float>(mWindow->getSize().y));
+	mInfoTxt.setCharacterSize(static_cast<unsigned int>(mWindowSize.y));
+	mInfoTxt.setScale(20.0f / mWindowSize.y, 20.0f / mWindowSize.y);
 
 	// UIのテキストを読み込み
 	mLoc = new LocalizationManager();
@@ -397,16 +401,16 @@ void Game::ProcessInput()
 							CallReset();
 						}
 
-						// Ctrl + rで全てリセット
-						if (event.key.control && event.key.code == sf::Keyboard::R)
+						// Ctrl + r (macOSではCmd + rも可) で全てリセット
+						if (PlatformInput::IsCommandModifierPressed(event.key) && event.key.code == sf::Keyboard::R)
 						{
 							// ボタンの長押しを解除
 							CancelAllUIHolds();
 							CallRestart();
 						}
 
-						// Ctrl + s で現在の盤面をセーブ
-						if (event.key.control && event.key.code == sf::Keyboard::S)
+						// Ctrl + s (macOSではCmd + sも可) で現在の盤面をセーブ
+						if (PlatformInput::IsCommandModifierPressed(event.key) && event.key.code == sf::Keyboard::S)
 						{
 							// ボタンの長押しを解除
 							CancelAllUIHolds();
@@ -476,8 +480,9 @@ void Game::ProcessInput()
 		// ゲームプレイ中に使えるUIは未実装
 		if (!mUIStack.empty())// && mGameState != GameState::EUIPaused)
 		{
-			// 一番手前のレイヤのUIの入力処理のみ行う
-			mUIStack.back()->ProcessInput(&event, sf::Mouse::getPosition(*mWindow));
+			// 一番手前のレイヤのUIの入力処理のみ行う（縮小表示時は論理座標へ変換）
+			const sf::Vector2f logicalMouse = MapPixelToLogicalCoords(sf::Mouse::getPosition(*mWindow));
+			mUIStack.back()->ProcessInput(&event, sf::Vector2i{ static_cast<int>(logicalMouse.x), static_cast<int>(logicalMouse.y) });
 		}
 	}
 }
@@ -809,6 +814,15 @@ void Game::AddBoard(const std::string& key, const std::vector<std::string>& line
 		mBoardData.emplace(key, lines);
 		mFilenames.emplace_back(key);
 	}
+}
+
+sf::Vector2f Game::MapPixelToLogicalCoords(const sf::Vector2i& pixelPos) const
+{
+	if (!mWindow)
+	{
+		return sf::Vector2f{ static_cast<float>(pixelPos.x), static_cast<float>(pixelPos.y) };
+	}
+	return mWindow->mapPixelToCoords(pixelPos);
 }
 
 sf::Vector2i Game::ScreenToTileCoords(const sf::Vector2f& screenPos) const

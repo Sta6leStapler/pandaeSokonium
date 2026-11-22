@@ -178,6 +178,7 @@
     <ClInclude Include="LocalizationManager.h" />
     <ClInclude Include="MoveAnimationComponent.h" />
     <ClInclude Include="ParamStruct.h" />
+    <ClInclude Include="PlatformInput.h" />
     <ClInclude Include="PlatformTime.h" />
     <ClInclude Include="SnapshotDialog.h" />
     <ClInclude Include="SolutionCodec.h" />
@@ -212,6 +213,7 @@
           DestinationFiles="@(PortableAsset->'$(OutDir)Assets\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(PortableRuntime)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(SolutionDir)THIRD_PARTY_LICENSES.txt" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
   </Target>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

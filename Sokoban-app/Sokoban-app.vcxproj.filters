@@ -146,6 +146,9 @@
     <ClInclude Include="SpriteComponent.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="PlatformInput.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
     <ClInclude Include="PlatformTime.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>

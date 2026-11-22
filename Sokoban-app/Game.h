@@ -101,6 +101,8 @@ public:
 	// ステップを加算
 	void AddStep() { mStep++; }
 
+	// ウィンドウ上のピクセル座標を論理座標（1600x900基準）へ変換する
+	sf::Vector2f MapPixelToLogicalCoords(const sf::Vector2i& pixelPos) const;
 	// スクリーン座標をタイル座標に変換する
 	sf::Vector2i ScreenToTileCoords(const sf::Vector2f& screenPos) const;
 	// タイル座標をスクリーン座標に変換する

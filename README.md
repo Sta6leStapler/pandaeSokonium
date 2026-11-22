@@ -97,6 +97,21 @@ cmake --build --preset macos-release --parallel
 ctest --preset macos-release
 ```
 
+### ポータブル配布パッケージの生成（Windows / Linux / macOS）
+ビルド後、以下のスクリプトで `UserData/` やデバッグシンボルを除いた配布アーカイブを作成できます（GitHub Actions CI でも 3 OS 分を自動生成・アップロードします）。
+
+```bash
+# Windows 例
+python scripts/package_release.py --platform windows --build-dir build/windows-msvc/Release --out-dir dist
+# Linux 例
+python3 scripts/package_release.py --platform linux --build-dir build/linux-release --out-dir dist
+# macOS 例
+python3 scripts/package_release.py --platform macos --build-dir build/macos-release --out-dir dist
+```
+
+- 保存（`Ctrl+S`）・リスタート（`Ctrl+R`）は、macOS では `Cmd+S` / `Cmd+R` でも操作できます。
+- 画面解像度が `1600x900` 未満の環境では、アスペクト比を維持して初期ウィンドウサイズを自動縮小し、描画・クリック座標をスケーリングします。
+
 ## ビルド手順（Visual Studio 2022）
 
 1. SFML 2.6.2 と TGUI 1.6.1 をダウンロードし、プロジェクトルートの `include/` と `lib/` に配置

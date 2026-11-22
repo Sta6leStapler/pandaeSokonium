@@ -546,7 +546,7 @@ void Player::ProcessInput(const sf::Event* event, const std::map<sf::Keyboard::K
 
 				if (event->mouseButton.button == sf::Mouse::Left)
 				{
-					sf::Vector2f mousePos(static_cast<float>(event->mouseButton.x), static_cast<float>(event->mouseButton.y));
+					sf::Vector2f mousePos = mGame->MapPixelToLogicalCoords(sf::Vector2i{ event->mouseButton.x, event->mouseButton.y });
 					sf::Vector2i clickedTile = mGame->ScreenToTileCoords(mousePos);
 
 					if (clickedTile != sf::Vector2i{ -1, -1 })

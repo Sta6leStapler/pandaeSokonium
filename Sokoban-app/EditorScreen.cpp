@@ -1,5 +1,6 @@
 #include "EditorScreen.h"
 #include "Game.h"
+#include "PlatformInput.h"
 #include "SFML/Graphics.hpp"
 
 #include <algorithm>
@@ -703,8 +704,8 @@ void EditorScreen::ProcessInput(const sf::Event* event, const sf::Vector2i& mous
             }
         }
 
-        // クイックセーブ (Ctrl + S)
-        if (event->key.control && event->key.code == sf::Keyboard::S)
+        // クイックセーブ (Ctrl + S / macOSではCmd + Sも可)
+        if (PlatformInput::IsCommandModifierPressed(event->key) && event->key.code == sf::Keyboard::S)
         {
             // セーブ後にエディタ画面に戻るためにfalse
             PerformSave(false);

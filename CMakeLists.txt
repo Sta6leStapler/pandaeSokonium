@@ -88,6 +88,9 @@ endif()
 
 if(APPLE AND PANDAE_MACOS_BUNDLE)
     add_executable(Sokoban-app MACOSX_BUNDLE ${PANDAE_SOURCES})
+    set_target_properties(Sokoban-app PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Info.plist.in"
+    )
 else()
     add_executable(Sokoban-app ${PANDAE_SOURCES})
 endif()
@@ -130,13 +133,15 @@ else()
     )
 endif()
 
-# ポータブル配置用にビルド後へAssetsをコピー
+# ポータブル配置用にビルド後へAssetsとライセンスをコピー
 if(APPLE AND PANDAE_MACOS_BUNDLE)
     set(PANDAE_ASSET_DST "$<TARGET_BUNDLE_CONTENT_DIR:Sokoban-app>/Resources/Assets")
     set(PANDAE_TOOLS_DST "$<TARGET_BUNDLE_CONTENT_DIR:Sokoban-app>/Resources/Tools")
+    set(PANDAE_LICENSE_DST "$<TARGET_BUNDLE_CONTENT_DIR:Sokoban-app>/Resources")
 else()
     set(PANDAE_ASSET_DST "$<TARGET_FILE_DIR:Sokoban-app>/Assets")
     set(PANDAE_TOOLS_DST "$<TARGET_FILE_DIR:Sokoban-app>/Tools")
+    set(PANDAE_LICENSE_DST "$<TARGET_FILE_DIR:Sokoban-app>")
 endif()
 
 add_custom_command(TARGET Sokoban-app POST_BUILD
@@ -144,7 +149,10 @@ add_custom_command(TARGET Sokoban-app POST_BUILD
         -DSRC_DIR=${CMAKE_CURRENT_SOURCE_DIR}/Sokoban-app/Assets
         -DDST_DIR=${PANDAE_ASSET_DST}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CopyAssets.cmake
-    COMMENT "Copying portable Assets to output directory"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/THIRD_PARTY_LICENSES.txt"
+        "${PANDAE_LICENSE_DST}/THIRD_PARTY_LICENSES.txt"
+    COMMENT "Copying portable Assets and licenses to output directory"
 )
 
 if(PANDAE_BUILD_FESTIVAL)
